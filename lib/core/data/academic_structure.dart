@@ -141,6 +141,7 @@ class AcademicStructure {
         'Mathematics',
         'Microbiology',
         'Physics',
+        'Physics and Astronomy',
         'Physics with Electronics',
         'Science Laboratory Technology',
         'Statistics',
