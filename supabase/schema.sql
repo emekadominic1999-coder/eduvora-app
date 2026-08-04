@@ -38,6 +38,62 @@ create table if not exists public.profiles (
   updated_at               timestamptz not null default now()
 );
 
+-- Bring a pre-existing profiles table up to the current shape.
+--
+-- `create table if not exists` above is skipped entirely when the table
+-- already exists, so a database created by an earlier version of Eduvora
+-- keeps its old columns and silently lacks the new ones. These statements are
+-- no-ops on a fresh database and repair a drifted one.
+alter table public.profiles add column if not exists full_name text not null default '';
+alter table public.profiles add column if not exists email text not null default '';
+alter table public.profiles add column if not exists avatar_url text;
+alter table public.profiles add column if not exists institution_name text not null default '';
+alter table public.profiles add column if not exists institution_abbreviation text not null default '';
+alter table public.profiles add column if not exists institution_state text not null default '';
+alter table public.profiles add column if not exists institution_type text not null default 'university';
+alter table public.profiles add column if not exists faculty text not null default '';
+alter table public.profiles add column if not exists department text not null default '';
+alter table public.profiles add column if not exists level text not null default '';
+alter table public.profiles add column if not exists matric_number text not null default '';
+alter table public.profiles add column if not exists bio text not null default '';
+alter table public.profiles add column if not exists joined_at timestamptz not null default now();
+alter table public.profiles add column if not exists updated_at timestamptz not null default now();
+
+-- Carry data across from the earlier column name where one is present, so an
+-- existing student does not lose the institution they already chose.
+do $$
+begin
+  if exists (
+    select 1 from information_schema.columns
+     where table_schema = 'public'
+       and table_name = 'profiles'
+       and column_name = 'university'
+  ) then
+    execute $mig$
+      update public.profiles
+         set institution_name = university
+       where coalesce(institution_name, '') = ''
+         and university is not null
+    $mig$;
+  end if;
+end $$;
+
+-- The institution_type check constraint only accepts the app's enum names.
+-- An older table may hold free text such as 'Polytechnic', so normalise
+-- before the constraint is applied.
+-- NULL is possible where the column was added ad hoc without a default, and
+-- `NULL not in (...)` never matches, so it is called out explicitly.
+update public.profiles
+   set institution_type = case
+     when institution_type is null then 'university'
+     when lower(institution_type) like '%poly%' then 'polytechnic'
+     when lower(institution_type) like '%college%' then 'collegeOfEducation'
+     when lower(institution_type) like '%educat%' then 'collegeOfEducation'
+     else 'university'
+   end
+ where institution_type is null
+    or institution_type not in ('university', 'polytechnic', 'collegeOfEducation');
+
 create index if not exists profiles_department_idx on public.profiles (department);
 create index if not exists profiles_institution_idx on public.profiles (institution_name);
 
@@ -104,6 +160,24 @@ create table if not exists public.materials (
   created_at    timestamptz not null default now()
 );
 
+-- Repair a materials table left over from an earlier version (see the note
+-- on profiles above).
+alter table public.materials add column if not exists title text not null default '';
+alter table public.materials add column if not exists course_code text not null default '';
+alter table public.materials add column if not exists department text not null default '';
+alter table public.materials add column if not exists faculty text not null default '';
+alter table public.materials add column if not exists institution text not null default '';
+alter table public.materials add column if not exists level text not null default '';
+alter table public.materials add column if not exists file_url text not null default '';
+alter table public.materials add column if not exists file_name text not null default '';
+alter table public.materials add column if not exists file_size bigint not null default 0;
+alter table public.materials add column if not exists description text not null default '';
+alter table public.materials add column if not exists kind text not null default 'lectureNote';
+alter table public.materials add column if not exists downloads integer not null default 0;
+alter table public.materials add column if not exists uploaded_by uuid;
+alter table public.materials add column if not exists uploader_name text not null default '';
+alter table public.materials add column if not exists created_at timestamptz not null default now();
+
 create index if not exists materials_department_idx on public.materials (department);
 create index if not exists materials_level_idx on public.materials (level);
 create index if not exists materials_created_idx on public.materials (created_at desc);
@@ -152,6 +226,69 @@ create table if not exists public.academic_videos (
   uploaded_by uuid references auth.users (id) on delete set null,
   created_at  timestamptz not null default now()
 );
+
+-- Repair an academic_videos table left over from an earlier version, which
+-- used youtube_url / thumbnail_url rather than video_url / thumbnail.
+alter table public.academic_videos add column if not exists title text not null default '';
+alter table public.academic_videos add column if not exists department text not null default '';
+alter table public.academic_videos add column if not exists faculty text not null default '';
+alter table public.academic_videos add column if not exists course_code text not null default '';
+alter table public.academic_videos add column if not exists level text not null default '';
+alter table public.academic_videos add column if not exists video_url text not null default '';
+alter table public.academic_videos add column if not exists thumbnail text not null default '';
+alter table public.academic_videos add column if not exists lecturer text not null default '';
+alter table public.academic_videos add column if not exists description text not null default '';
+alter table public.academic_videos add column if not exists duration text not null default '';
+alter table public.academic_videos add column if not exists views integer not null default 0;
+alter table public.academic_videos add column if not exists uploaded_by uuid;
+alter table public.academic_videos add column if not exists created_at timestamptz not null default now();
+
+-- Carry existing recordings across from the older column names so no video
+-- is orphaned by the rename.
+do $$
+begin
+  if exists (
+    select 1 from information_schema.columns
+     where table_schema = 'public'
+       and table_name = 'academic_videos'
+       and column_name = 'youtube_url'
+  ) then
+    execute $mig$
+      update public.academic_videos
+         set video_url = youtube_url
+       where coalesce(video_url, '') = ''
+         and youtube_url is not null
+    $mig$;
+  end if;
+
+  if exists (
+    select 1 from information_schema.columns
+     where table_schema = 'public'
+       and table_name = 'academic_videos'
+       and column_name = 'thumbnail_url'
+  ) then
+    execute $mig$
+      update public.academic_videos
+         set thumbnail = thumbnail_url
+       where coalesce(thumbnail, '') = ''
+         and thumbnail_url is not null
+    $mig$;
+  end if;
+
+  if exists (
+    select 1 from information_schema.columns
+     where table_schema = 'public'
+       and table_name = 'academic_videos'
+       and column_name = 'channel_name'
+  ) then
+    execute $mig$
+      update public.academic_videos
+         set lecturer = channel_name
+       where coalesce(lecturer, '') = ''
+         and channel_name is not null
+    $mig$;
+  end if;
+end $$;
 
 create index if not exists videos_department_idx on public.academic_videos (department);
 create index if not exists videos_created_idx on public.academic_videos (created_at desc);
