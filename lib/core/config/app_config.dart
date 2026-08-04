@@ -25,11 +25,13 @@ class AppConfig {
   static const String version = '1.0.0';
 
   static const String supabaseUrl = String.fromEnvironment('SUPABASE_URL');
-  static const String supabaseAnonKey =
-      String.fromEnvironment('SUPABASE_ANON_KEY');
+  static const String supabaseAnonKey = String.fromEnvironment(
+    'SUPABASE_ANON_KEY',
+  );
 
   /// Deep link registered in the Supabase dashboard for OAuth callbacks.
-  static const String oauthRedirect = 'com.dominicemeka.eduvora://login-callback';
+  static const String oauthRedirect =
+      'com.dominicemeka.eduvora://login-callback';
 
   /// True when a Supabase project has been wired up for this build.
   static bool get hasBackend =>

@@ -33,9 +33,9 @@ class _ChatsScreenState extends State<ChatsScreen>
     if (!mounted) return;
 
     if (conversation.isAssistant) {
-      await Navigator.of(context).push(
-        MaterialPageRoute<void>(builder: (_) => const AssistantScreen()),
-      );
+      await Navigator.of(
+        context,
+      ).push(MaterialPageRoute<void>(builder: (_) => const AssistantScreen()));
     } else {
       await Navigator.of(context).push(
         MaterialPageRoute<void>(
@@ -60,10 +60,12 @@ class _ChatsScreenState extends State<ChatsScreen>
     final List<Conversation> conversations = q.isEmpty
         ? all
         : all
-            .where((Conversation c) =>
-                c.title.toLowerCase().contains(q) ||
-                c.subtitle.toLowerCase().contains(q))
-            .toList();
+              .where(
+                (Conversation c) =>
+                    c.title.toLowerCase().contains(q) ||
+                    c.subtitle.toLowerCase().contains(q),
+              )
+              .toList();
 
     return Scaffold(
       backgroundColor: AppColours.background,
@@ -167,10 +169,7 @@ class _ConversationRow extends StatelessWidget {
               ),
             )
           else
-            InitialsAvatar(
-              initials: _initials(conversation.title),
-              size: 46,
-            ),
+            InitialsAvatar(initials: _initials(conversation.title), size: 46),
           const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(

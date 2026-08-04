@@ -45,8 +45,7 @@ class MathText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final TextStyle effective =
-        style ?? DefaultTextStyle.of(context).style;
+    final TextStyle effective = style ?? DefaultTextStyle.of(context).style;
 
     // The overwhelmingly common case: no maths at all.
     if (!hasMath(text)) {

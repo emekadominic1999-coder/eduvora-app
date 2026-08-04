@@ -85,27 +85,15 @@ class AppShadows {
   const AppShadows._();
 
   static const List<BoxShadow> card = <BoxShadow>[
-    BoxShadow(
-      color: Color(0x0F1E293B),
-      blurRadius: 18,
-      offset: Offset(0, 6),
-    ),
+    BoxShadow(color: Color(0x0F1E293B), blurRadius: 18, offset: Offset(0, 6)),
   ];
 
   static const List<BoxShadow> raised = <BoxShadow>[
-    BoxShadow(
-      color: Color(0x1A1E293B),
-      blurRadius: 28,
-      offset: Offset(0, 12),
-    ),
+    BoxShadow(color: Color(0x1A1E293B), blurRadius: 28, offset: Offset(0, 12)),
   ];
 
   static const List<BoxShadow> subtle = <BoxShadow>[
-    BoxShadow(
-      color: Color(0x0A1E293B),
-      blurRadius: 10,
-      offset: Offset(0, 3),
-    ),
+    BoxShadow(color: Color(0x0A1E293B), blurRadius: 10, offset: Offset(0, 3)),
   ];
 }
 
@@ -201,8 +189,9 @@ class AppTheme {
         ),
         hintStyle: textTheme.bodyMedium?.copyWith(color: AppColours.textFaint),
         labelStyle: textTheme.bodyMedium?.copyWith(color: AppColours.textMuted),
-        floatingLabelStyle:
-            textTheme.bodyMedium?.copyWith(color: AppColours.primary),
+        floatingLabelStyle: textTheme.bodyMedium?.copyWith(
+          color: AppColours.primary,
+        ),
         prefixIconColor: AppColours.textMuted,
         suffixIconColor: AppColours.textMuted,
         border: _fieldBorder(AppColours.border),
@@ -234,7 +223,9 @@ class AppTheme {
           elevation: 0,
           minimumSize: const Size.fromHeight(54),
           shape: const RoundedRectangleBorder(borderRadius: AppRadii.md),
-          textStyle: textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+          textStyle: textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
@@ -243,13 +234,17 @@ class AppTheme {
           minimumSize: const Size.fromHeight(54),
           side: const BorderSide(color: AppColours.border, width: 1.4),
           shape: const RoundedRectangleBorder(borderRadius: AppRadii.md),
-          textStyle: textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+          textStyle: textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: AppColours.primary,
-          textStyle: textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
+          textStyle: textTheme.labelLarge?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
         ),
       ),
       chipTheme: ChipThemeData(
@@ -273,10 +268,12 @@ class AppTheme {
         backgroundColor: AppColours.surface,
         selectedItemColor: AppColours.primary,
         unselectedItemColor: AppColours.textFaint,
-        selectedLabelStyle:
-            textTheme.labelSmall?.copyWith(fontWeight: FontWeight.w700),
-        unselectedLabelStyle:
-            textTheme.labelSmall?.copyWith(fontWeight: FontWeight.w500),
+        selectedLabelStyle: textTheme.labelSmall?.copyWith(
+          fontWeight: FontWeight.w700,
+        ),
+        unselectedLabelStyle: textTheme.labelSmall?.copyWith(
+          fontWeight: FontWeight.w500,
+        ),
         type: BottomNavigationBarType.fixed,
         elevation: 0,
       ),
@@ -307,8 +304,9 @@ class AppTheme {
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         shape: const RoundedRectangleBorder(borderRadius: AppRadii.lg),
-        titleTextStyle:
-            textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+        titleTextStyle: textTheme.titleMedium?.copyWith(
+          fontWeight: FontWeight.w700,
+        ),
         contentTextStyle: textTheme.bodyMedium,
       ),
       bottomSheetTheme: const BottomSheetThemeData(
@@ -335,8 +333,9 @@ class AppTheme {
         indicatorSize: TabBarIndicatorSize.label,
         dividerColor: AppColours.border,
         labelStyle: textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
-        unselectedLabelStyle:
-            textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w500),
+        unselectedLabelStyle: textTheme.titleSmall?.copyWith(
+          fontWeight: FontWeight.w500,
+        ),
       ),
       progressIndicatorTheme: const ProgressIndicatorThemeData(
         color: AppColours.primary,
@@ -349,12 +348,15 @@ class AppTheme {
         thumbColor: AppColours.primary,
       ),
       switchTheme: SwitchThemeData(
-        thumbColor: WidgetStateProperty.resolveWith((Set<WidgetState> s) =>
-            s.contains(WidgetState.selected) ? Colors.white : Colors.white),
-        trackColor: WidgetStateProperty.resolveWith((Set<WidgetState> s) =>
-            s.contains(WidgetState.selected)
-                ? AppColours.primary
-                : AppColours.borderStrong),
+        thumbColor: WidgetStateProperty.resolveWith(
+          (Set<WidgetState> s) =>
+              s.contains(WidgetState.selected) ? Colors.white : Colors.white,
+        ),
+        trackColor: WidgetStateProperty.resolveWith(
+          (Set<WidgetState> s) => s.contains(WidgetState.selected)
+              ? AppColours.primary
+              : AppColours.borderStrong,
+        ),
         trackOutlineColor: const WidgetStatePropertyAll<Color>(
           Colors.transparent,
         ),
@@ -366,10 +368,7 @@ class AppTheme {
           fontSize: 15,
           fontWeight: FontWeight.w600,
         ),
-        subtitleTextStyle: TextStyle(
-          color: AppColours.textMuted,
-          fontSize: 13,
-        ),
+        subtitleTextStyle: TextStyle(color: AppColours.textMuted, fontSize: 13),
         shape: RoundedRectangleBorder(borderRadius: AppRadii.md),
       ),
       iconTheme: const IconThemeData(color: AppColours.textMuted, size: 22),

@@ -75,10 +75,12 @@ class SessionController extends ChangeNotifier {
         }
       }
 
-      final Map<String, dynamic>? cached =
-          LocalStore.instance.readMap(StoreKeys.profile);
-      final String? currentUser =
-          LocalStore.instance.readString(StoreKeys.currentUser);
+      final Map<String, dynamic>? cached = LocalStore.instance.readMap(
+        StoreKeys.profile,
+      );
+      final String? currentUser = LocalStore.instance.readString(
+        StoreKeys.currentUser,
+      );
 
       if (cached != null && currentUser != null && currentUser.isNotEmpty) {
         _profile = StudentProfile.fromJson(cached);
@@ -124,8 +126,9 @@ class SessionController extends ChangeNotifier {
       }
 
       // ---- Campus Mode ----
-      final List<Map<String, dynamic>> accounts =
-          LocalStore.instance.readList(StoreKeys.localAccounts);
+      final List<Map<String, dynamic>> accounts = LocalStore.instance.readList(
+        StoreKeys.localAccounts,
+      );
       final bool exists = accounts.any(
         (Map<String, dynamic> a) => a['email'] == cleanEmail,
       );
@@ -148,8 +151,11 @@ class SessionController extends ChangeNotifier {
       });
       await LocalStore.instance.writeList(StoreKeys.localAccounts, accounts);
 
-      final StudentProfile fresh =
-          StudentProfile.empty(id, cleanEmail, fullName.trim());
+      final StudentProfile fresh = StudentProfile.empty(
+        id,
+        cleanEmail,
+        fullName.trim(),
+      );
       await _persistLocalSession(fresh);
       _profile = fresh;
       _status = AuthStatus.needsOnboarding;
@@ -167,11 +173,8 @@ class SessionController extends ChangeNotifier {
       final String cleanEmail = email.trim().toLowerCase();
 
       if (SupabaseService.isReady) {
-        final sb.AuthResponse response =
-            await SupabaseService.auth.signInWithPassword(
-          email: cleanEmail,
-          password: password,
-        );
+        final sb.AuthResponse response = await SupabaseService.auth
+            .signInWithPassword(email: cleanEmail, password: password);
         final sb.User? user = response.user;
         if (user == null) {
           throw const AuthFailure(
@@ -183,8 +186,9 @@ class SessionController extends ChangeNotifier {
       }
 
       // ---- Campus Mode ----
-      final List<Map<String, dynamic>> accounts =
-          LocalStore.instance.readList(StoreKeys.localAccounts);
+      final List<Map<String, dynamic>> accounts = LocalStore.instance.readList(
+        StoreKeys.localAccounts,
+      );
       Map<String, dynamic>? account;
       for (final Map<String, dynamic> a in accounts) {
         if (a['email'] == cleanEmail) {
@@ -208,8 +212,9 @@ class SessionController extends ChangeNotifier {
         );
       }
 
-      final Map<String, dynamic>? saved =
-          LocalStore.instance.readMap('${StoreKeys.profile}.$cleanEmail');
+      final Map<String, dynamic>? saved = LocalStore.instance.readMap(
+        '${StoreKeys.profile}.$cleanEmail',
+      );
       final StudentProfile restored = saved != null
           ? StudentProfile.fromJson(saved)
           : StudentProfile.empty(
@@ -220,8 +225,9 @@ class SessionController extends ChangeNotifier {
 
       await _persistLocalSession(restored);
       _profile = restored;
-      _status =
-          restored.isComplete ? AuthStatus.ready : AuthStatus.needsOnboarding;
+      _status = restored.isComplete
+          ? AuthStatus.ready
+          : AuthStatus.needsOnboarding;
     } finally {
       _setBusy(false);
     }
@@ -300,14 +306,14 @@ class SessionController extends ChangeNotifier {
         }
       }
 
-      await LocalStore.instance
-          .writeMap(StoreKeys.profile, updated.toJson());
+      await LocalStore.instance.writeMap(StoreKeys.profile, updated.toJson());
       await LocalStore.instance.writeMap(
         '${StoreKeys.profile}.${updated.email}',
         updated.toJson(),
       );
-      _status =
-          updated.isComplete ? AuthStatus.ready : AuthStatus.needsOnboarding;
+      _status = updated.isComplete
+          ? AuthStatus.ready
+          : AuthStatus.needsOnboarding;
     } finally {
       _setBusy(false);
     }
@@ -355,16 +361,14 @@ class SessionController extends ChangeNotifier {
     final String name = fallbackName.isNotEmpty
         ? fallbackName
         : (user.userMetadata?['full_name'] as String?) ??
-            (user.userMetadata?['name'] as String?) ??
-            (user.email?.split('@').first ?? 'Student');
+              (user.userMetadata?['name'] as String?) ??
+              (user.email?.split('@').first ?? 'Student');
 
     StudentProfile resolved = StudentProfile.empty(
       user.id,
       user.email ?? '',
       name,
-    ).copyWith(
-      avatarUrl: user.userMetadata?['avatar_url'] as String?,
-    );
+    ).copyWith(avatarUrl: user.userMetadata?['avatar_url'] as String?);
 
     try {
       final Map<String, dynamic>? row = await SupabaseService.client
@@ -377,23 +381,27 @@ class SessionController extends ChangeNotifier {
       }
     } catch (error) {
       debugPrint('[Eduvora] profile fetch failed, using cache: $error');
-      final Map<String, dynamic>? cached =
-          LocalStore.instance.readMap('${StoreKeys.profile}.${user.email}');
+      final Map<String, dynamic>? cached = LocalStore.instance.readMap(
+        '${StoreKeys.profile}.${user.email}',
+      );
       if (cached != null) resolved = StudentProfile.fromJson(cached);
     }
 
     await _persistLocalSession(resolved);
     _profile = resolved;
-    _status =
-        resolved.isComplete ? AuthStatus.ready : AuthStatus.needsOnboarding;
+    _status = resolved.isComplete
+        ? AuthStatus.ready
+        : AuthStatus.needsOnboarding;
     notifyListeners();
   }
 
   Future<void> _persistLocalSession(StudentProfile p) async {
     await LocalStore.instance.writeString(StoreKeys.currentUser, p.email);
     await LocalStore.instance.writeMap(StoreKeys.profile, p.toJson());
-    await LocalStore.instance
-        .writeMap('${StoreKeys.profile}.${p.email}', p.toJson());
+    await LocalStore.instance.writeMap(
+      '${StoreKeys.profile}.${p.email}',
+      p.toJson(),
+    );
   }
 
   void _setBusy(bool value) {
@@ -404,8 +412,7 @@ class SessionController extends ChangeNotifier {
 
   static String _newSalt() {
     final Random rng = Random.secure();
-    final List<int> bytes =
-        List<int>.generate(16, (_) => rng.nextInt(256));
+    final List<int> bytes = List<int>.generate(16, (_) => rng.nextInt(256));
     return base64Url.encode(bytes);
   }
 

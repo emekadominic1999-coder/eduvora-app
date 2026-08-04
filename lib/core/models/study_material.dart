@@ -18,9 +18,9 @@ enum MaterialKind {
   final Color colour;
 
   static MaterialKind fromName(String? name) => MaterialKind.values.firstWhere(
-        (MaterialKind k) => k.name == name || k.label == name,
-        orElse: () => MaterialKind.lectureNote,
-      );
+    (MaterialKind k) => k.name == name || k.label == name,
+    orElse: () => MaterialKind.lectureNote,
+  );
 }
 
 /// A shared academic resource — maps to the `materials` table.
@@ -79,59 +79,59 @@ class StudyMaterial {
   }
 
   StudyMaterial copyWith({int? downloads}) => StudyMaterial(
-        id: id,
-        title: title,
-        courseCode: courseCode,
-        department: department,
-        faculty: faculty,
-        institution: institution,
-        level: level,
-        fileUrl: fileUrl,
-        fileName: fileName,
-        fileSizeBytes: fileSizeBytes,
-        uploadedBy: uploadedBy,
-        uploaderName: uploaderName,
-        description: description,
-        kind: kind,
-        downloads: downloads ?? this.downloads,
-        createdAt: createdAt,
-      );
+    id: id,
+    title: title,
+    courseCode: courseCode,
+    department: department,
+    faculty: faculty,
+    institution: institution,
+    level: level,
+    fileUrl: fileUrl,
+    fileName: fileName,
+    fileSizeBytes: fileSizeBytes,
+    uploadedBy: uploadedBy,
+    uploaderName: uploaderName,
+    description: description,
+    kind: kind,
+    downloads: downloads ?? this.downloads,
+    createdAt: createdAt,
+  );
 
   Map<String, dynamic> toJson() => <String, dynamic>{
-        'id': id,
-        'title': title,
-        'course_code': courseCode,
-        'department': department,
-        'faculty': faculty,
-        'institution': institution,
-        'level': level,
-        'file_url': fileUrl,
-        'file_name': fileName,
-        'file_size': fileSizeBytes,
-        'uploaded_by': uploadedBy,
-        'uploader_name': uploaderName,
-        'description': description,
-        'kind': kind.name,
-        'downloads': downloads,
-        'created_at': (createdAt ?? DateTime.now()).toIso8601String(),
-      };
+    'id': id,
+    'title': title,
+    'course_code': courseCode,
+    'department': department,
+    'faculty': faculty,
+    'institution': institution,
+    'level': level,
+    'file_url': fileUrl,
+    'file_name': fileName,
+    'file_size': fileSizeBytes,
+    'uploaded_by': uploadedBy,
+    'uploader_name': uploaderName,
+    'description': description,
+    'kind': kind.name,
+    'downloads': downloads,
+    'created_at': (createdAt ?? DateTime.now()).toIso8601String(),
+  };
 
   factory StudyMaterial.fromJson(Map<String, dynamic> json) => StudyMaterial(
-        id: (json['id'] ?? '') as String,
-        title: (json['title'] ?? '') as String,
-        courseCode: (json['course_code'] ?? '') as String,
-        department: (json['department'] ?? '') as String,
-        faculty: (json['faculty'] ?? '') as String,
-        institution: (json['institution'] ?? '') as String,
-        level: (json['level'] ?? '') as String,
-        fileUrl: (json['file_url'] ?? '') as String,
-        fileName: (json['file_name'] ?? '') as String,
-        fileSizeBytes: (json['file_size'] as num?)?.toInt() ?? 0,
-        uploadedBy: (json['uploaded_by'] ?? '') as String,
-        uploaderName: (json['uploader_name'] ?? 'A fellow student') as String,
-        description: (json['description'] ?? '') as String,
-        kind: MaterialKind.fromName(json['kind'] as String?),
-        downloads: (json['downloads'] as num?)?.toInt() ?? 0,
-        createdAt: DateTime.tryParse((json['created_at'] ?? '') as String),
-      );
+    id: (json['id'] ?? '') as String,
+    title: (json['title'] ?? '') as String,
+    courseCode: (json['course_code'] ?? '') as String,
+    department: (json['department'] ?? '') as String,
+    faculty: (json['faculty'] ?? '') as String,
+    institution: (json['institution'] ?? '') as String,
+    level: (json['level'] ?? '') as String,
+    fileUrl: (json['file_url'] ?? '') as String,
+    fileName: (json['file_name'] ?? '') as String,
+    fileSizeBytes: (json['file_size'] as num?)?.toInt() ?? 0,
+    uploadedBy: (json['uploaded_by'] ?? '') as String,
+    uploaderName: (json['uploader_name'] ?? 'A fellow student') as String,
+    description: (json['description'] ?? '') as String,
+    kind: MaterialKind.fromName(json['kind'] as String?),
+    downloads: (json['downloads'] as num?)?.toInt() ?? 0,
+    createdAt: DateTime.tryParse((json['created_at'] ?? '') as String),
+  );
 }

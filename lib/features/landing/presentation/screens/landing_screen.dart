@@ -35,9 +35,7 @@ class LandingScreen extends StatelessWidget {
             title: const EduvoraWordmark(logoSize: 34),
             actions: <Widget>[
               Padding(
-                padding: const EdgeInsets.only(
-                  right: AppSpacing.screenPadding,
-                ),
+                padding: const EdgeInsets.only(right: AppSpacing.screenPadding),
                 child: FilledButton(
                   onPressed: () => Navigator.of(context).maybePop(),
                   style: FilledButton.styleFrom(
@@ -53,13 +51,17 @@ class LandingScreen extends StatelessWidget {
               ),
             ],
           ),
-          SliverToBoxAdapter(child: _Hero(onSignIn: () => Navigator.of(context).maybePop())),
+          SliverToBoxAdapter(
+            child: _Hero(onSignIn: () => Navigator.of(context).maybePop()),
+          ),
           const SliverToBoxAdapter(child: _Numbers()),
           const SliverToBoxAdapter(child: _Features()),
           const SliverToBoxAdapter(child: _Coverage()),
           const SliverToBoxAdapter(child: _Voices()),
           SliverToBoxAdapter(
-            child: _ClosingCta(onSignIn: () => Navigator.of(context).maybePop()),
+            child: _ClosingCta(
+              onSignIn: () => Navigator.of(context).maybePop(),
+            ),
           ),
           SliverToBoxAdapter(
             child: AppFooter(onSignIn: () => Navigator.of(context).maybePop()),
@@ -184,11 +186,17 @@ class _Numbers extends StatelessWidget {
           child: Row(
             children: <Widget>[
               Expanded(
-                child: _NumberCell(value: '$institutions+', label: 'Institutions'),
+                child: _NumberCell(
+                  value: '$institutions+',
+                  label: 'Institutions',
+                ),
               ),
               const _CellDivider(),
               Expanded(
-                child: _NumberCell(value: '$departments+', label: 'Departments'),
+                child: _NumberCell(
+                  value: '$departments+',
+                  label: 'Departments',
+                ),
               ),
               const _CellDivider(),
               Expanded(
@@ -209,11 +217,8 @@ class _CellDivider extends StatelessWidget {
   const _CellDivider();
 
   @override
-  Widget build(BuildContext context) => Container(
-        width: 1,
-        height: 34,
-        color: AppColours.border,
-      );
+  Widget build(BuildContext context) =>
+      Container(width: 1, height: 34, color: AppColours.border);
 }
 
 class _NumberCell extends StatelessWidget {
@@ -324,9 +329,9 @@ class _Features extends StatelessWidget {
           Text(
             'Six things, done properly, for university, polytechnic and '
             'college of education students alike.',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColours.textMuted,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: AppColours.textMuted),
           ),
           const SizedBox(height: AppSpacing.xl),
           ..._items.map(
@@ -353,16 +358,14 @@ class _Features extends StatelessWidget {
                         children: <Widget>[
                           Text(
                             f.title,
-                            style:
-                                Theme.of(context).textTheme.titleMedium,
+                            style: Theme.of(context).textTheme.titleMedium,
                           ),
                           const SizedBox(height: 4),
                           Text(
                             f.body,
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodySmall
-                                ?.copyWith(height: 1.55),
+                            style: Theme.of(
+                              context,
+                            ).textTheme.bodySmall?.copyWith(height: 1.55),
                           ),
                         ],
                       ),
@@ -477,10 +480,7 @@ class _CoverageRow extends StatelessWidget {
               children: <Widget>[
                 Row(
                   children: <Widget>[
-                    Text(
-                      title,
-                      style: Theme.of(context).textTheme.titleSmall,
-                    ),
+                    Text(title, style: Theme.of(context).textTheme.titleSmall),
                     const SizedBox(width: AppSpacing.sm),
                     Pill(label: '$count listed', dense: true),
                   ],
@@ -488,9 +488,9 @@ class _CoverageRow extends StatelessWidget {
                 const SizedBox(height: 5),
                 Text(
                   examples,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        fontSize: 12.5,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(fontSize: 12.5),
                 ),
               ],
             ),
@@ -563,9 +563,7 @@ class _Voices extends StatelessWidget {
                         Expanded(
                           child: Text(
                             _quotes[index][0],
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium
+                            style: Theme.of(context).textTheme.bodyMedium
                                 ?.copyWith(height: 1.55, fontSize: 14),
                           ),
                         ),

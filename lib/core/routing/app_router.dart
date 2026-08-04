@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../features/auth/presentation/screens/auth_screen.dart';
 import '../../features/auth/presentation/screens/splash_gate.dart';
 import '../../features/cbt/presentation/screens/cbt_home_screen.dart';
+import '../../features/courses/presentation/screens/course_outline_screen.dart';
 import '../../features/chats/presentation/screens/assistant_screen.dart';
 import '../../features/chats/presentation/screens/chats_screen.dart';
 import '../../features/community/presentation/screens/community_screen.dart';
@@ -32,6 +33,7 @@ class AppRouter {
   static const String materials = '/materials';
   static const String upload = '/upload';
   static const String cbt = '/cbt';
+  static const String courses = '/courses';
   static const String gpa = '/gpa';
   static const String community = '/community';
   static const String chats = '/chats';
@@ -71,6 +73,8 @@ class AppRouter {
         page = const MaterialsScreen();
       case upload:
         page = const UploadMaterialScreen();
+      case courses:
+        page = const CourseOutlineScreen();
       case cbt:
         page = const CbtHomeScreen();
       case gpa:
@@ -89,10 +93,7 @@ class AppRouter {
         page = const SplashGate();
     }
 
-    return MaterialPageRoute<dynamic>(
-      builder: (_) => page,
-      settings: settings,
-    );
+    return MaterialPageRoute<dynamic>(builder: (_) => page, settings: settings);
   }
 
   /// Navigates to [route], switching shell tabs where that is the right move.
@@ -108,6 +109,8 @@ class AppRouter {
 
   /// Replaces the whole stack — used after sign-in, onboarding and sign-out.
   static void reset(BuildContext context, String route) {
-    Navigator.of(context).pushNamedAndRemoveUntil(route, (Route<dynamic> _) => false);
+    Navigator.of(
+      context,
+    ).pushNamedAndRemoveUntil(route, (Route<dynamic> _) => false);
   }
 }

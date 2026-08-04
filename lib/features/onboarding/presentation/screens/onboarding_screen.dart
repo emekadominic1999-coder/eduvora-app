@@ -252,9 +252,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   height: 5,
                   margin: EdgeInsets.only(right: i == _lastStep ? 0 : 5),
                   decoration: BoxDecoration(
-                    color: i <= _step
-                        ? AppColours.primary
-                        : AppColours.border,
+                    color: i <= _step ? AppColours.primary : AppColours.border,
                     borderRadius: BorderRadius.circular(3),
                   ),
                 ),
@@ -262,15 +260,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             }),
           ),
           const SizedBox(height: AppSpacing.xl),
-          Text(
-            titles[_step],
-            style: Theme.of(context).textTheme.headlineSmall,
-          ),
+          Text(titles[_step], style: Theme.of(context).textTheme.headlineSmall),
           const SizedBox(height: 5),
-          Text(
-            subtitles[_step],
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
+          Text(subtitles[_step], style: Theme.of(context).textTheme.bodySmall),
         ],
       ),
     );
@@ -344,8 +336,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   selected
                       ? Icons.check_circle_rounded
                       : Icons.radio_button_unchecked_rounded,
-                  color:
-                      selected ? AppColours.primary : AppColours.borderStrong,
+                  color: selected
+                      ? AppColours.primary
+                      : AppColours.borderStrong,
                   size: 22,
                 ),
               ],
@@ -506,8 +499,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                       colour: i.ownership == Ownership.federal
                                           ? AppColours.primary
                                           : i.ownership == Ownership.state
-                                              ? AppColours.info
-                                              : AppColours.accent,
+                                          ? AppColours.info
+                                          : AppColours.accent,
                                     ),
                                     const SizedBox(width: 6),
                                     Text(
@@ -559,8 +552,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 style: TextStyle(
                   fontSize: 12.5,
                   fontWeight: FontWeight.w600,
-                  color:
-                      active ? AppColours.primary : AppColours.textMuted,
+                  color: active ? AppColours.primary : AppColours.textMuted,
                 ),
               ),
               const SizedBox(width: 3),
@@ -755,9 +747,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     final List<String> results = _query.trim().isEmpty
         ? departments
         : departments
-            .where((String d) =>
-                d.toLowerCase().contains(_query.trim().toLowerCase()))
-            .toList();
+              .where(
+                (String d) =>
+                    d.toLowerCase().contains(_query.trim().toLowerCase()),
+              )
+              .toList();
 
     return Column(
       children: <Widget>[
@@ -779,7 +773,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               ? const EmptyState(
                   icon: Icons.school_outlined,
                   title: 'No department matches',
-                  message: 'Try a different word, or go back and change the '
+                  message:
+                      'Try a different word, or go back and change the '
                       'faculty.',
                   compact: true,
                 )
@@ -872,13 +867,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   vertical: 13,
                 ),
                 decoration: BoxDecoration(
-                  color:
-                      selected ? AppColours.primary : AppColours.surface,
+                  color: selected ? AppColours.primary : AppColours.surface,
                   borderRadius: AppRadii.md,
                   border: Border.all(
-                    color: selected
-                        ? AppColours.primary
-                        : AppColours.border,
+                    color: selected ? AppColours.primary : AppColours.border,
                     width: selected ? 1.7 : 1,
                   ),
                   boxShadow: AppShadows.subtle,
@@ -887,8 +879,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   level,
                   style: TextStyle(
                     fontSize: 14,
-                    fontWeight:
-                        selected ? FontWeight.w700 : FontWeight.w500,
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                     color: selected ? Colors.white : AppColours.text,
                   ),
                 ),
@@ -939,9 +930,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               const SizedBox(width: AppSpacing.sm),
               Text(
                 'Your Eduvora profile',
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      color: AppColours.primaryDeep,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleSmall?.copyWith(color: AppColours.primaryDeep),
               ),
             ],
           ),

@@ -590,8 +590,10 @@ class AcademicStructure {
     return null;
   }
 
-  static List<String> departmentsFor(InstitutionType type, String facultyName) =>
-      facultyByName(type, facultyName)?.departments ?? const <String>[];
+  static List<String> departmentsFor(
+    InstitutionType type,
+    String facultyName,
+  ) => facultyByName(type, facultyName)?.departments ?? const <String>[];
 
   /// Every department across every institution type — used by search.
   static List<String> get allDepartments {
@@ -607,10 +609,7 @@ class AcademicStructure {
 
   /// Resolves the faculty a department belongs to, so a returning student's
   /// saved department can be shown with its parent grouping.
-  static Faculty? facultyOfDepartment(
-    InstitutionType type,
-    String department,
-  ) {
+  static Faculty? facultyOfDepartment(InstitutionType type, String department) {
     for (final Faculty f in facultiesFor(type)) {
       if (f.departments.contains(department)) return f;
     }

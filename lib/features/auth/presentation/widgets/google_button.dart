@@ -5,11 +5,7 @@ import '../../../../core/theme/app_theme.dart';
 /// "Continue with Google" — the mark is drawn locally so the button needs no
 /// network request and works offline.
 class GoogleButton extends StatelessWidget {
-  const GoogleButton({
-    super.key,
-    required this.label,
-    required this.onPressed,
-  });
+  const GoogleButton({super.key, required this.label, required this.onPressed});
 
   final String label;
   final VoidCallback? onPressed;

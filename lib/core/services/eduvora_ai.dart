@@ -22,11 +22,7 @@ class AiReply {
 }
 
 class _Intent {
-  const _Intent({
-    required this.keywords,
-    required this.build,
-    this.weight = 1,
-  });
+  const _Intent({required this.keywords, required this.build, this.weight = 1});
 
   /// Any of these appearing in the message counts as a hit.
   final List<String> keywords;
@@ -127,8 +123,14 @@ class EduvoraAi {
     // ---------------------------------------------------------- greetings
     _Intent(
       keywords: <String>[
-        'hello', 'hi ', 'hey', 'good morning', 'good afternoon',
-        'good evening', 'how are you', 'good day',
+        'hello',
+        'hi ',
+        'hey',
+        'good morning',
+        'good afternoon',
+        'good evening',
+        'how are you',
+        'good day',
       ],
       build: (StudentProfile? p) => AiReply(
         message:
@@ -147,11 +149,30 @@ class EduvoraAi {
     _Intent(
       weight: 2,
       keywords: <String>[
-        'overwhelmed', 'stressed', 'stress', 'anxious', 'anxiety', 'tired',
-        'exhausted', 'burnt out', 'burnout', 'depressed', 'sad', 'crying',
-        'giving up', 'give up', 'cannot cope', "can't cope", 'too much',
-        'i am struggling', 'struggling', 'frustrated', 'lonely', 'afraid',
-        'scared', 'hopeless',
+        'overwhelmed',
+        'stressed',
+        'stress',
+        'anxious',
+        'anxiety',
+        'tired',
+        'exhausted',
+        'burnt out',
+        'burnout',
+        'depressed',
+        'sad',
+        'crying',
+        'giving up',
+        'give up',
+        'cannot cope',
+        "can't cope",
+        'too much',
+        'i am struggling',
+        'struggling',
+        'frustrated',
+        'lonely',
+        'afraid',
+        'scared',
+        'hopeless',
       ],
       build: (StudentProfile? p) => AiReply(
         message:
@@ -179,9 +200,19 @@ class EduvoraAi {
     _Intent(
       weight: 2,
       keywords: <String>[
-        'failed', 'failing', 'carry over', 'carryover', 'carry-over', 'spill',
-        'probation', 'withdrawn', 'bad grade', 'poor result', 'low cgpa',
-        'low gpa', 'repeat',
+        'failed',
+        'failing',
+        'carry over',
+        'carryover',
+        'carry-over',
+        'spill',
+        'probation',
+        'withdrawn',
+        'bad grade',
+        'poor result',
+        'low cgpa',
+        'low gpa',
+        'repeat',
       ],
       build: (StudentProfile? p) => AiReply(
         message:
@@ -209,8 +240,14 @@ class EduvoraAi {
     // ------------------------------------------------------------- videos
     _Intent(
       keywords: <String>[
-        'video', 'videos', 'lecture', 'lectures', 'watch', 'recording',
-        'tutorial video', 'play',
+        'video',
+        'videos',
+        'lecture',
+        'lectures',
+        'watch',
+        'recording',
+        'tutorial video',
+        'play',
       ],
       build: (StudentProfile? p) => AiReply(
         message:
@@ -236,9 +273,22 @@ class EduvoraAi {
     // ---------------------------------------------------------- materials
     _Intent(
       keywords: <String>[
-        'material', 'materials', 'note', 'notes', 'handout', 'past question',
-        'past questions', 'pq', 'textbook', 'pdf', 'download', 'library',
-        'resource', 'resources', 'slide', 'slides',
+        'material',
+        'materials',
+        'note',
+        'notes',
+        'handout',
+        'past question',
+        'past questions',
+        'pq',
+        'textbook',
+        'pdf',
+        'download',
+        'library',
+        'resource',
+        'resources',
+        'slide',
+        'slides',
       ],
       build: (StudentProfile? p) => AiReply(
         message:
@@ -262,7 +312,11 @@ class EduvoraAi {
     ),
     _Intent(
       keywords: <String>[
-        'upload', 'share my note', 'share notes', 'contribute', 'post material',
+        'upload',
+        'share my note',
+        'share notes',
+        'contribute',
+        'post material',
         'add material',
       ],
       build: (StudentProfile? p) => AiReply(
@@ -284,11 +338,60 @@ class EduvoraAi {
       ),
     ),
 
+    // ------------------------------------------------------ course outline
+    _Intent(
+      keywords: <String>[
+        'course outline',
+        'outline',
+        'syllabus',
+        'curriculum',
+        'course list',
+        'what courses',
+        'courses i will',
+        'course code',
+        'credit unit',
+        'registration',
+        'what am i studying',
+        'my courses',
+      ],
+      build: (StudentProfile? p) => AiReply(
+        message:
+            'Course Outline is on your home dashboard.\n\nIt shows the courses '
+            'for '
+            '${p?.department.isNotEmpty == true ? p!.department : 'your department'}'
+            ' at '
+            '${p?.institutionAbbreviation.isNotEmpty == true ? p!.institutionAbbreviation : 'your own institution'}'
+            ', split into first and second semester, with credit units and '
+            'the topics each course covers.\n\nOne thing worth knowing: it is '
+            'filtered to **your school specifically**, because course codes '
+            'and syllabi genuinely differ between institutions — UNILAG’s '
+            'CSC 101 is not UNN’s CSC 101. There is a separate, clearly '
+            'labelled section if you want to compare with other schools, but '
+            'do revise from your own.\n\nIf a course is missing, please add '
+            'it. The outline grows because students like you fill it in.',
+        route: '/courses',
+        routeLabel: 'Open Course Outline',
+        suggestions: <String>[
+          'How do I add a course?',
+          'Find materials for my department',
+        ],
+      ),
+    ),
+
     // ---------------------------------------------------------------- CBT
     _Intent(
       keywords: <String>[
-        'cbt', 'exam', 'exams', 'test', 'quiz', 'practice', 'mock',
-        'multiple choice', 'mcq', 'objective', 'past paper',
+        'cbt',
+        'exam',
+        'exams',
+        'test',
+        'quiz',
+        'practice',
+        'mock',
+        'multiple choice',
+        'mcq',
+        'objective',
+        'past paper',
       ],
       build: (StudentProfile? p) => AiReply(
         message:
@@ -316,8 +419,16 @@ class EduvoraAi {
     // ---------------------------------------------------------------- GPA
     _Intent(
       keywords: <String>[
-        'gpa', 'cgpa', 'gp calculator', 'gp', 'grade point', 'class of degree',
-        'first class', 'second class', 'calculate my result', 'classification',
+        'gpa',
+        'cgpa',
+        'gp calculator',
+        'gp',
+        'grade point',
+        'class of degree',
+        'first class',
+        'second class',
+        'calculate my result',
+        'classification',
       ],
       build: (StudentProfile? p) => AiReply(
         message:
@@ -341,8 +452,13 @@ class EduvoraAi {
     ),
     _Intent(
       keywords: <String>[
-        'second class upper', '2:1', 'what class', 'degree class',
-        'what cgpa do i need', 'improve my cgpa', 'improve my gpa',
+        'second class upper',
+        '2:1',
+        'what class',
+        'degree class',
+        'what cgpa do i need',
+        'improve my cgpa',
+        'improve my gpa',
       ],
       build: (StudentProfile? p) => AiReply(
         message:
@@ -368,8 +484,15 @@ class EduvoraAi {
     // --------------------------------------------------------- community
     _Intent(
       keywords: <String>[
-        'community', 'forum', 'post', 'discussion', 'peers', 'other students',
-        'study group', 'group', 'ask a question',
+        'community',
+        'forum',
+        'post',
+        'discussion',
+        'peers',
+        'other students',
+        'study group',
+        'group',
+        'ask a question',
       ],
       build: (StudentProfile? p) => AiReply(
         message:
@@ -393,8 +516,14 @@ class EduvoraAi {
     // -------------------------------------------------------------- chats
     _Intent(
       keywords: <String>[
-        'chat', 'chats', 'message', 'messages', 'dm', 'direct message',
-        'talk to someone', 'inbox',
+        'chat',
+        'chats',
+        'message',
+        'messages',
+        'dm',
+        'direct message',
+        'talk to someone',
+        'inbox',
       ],
       build: (StudentProfile? p) => AiReply(
         message:
@@ -416,9 +545,20 @@ class EduvoraAi {
     // --------------------------------------------------------------- news
     _Intent(
       keywords: <String>[
-        'news', 'scholarship', 'scholarships', 'bursary', 'grant',
-        'opportunity', 'opportunities', 'internship', 'job', 'noticeboard',
-        'admission', 'siwes', 'nysc', 'competition',
+        'news',
+        'scholarship',
+        'scholarships',
+        'bursary',
+        'grant',
+        'opportunity',
+        'opportunities',
+        'internship',
+        'job',
+        'noticeboard',
+        'admission',
+        'siwes',
+        'nysc',
+        'competition',
       ],
       build: (StudentProfile? p) => AiReply(
         message:
@@ -445,9 +585,18 @@ class EduvoraAi {
     // ------------------------------------------------------------ profile
     _Intent(
       keywords: <String>[
-        'profile', 'my account', 'change my department', 'change department',
-        'change level', 'change my level', 'wrong university', 'edit profile',
-        'change university', 'change school', 'settings', 'faculty is wrong',
+        'profile',
+        'my account',
+        'change my department',
+        'change department',
+        'change level',
+        'change my level',
+        'wrong university',
+        'edit profile',
+        'change university',
+        'change school',
+        'settings',
+        'faculty is wrong',
       ],
       build: (StudentProfile? p) => AiReply(
         message:
@@ -468,7 +617,11 @@ class EduvoraAi {
     ),
     _Intent(
       keywords: <String>[
-        'sign out', 'log out', 'logout', 'signout', 'delete my account',
+        'sign out',
+        'log out',
+        'logout',
+        'signout',
+        'delete my account',
       ],
       build: (StudentProfile? p) => AiReply(
         message:
@@ -484,9 +637,18 @@ class EduvoraAi {
     // ------------------------------------------------------------- how-to
     _Intent(
       keywords: <String>[
-        'how do i use', 'how does this work', 'what can you do', 'help',
-        'navigate', 'get started', 'guide', 'tour', 'what is eduvora',
-        'features', 'lost', 'confused',
+        'how do i use',
+        'how does this work',
+        'what can you do',
+        'help',
+        'navigate',
+        'get started',
+        'guide',
+        'tour',
+        'what is eduvora',
+        'features',
+        'lost',
+        'confused',
       ],
       build: (StudentProfile? p) => AiReply(
         message:
@@ -505,7 +667,11 @@ class EduvoraAi {
     ),
     _Intent(
       keywords: <String>[
-        'offline', 'no network', 'no internet', 'data', 'campus mode',
+        'offline',
+        'no network',
+        'no internet',
+        'data',
+        'campus mode',
         'without internet',
       ],
       build: (StudentProfile? p) => AiReply(
@@ -527,9 +693,19 @@ class EduvoraAi {
     // ------------------------------------------------------------- study
     _Intent(
       keywords: <String>[
-        'study plan', 'how to study', 'revision', 'revise', 'read',
-        'timetable', 'schedule', 'concentrate', 'focus', 'memorise',
-        'cramming', 'cram', 'tips',
+        'study plan',
+        'how to study',
+        'revision',
+        'revise',
+        'read',
+        'timetable',
+        'schedule',
+        'concentrate',
+        'focus',
+        'memorise',
+        'cramming',
+        'cram',
+        'tips',
       ],
       build: (StudentProfile? p) => AiReply(
         message:
@@ -556,8 +732,16 @@ class EduvoraAi {
     // -------------------------------------------------------------- about
     _Intent(
       keywords: <String>[
-        'who made', 'who built', 'who created', 'developer', 'about the app',
-        'who are you', 'your name', 'are you human', 'are you real', 'ai',
+        'who made',
+        'who built',
+        'who created',
+        'developer',
+        'about the app',
+        'who are you',
+        'your name',
+        'are you human',
+        'are you real',
+        'ai',
       ],
       build: (StudentProfile? p) => AiReply(
         message:
@@ -573,7 +757,12 @@ class EduvoraAi {
     ),
     _Intent(
       keywords: <String>[
-        'thank you', 'thanks', 'thank u', 'appreciate', 'well done', 'nice one',
+        'thank you',
+        'thanks',
+        'thank u',
+        'appreciate',
+        'well done',
+        'nice one',
         'you are helpful',
       ],
       build: (StudentProfile? p) => AiReply(

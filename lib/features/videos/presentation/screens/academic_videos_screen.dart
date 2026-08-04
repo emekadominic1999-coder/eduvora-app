@@ -33,7 +33,9 @@ class _AcademicVideosScreenState extends State<AcademicVideosScreen> {
 
   Future<List<AcademicVideo>> _load() {
     final StudentProfile? profile = sessionController.profile;
-    if (profile == null) return Future<List<AcademicVideo>>.value(<AcademicVideo>[]);
+    if (profile == null) {
+      return Future<List<AcademicVideo>>.value(<AcademicVideo>[]);
+    }
     return _content.videos(profile);
   }
 
@@ -42,23 +44,28 @@ class _AcademicVideosScreenState extends State<AcademicVideosScreen> {
     List<AcademicVideo> list = q.isEmpty
         ? List<AcademicVideo>.from(source)
         : source
-            .where((AcademicVideo v) =>
-                v.title.toLowerCase().contains(q) ||
-                v.courseCode.toLowerCase().contains(q) ||
-                v.lecturer.toLowerCase().contains(q))
-            .toList();
+              .where(
+                (AcademicVideo v) =>
+                    v.title.toLowerCase().contains(q) ||
+                    v.courseCode.toLowerCase().contains(q) ||
+                    v.lecturer.toLowerCase().contains(q),
+              )
+              .toList();
 
     switch (_sort) {
       case 'Most watched':
-        list.sort((AcademicVideo a, AcademicVideo b) =>
-            b.views.compareTo(a.views));
+        list.sort(
+          (AcademicVideo a, AcademicVideo b) => b.views.compareTo(a.views),
+        );
       case 'A–Z':
-        list.sort((AcademicVideo a, AcademicVideo b) =>
-            a.title.compareTo(b.title));
+        list.sort(
+          (AcademicVideo a, AcademicVideo b) => a.title.compareTo(b.title),
+        );
       default:
-        list.sort((AcademicVideo a, AcademicVideo b) =>
-            (b.createdAt ?? DateTime(2000))
-                .compareTo(a.createdAt ?? DateTime(2000)));
+        list.sort(
+          (AcademicVideo a, AcademicVideo b) => (b.createdAt ?? DateTime(2000))
+              .compareTo(a.createdAt ?? DateTime(2000)),
+        );
     }
     return list;
   }
@@ -119,44 +126,46 @@ class _AcademicVideosScreenState extends State<AcademicVideosScreen> {
           Expanded(
             child: FutureBuilder<List<AcademicVideo>>(
               future: _future,
-              builder: (
-                BuildContext context,
-                AsyncSnapshot<List<AcademicVideo>> snapshot,
-              ) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                final List<AcademicVideo> videos =
-                    _apply(snapshot.data ?? <AcademicVideo>[]);
+              builder:
+                  (
+                    BuildContext context,
+                    AsyncSnapshot<List<AcademicVideo>> snapshot,
+                  ) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    final List<AcademicVideo> videos = _apply(
+                      snapshot.data ?? <AcademicVideo>[],
+                    );
 
-                if (videos.isEmpty) {
-                  return EmptyState(
-                    icon: Icons.ondemand_video_rounded,
-                    title: _query.isEmpty
-                        ? 'No lectures yet'
-                        : 'Nothing matches that search',
-                    message: _query.isEmpty
-                        ? 'Lectures for your department will appear here as '
-                            'soon as they are added.'
-                        : 'Try a shorter search term, or clear it to see '
-                            'everything.',
-                  );
-                }
+                    if (videos.isEmpty) {
+                      return EmptyState(
+                        icon: Icons.ondemand_video_rounded,
+                        title: _query.isEmpty
+                            ? 'No lectures yet'
+                            : 'Nothing matches that search',
+                        message: _query.isEmpty
+                            ? 'Lectures for your department will appear here as '
+                                  'soon as they are added.'
+                            : 'Try a shorter search term, or clear it to see '
+                                  'everything.',
+                      );
+                    }
 
-                return ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.screenPadding,
-                    0,
-                    AppSpacing.screenPadding,
-                    AppSpacing.xxl,
-                  ),
-                  itemCount: videos.length,
-                  separatorBuilder: (_, _) =>
-                      const SizedBox(height: AppSpacing.md),
-                  itemBuilder: (BuildContext context, int index) =>
-                      _VideoRow(video: videos[index]),
-                );
-              },
+                    return ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(
+                        AppSpacing.screenPadding,
+                        0,
+                        AppSpacing.screenPadding,
+                        AppSpacing.xxl,
+                      ),
+                      itemCount: videos.length,
+                      separatorBuilder: (_, _) =>
+                          const SizedBox(height: AppSpacing.md),
+                      itemBuilder: (BuildContext context, int index) =>
+                          _VideoRow(video: videos[index]),
+                    );
+                  },
             ),
           ),
         ],

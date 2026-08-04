@@ -44,7 +44,14 @@ class SeedContent {
   ];
 
   static const List<String> _durations = <String>[
-    '42:18', '1:05:32', '28:47', '51:09', '36:24', '1:12:55', '24:03', '47:41',
+    '42:18',
+    '1:05:32',
+    '28:47',
+    '51:09',
+    '36:24',
+    '1:12:55',
+    '24:03',
+    '47:41',
   ];
 
   // ------------------------------------------------------------ topic pools
@@ -54,228 +61,228 @@ class SeedContent {
   /// result stays specific.
   static const Map<String, List<String>> _facultyTopics =
       <String, List<String>>{
-    'Faculty of Engineering & Technology': <String>[
-      'Engineering Statics and Free-Body Diagrams',
-      'Thermodynamics: First and Second Laws',
-      'Fluid Mechanics — Bernoulli and Continuity',
-      'Strength of Materials: Stress, Strain and Elasticity',
-      'Engineering Drawing and Orthographic Projection',
-      'Circuit Analysis: Kirchhoff’s Laws in Practice',
-      'Control Systems and Feedback Fundamentals',
-      'Workshop Practice and Safety Procedures',
-      'Final Year Project: Choosing and Scoping a Topic',
-      'SIWES Preparation and Logbook Standards',
-    ],
-    'Faculty of Science': <String>[
-      'Laboratory Technique and Measurement Error',
-      'Scientific Method and Experimental Design',
-      'Data Handling, Graphs and Significant Figures',
-      'Practical Report Writing for Science Students',
-      'Instrumentation and Analytical Methods',
-      'Research Seminar: Reading a Scientific Paper',
-      'Field Work Methods and Sampling',
-      'Statistics for Scientists',
-    ],
-    'Faculty of Computing & Information Technology': <String>[
-      'Problem Solving with Algorithms and Flowcharts',
-      'Programming Fundamentals: Variables to Functions',
-      'Data Structures — Stacks, Queues and Trees',
-      'Database Design and Normalisation',
-      'Operating Systems: Processes and Scheduling',
-      'Computer Networks and the OSI Model',
-      'Software Engineering: Requirements to Deployment',
-      'Cyber Security Essentials for Students',
-      'Version Control with Git for Coursework',
-      'Building Your First Portfolio Project',
-    ],
-    'Faculty of Basic Medical Sciences': <String>[
-      'Cell Structure and Membrane Transport',
-      'Histology: Reading Tissue Slides',
-      'Metabolic Pathways Made Simple',
-      'Neurophysiology: Action Potentials',
-      'Cardiovascular Physiology Revision',
-      'Practical Anatomy: Dissection Room Conduct',
-    ],
-    'Faculty of Clinical Sciences': <String>[
-      'Clinical History Taking and Examination',
-      'Interpreting Basic Investigations',
-      'Ethics and Professionalism in Clinical Practice',
-      'Common Presentations in the Nigerian Setting',
-      'Ward Round Etiquette and Case Presentation',
-    ],
-    'Faculty of Allied Health Sciences': <String>[
-      'Patient Communication and Consent',
-      'Infection Prevention and Control',
-      'Clinical Documentation Standards',
-      'Community Health Practice in Nigeria',
-      'Laboratory Quality Assurance',
-    ],
-    'Faculty of Pharmaceutical Sciences': <String>[
-      'Pharmacokinetics: ADME Explained',
-      'Dosage Forms and Formulation Basics',
-      'Drug Interactions and Counselling Points',
-      'Pharmacognosy: Nigerian Medicinal Plants',
-      'Good Dispensing Practice',
-    ],
-    'Faculty of Agriculture': <String>[
-      'Soil Fertility and Nutrient Management',
-      'Crop Production Systems in Nigeria',
-      'Animal Nutrition and Feed Formulation',
-      'Farm Records and Agribusiness Planning',
-      'Post-Harvest Handling and Storage',
-      'Agricultural Extension Methods',
-    ],
-    'Faculty of Veterinary Medicine': <String>[
-      'Comparative Animal Anatomy',
-      'Livestock Disease Recognition',
-      'Veterinary Public Health and Zoonoses',
-      'Clinical Handling and Restraint',
-    ],
-    'Faculty of Environmental Sciences': <String>[
-      'Design Studio: Concept to Presentation',
-      'Building Materials and Construction Methods',
-      'Measurement and Bills of Quantities',
-      'Site Surveying and Levelling Practice',
-      'Land Use Planning and Development Control',
-      'Property Valuation Principles',
-    ],
-    'Faculty of Management Sciences': <String>[
-      'Financial Accounting: Ledger to Final Accounts',
-      'Cost and Management Accounting Basics',
-      'Business Statistics and Decision Making',
-      'Principles of Management and Organisation',
-      'Marketing Fundamentals and the Nigerian Consumer',
-      'Corporate Finance: Time Value of Money',
-      'Business Communication and Report Writing',
-    ],
-    'Faculty of Social Sciences': <String>[
-      'Research Methods in the Social Sciences',
-      'Nigerian Government and Politics',
-      'Introduction to Social Theory',
-      'Quantitative Methods and SPSS Basics',
-      'Development Studies in an African Context',
-      'Writing a Sound Undergraduate Thesis',
-    ],
-    'Faculty of Communication & Media Studies': <String>[
-      'News Writing and Reporting Skills',
-      'Media Law and Ethics in Nigeria',
-      'Broadcast Production Fundamentals',
-      'Public Relations Campaign Planning',
-      'Digital Media and Audience Analytics',
-    ],
-    'Faculty of Arts & Humanities': <String>[
-      'Literary Criticism and Close Reading',
-      'Essay Writing and Argument Construction',
-      'Historiography and Source Analysis',
-      'Introduction to Philosophy of Mind',
-      'Language, Culture and Identity',
-      'Research and Referencing in the Humanities',
-    ],
-    'Faculty of Law': <String>[
-      'Nigerian Legal System and Court Hierarchy',
-      'Law of Contract: Offer and Acceptance',
-      'Constitutional Law: Fundamental Rights',
-      'Criminal Law: Elements of an Offence',
-      'Legal Research and Case Note Writing',
-      'Moot Court Preparation',
-    ],
-    'Faculty of Education': <String>[
-      'Lesson Planning and Instructional Objectives',
-      'Classroom Management Strategies',
-      'Test Construction and Item Analysis',
-      'Educational Technology in the Classroom',
-      'Teaching Practice: What Supervisors Look For',
-      'Child Development for Teachers',
-    ],
-    'School of Engineering Technology': <String>[
-      'Technical Drawing and Detailing',
-      'Applied Mechanics for Technologists',
-      'Electrical Installation Practice',
-      'Machine Shop Operations',
-      'ND Project Work: Scope and Standards',
-      'Industrial Attachment Readiness',
-    ],
-    'School of Environmental Studies': <String>[
-      'Construction Technology Practicals',
-      'Taking Off Quantities from Drawings',
-      'Survey Field Practice with Total Station',
-      'Estate Records and Property Management',
-    ],
-    'School of Business & Management Studies': <String>[
-      'Bookkeeping to Trial Balance',
-      'Office Practice and Records Management',
-      'Introduction to Entrepreneurship',
-      'Business Law for Technologists',
-      'Purchasing, Stores and Supply Practice',
-    ],
-    'School of Applied Sciences': <String>[
-      'Laboratory Safety and Glassware Handling',
-      'Volumetric and Gravimetric Analysis',
-      'Food Analysis and Quality Control',
-      'Public Health Inspection Practice',
-    ],
-    'School of Information & Communication Technology': <String>[
-      'Computer Appreciation and Packages',
-      'Web Design Fundamentals',
-      'Networking Practicals: Cabling to Configuration',
-      'Introduction to Programming in Python',
-      'Database Practicals with SQL',
-    ],
-    'School of Art, Design & Printing Technology': <String>[
-      'Drawing from Observation',
-      'Colour Theory and Composition',
-      'Studio Practice and Portfolio Building',
-      'Printing Processes and Finishing',
-    ],
-    'School of Agricultural Technology': <String>[
-      'Farm Practical: Nursery and Transplanting',
-      'Livestock Housing and Management',
-      'Fish Pond Construction and Management',
-      'Agricultural Machinery Operation',
-    ],
-    'School of Liberal & General Studies': <String>[
-      'Use of English and Communication Skills',
-      'Citizenship Education',
-      'Nigerian Peoples and Culture',
-      'Hospitality Service Standards',
-    ],
-    'School of Education': <String>[
-      'Principles and Practice of Education',
-      'Micro-Teaching Preparation',
-      'Guidance and Counselling in Schools',
-      'Continuous Assessment Practice',
-    ],
-    'School of Early Childhood Care & Primary Education': <String>[
-      'Play-Based Learning Methods',
-      'Early Literacy and Numeracy',
-      'Child Health, Safety and Nutrition',
-      'Managing the Early Years Classroom',
-    ],
-    'School of Sciences': <String>[
-      'Integrated Science Teaching Methods',
-      'Practical Biology for NCE Students',
-      'Mathematics Method and Problem Solving',
-      'School Laboratory Organisation',
-    ],
-    'School of Languages': <String>[
-      'Phonetics and Spoken English',
-      'Grammar and Usage for Teachers',
-      'Translation Practice',
-      'Oral Literature and Performance',
-    ],
-    'School of Arts & Social Sciences': <String>[
-      'Social Studies Method',
-      'Map Reading and Fieldwork',
-      'Religious Studies Method',
-      'History Teaching Techniques',
-    ],
-    'School of Vocational & Technical Education': <String>[
-      'Workshop Organisation and Safety',
-      'Home Economics Practicals',
-      'Business Education Method',
-      'Technical Drawing for Teachers',
-    ],
-  };
+        'Faculty of Engineering & Technology': <String>[
+          'Engineering Statics and Free-Body Diagrams',
+          'Thermodynamics: First and Second Laws',
+          'Fluid Mechanics — Bernoulli and Continuity',
+          'Strength of Materials: Stress, Strain and Elasticity',
+          'Engineering Drawing and Orthographic Projection',
+          'Circuit Analysis: Kirchhoff’s Laws in Practice',
+          'Control Systems and Feedback Fundamentals',
+          'Workshop Practice and Safety Procedures',
+          'Final Year Project: Choosing and Scoping a Topic',
+          'SIWES Preparation and Logbook Standards',
+        ],
+        'Faculty of Science': <String>[
+          'Laboratory Technique and Measurement Error',
+          'Scientific Method and Experimental Design',
+          'Data Handling, Graphs and Significant Figures',
+          'Practical Report Writing for Science Students',
+          'Instrumentation and Analytical Methods',
+          'Research Seminar: Reading a Scientific Paper',
+          'Field Work Methods and Sampling',
+          'Statistics for Scientists',
+        ],
+        'Faculty of Computing & Information Technology': <String>[
+          'Problem Solving with Algorithms and Flowcharts',
+          'Programming Fundamentals: Variables to Functions',
+          'Data Structures — Stacks, Queues and Trees',
+          'Database Design and Normalisation',
+          'Operating Systems: Processes and Scheduling',
+          'Computer Networks and the OSI Model',
+          'Software Engineering: Requirements to Deployment',
+          'Cyber Security Essentials for Students',
+          'Version Control with Git for Coursework',
+          'Building Your First Portfolio Project',
+        ],
+        'Faculty of Basic Medical Sciences': <String>[
+          'Cell Structure and Membrane Transport',
+          'Histology: Reading Tissue Slides',
+          'Metabolic Pathways Made Simple',
+          'Neurophysiology: Action Potentials',
+          'Cardiovascular Physiology Revision',
+          'Practical Anatomy: Dissection Room Conduct',
+        ],
+        'Faculty of Clinical Sciences': <String>[
+          'Clinical History Taking and Examination',
+          'Interpreting Basic Investigations',
+          'Ethics and Professionalism in Clinical Practice',
+          'Common Presentations in the Nigerian Setting',
+          'Ward Round Etiquette and Case Presentation',
+        ],
+        'Faculty of Allied Health Sciences': <String>[
+          'Patient Communication and Consent',
+          'Infection Prevention and Control',
+          'Clinical Documentation Standards',
+          'Community Health Practice in Nigeria',
+          'Laboratory Quality Assurance',
+        ],
+        'Faculty of Pharmaceutical Sciences': <String>[
+          'Pharmacokinetics: ADME Explained',
+          'Dosage Forms and Formulation Basics',
+          'Drug Interactions and Counselling Points',
+          'Pharmacognosy: Nigerian Medicinal Plants',
+          'Good Dispensing Practice',
+        ],
+        'Faculty of Agriculture': <String>[
+          'Soil Fertility and Nutrient Management',
+          'Crop Production Systems in Nigeria',
+          'Animal Nutrition and Feed Formulation',
+          'Farm Records and Agribusiness Planning',
+          'Post-Harvest Handling and Storage',
+          'Agricultural Extension Methods',
+        ],
+        'Faculty of Veterinary Medicine': <String>[
+          'Comparative Animal Anatomy',
+          'Livestock Disease Recognition',
+          'Veterinary Public Health and Zoonoses',
+          'Clinical Handling and Restraint',
+        ],
+        'Faculty of Environmental Sciences': <String>[
+          'Design Studio: Concept to Presentation',
+          'Building Materials and Construction Methods',
+          'Measurement and Bills of Quantities',
+          'Site Surveying and Levelling Practice',
+          'Land Use Planning and Development Control',
+          'Property Valuation Principles',
+        ],
+        'Faculty of Management Sciences': <String>[
+          'Financial Accounting: Ledger to Final Accounts',
+          'Cost and Management Accounting Basics',
+          'Business Statistics and Decision Making',
+          'Principles of Management and Organisation',
+          'Marketing Fundamentals and the Nigerian Consumer',
+          'Corporate Finance: Time Value of Money',
+          'Business Communication and Report Writing',
+        ],
+        'Faculty of Social Sciences': <String>[
+          'Research Methods in the Social Sciences',
+          'Nigerian Government and Politics',
+          'Introduction to Social Theory',
+          'Quantitative Methods and SPSS Basics',
+          'Development Studies in an African Context',
+          'Writing a Sound Undergraduate Thesis',
+        ],
+        'Faculty of Communication & Media Studies': <String>[
+          'News Writing and Reporting Skills',
+          'Media Law and Ethics in Nigeria',
+          'Broadcast Production Fundamentals',
+          'Public Relations Campaign Planning',
+          'Digital Media and Audience Analytics',
+        ],
+        'Faculty of Arts & Humanities': <String>[
+          'Literary Criticism and Close Reading',
+          'Essay Writing and Argument Construction',
+          'Historiography and Source Analysis',
+          'Introduction to Philosophy of Mind',
+          'Language, Culture and Identity',
+          'Research and Referencing in the Humanities',
+        ],
+        'Faculty of Law': <String>[
+          'Nigerian Legal System and Court Hierarchy',
+          'Law of Contract: Offer and Acceptance',
+          'Constitutional Law: Fundamental Rights',
+          'Criminal Law: Elements of an Offence',
+          'Legal Research and Case Note Writing',
+          'Moot Court Preparation',
+        ],
+        'Faculty of Education': <String>[
+          'Lesson Planning and Instructional Objectives',
+          'Classroom Management Strategies',
+          'Test Construction and Item Analysis',
+          'Educational Technology in the Classroom',
+          'Teaching Practice: What Supervisors Look For',
+          'Child Development for Teachers',
+        ],
+        'School of Engineering Technology': <String>[
+          'Technical Drawing and Detailing',
+          'Applied Mechanics for Technologists',
+          'Electrical Installation Practice',
+          'Machine Shop Operations',
+          'ND Project Work: Scope and Standards',
+          'Industrial Attachment Readiness',
+        ],
+        'School of Environmental Studies': <String>[
+          'Construction Technology Practicals',
+          'Taking Off Quantities from Drawings',
+          'Survey Field Practice with Total Station',
+          'Estate Records and Property Management',
+        ],
+        'School of Business & Management Studies': <String>[
+          'Bookkeeping to Trial Balance',
+          'Office Practice and Records Management',
+          'Introduction to Entrepreneurship',
+          'Business Law for Technologists',
+          'Purchasing, Stores and Supply Practice',
+        ],
+        'School of Applied Sciences': <String>[
+          'Laboratory Safety and Glassware Handling',
+          'Volumetric and Gravimetric Analysis',
+          'Food Analysis and Quality Control',
+          'Public Health Inspection Practice',
+        ],
+        'School of Information & Communication Technology': <String>[
+          'Computer Appreciation and Packages',
+          'Web Design Fundamentals',
+          'Networking Practicals: Cabling to Configuration',
+          'Introduction to Programming in Python',
+          'Database Practicals with SQL',
+        ],
+        'School of Art, Design & Printing Technology': <String>[
+          'Drawing from Observation',
+          'Colour Theory and Composition',
+          'Studio Practice and Portfolio Building',
+          'Printing Processes and Finishing',
+        ],
+        'School of Agricultural Technology': <String>[
+          'Farm Practical: Nursery and Transplanting',
+          'Livestock Housing and Management',
+          'Fish Pond Construction and Management',
+          'Agricultural Machinery Operation',
+        ],
+        'School of Liberal & General Studies': <String>[
+          'Use of English and Communication Skills',
+          'Citizenship Education',
+          'Nigerian Peoples and Culture',
+          'Hospitality Service Standards',
+        ],
+        'School of Education': <String>[
+          'Principles and Practice of Education',
+          'Micro-Teaching Preparation',
+          'Guidance and Counselling in Schools',
+          'Continuous Assessment Practice',
+        ],
+        'School of Early Childhood Care & Primary Education': <String>[
+          'Play-Based Learning Methods',
+          'Early Literacy and Numeracy',
+          'Child Health, Safety and Nutrition',
+          'Managing the Early Years Classroom',
+        ],
+        'School of Sciences': <String>[
+          'Integrated Science Teaching Methods',
+          'Practical Biology for NCE Students',
+          'Mathematics Method and Problem Solving',
+          'School Laboratory Organisation',
+        ],
+        'School of Languages': <String>[
+          'Phonetics and Spoken English',
+          'Grammar and Usage for Teachers',
+          'Translation Practice',
+          'Oral Literature and Performance',
+        ],
+        'School of Arts & Social Sciences': <String>[
+          'Social Studies Method',
+          'Map Reading and Fieldwork',
+          'Religious Studies Method',
+          'History Teaching Techniques',
+        ],
+        'School of Vocational & Technical Education': <String>[
+          'Workshop Organisation and Safety',
+          'Home Economics Practicals',
+          'Business Education Method',
+          'Technical Drawing for Teachers',
+        ],
+      };
 
   static const List<String> _fallbackTopics = <String>[
     'Course Introduction and Scheme of Work',
@@ -307,8 +314,9 @@ class SeedContent {
         .map((String w) => w[0])
         .join()
         .toUpperCase();
-    final String prefix =
-        (letters.length >= 3 ? letters.substring(0, 3) : letters.padRight(3, 'X'));
+    final String prefix = (letters.length >= 3
+        ? letters.substring(0, 3)
+        : letters.padRight(3, 'X'));
     final int number = 101 + (index * 12) % 400;
     return '$prefix $number';
   }
@@ -415,7 +423,8 @@ class SeedContent {
     return <NewsItem>[
       NewsItem(
         id: 'news-1',
-        title: 'NNPC/SNEPCo National University Scholarship — applications open',
+        title:
+            'NNPC/SNEPCo National University Scholarship — applications open',
         summary:
             'Undergraduate awards for students in their second year and above '
             'across all Nigerian universities.',
@@ -750,30 +759,32 @@ class SeedContent {
 
   static List<CommunityComment> commentsFor(String postId) {
     final DateTime now = DateTime.now();
-    final Map<String, List<List<String>>> byPost =
-        <String, List<List<String>>>{
+    final Map<String, List<List<String>>> byPost = <String, List<List<String>>>{
       'post-1': <List<String>>[
         <String>['Kelechi A.', 'This is the exact advice I needed. Thank you.'],
         <String>[
           'Musa T.',
-          'Which past questions did you use? Departmental or general?'
+          'Which past questions did you use? Departmental or general?',
         ],
         <String>[
           'Adaeze Nwankwo',
-          'Departmental ones first, then anything from a similar syllabus.'
+          'Departmental ones first, then anything from a similar syllabus.',
         ],
       ],
       'post-2': <List<String>>[
         <String>[
           'Bola O.',
-          'HND students were eligible in my year. Check the portal wording carefully.'
+          'HND students were eligible in my year. Check the portal wording carefully.',
         ],
         <String>['Ibrahim Suleiman', 'Thank you, that helps a great deal.'],
       ],
       'post-3': <List<String>>[
         <String>['Peace I.', 'Please add me. I am in 200 level too.'],
         <String>['Samuel E.', 'Count me in. Which days do you meet?'],
-        <String>['Grace Effiong', 'Tuesdays and Fridays, 6pm at the study hall.'],
+        <String>[
+          'Grace Effiong',
+          'Tuesdays and Fridays, 6pm at the study hall.',
+        ],
       ],
     };
 

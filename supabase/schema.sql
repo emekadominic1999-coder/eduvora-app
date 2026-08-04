@@ -366,6 +366,66 @@ create policy "authenticated users contribute cbt questions"
   to authenticated
   with check (true);
 
+-- ------------------------------------------------------------ course_outlines
+-- Course lists and syllabi, keyed to a specific institution as well as a
+-- department and level.
+--
+-- The institution column is not optional padding: the same nominal subject
+-- genuinely differs between schools — course codes, credit loading and topics
+-- all vary — so an outline is only trustworthy when attributed to the school
+-- it came from. The app filters on institution first for exactly this reason.
+create table if not exists public.course_outlines (
+  id               uuid primary key default gen_random_uuid(),
+  course_code      text not null,
+  course_title     text not null,
+  institution      text not null,
+  faculty          text not null default '',
+  department       text not null,
+  level            text not null,
+  semester         text not null default 'first'
+                     check (semester in ('first', 'second')),
+  credit_units     integer not null default 0,
+  description      text not null default '',
+  topics           jsonb not null default '[]'::jsonb,
+  lecturer         text not null default '',
+  is_elective      boolean not null default false,
+  contributed_by   uuid references auth.users (id) on delete set null,
+  contributor_name text not null default '',
+  created_at       timestamptz not null default now()
+);
+
+create index if not exists outlines_lookup_idx
+  on public.course_outlines (institution, department, level);
+create index if not exists outlines_department_idx
+  on public.course_outlines (department, level);
+
+alter table public.course_outlines enable row level security;
+
+drop policy if exists "outlines are readable by authenticated users" on public.course_outlines;
+create policy "outlines are readable by authenticated users"
+  on public.course_outlines for select
+  to authenticated
+  using (true);
+
+drop policy if exists "students contribute outlines" on public.course_outlines;
+create policy "students contribute outlines"
+  on public.course_outlines for insert
+  to authenticated
+  with check (auth.uid() = contributed_by);
+
+drop policy if exists "students edit their own outlines" on public.course_outlines;
+create policy "students edit their own outlines"
+  on public.course_outlines for update
+  to authenticated
+  using (auth.uid() = contributed_by)
+  with check (auth.uid() = contributed_by);
+
+drop policy if exists "students remove their own outlines" on public.course_outlines;
+create policy "students remove their own outlines"
+  on public.course_outlines for delete
+  to authenticated
+  using (auth.uid() = contributed_by);
+
 -- ---------------------------------------------------------------------- news
 create table if not exists public.news (
   id           uuid primary key default gen_random_uuid(),

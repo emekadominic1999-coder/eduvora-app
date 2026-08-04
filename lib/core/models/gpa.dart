@@ -17,9 +17,9 @@ enum Grade {
   final String category;
 
   static Grade fromLetter(String? letter) => Grade.values.firstWhere(
-        (Grade g) => g.letter == letter?.toUpperCase(),
-        orElse: () => Grade.a,
-      );
+    (Grade g) => g.letter == letter?.toUpperCase(),
+    orElse: () => Grade.a,
+  );
 }
 
 /// One registered course inside a semester.
@@ -49,18 +49,18 @@ class CourseEntry {
       );
 
   Map<String, dynamic> toJson() => <String, dynamic>{
-        'id': id,
-        'code': code,
-        'credit_units': creditUnits,
-        'grade': grade.letter,
-      };
+    'id': id,
+    'code': code,
+    'credit_units': creditUnits,
+    'grade': grade.letter,
+  };
 
   factory CourseEntry.fromJson(Map<String, dynamic> json) => CourseEntry(
-        id: (json['id'] ?? '') as String,
-        code: (json['code'] ?? '') as String,
-        creditUnits: (json['credit_units'] as num?)?.toInt() ?? 0,
-        grade: Grade.fromLetter(json['grade'] as String?),
-      );
+    id: (json['id'] ?? '') as String,
+    code: (json['code'] ?? '') as String,
+    creditUnits: (json['credit_units'] as num?)?.toInt() ?? 0,
+    grade: Grade.fromLetter(json['grade'] as String?),
+  );
 }
 
 /// A saved semester result used to build the running CGPA.
@@ -88,23 +88,25 @@ class SemesterRecord {
   double get gpa => totalUnits == 0 ? 0 : totalQualityPoints / totalUnits;
 
   Map<String, dynamic> toJson() => <String, dynamic>{
-        'id': id,
-        'label': label,
-        'courses': courses.map((CourseEntry c) => c.toJson()).toList(),
-        'saved_at': savedAt.toIso8601String(),
-      };
+    'id': id,
+    'label': label,
+    'courses': courses.map((CourseEntry c) => c.toJson()).toList(),
+    'saved_at': savedAt.toIso8601String(),
+  };
 
   factory SemesterRecord.fromJson(Map<String, dynamic> json) => SemesterRecord(
-        id: (json['id'] ?? '') as String,
-        label: (json['label'] ?? '') as String,
-        courses: (json['courses'] as List<dynamic>? ?? <dynamic>[])
-            .whereType<Map<dynamic, dynamic>>()
-            .map((Map<dynamic, dynamic> e) =>
-                CourseEntry.fromJson(Map<String, dynamic>.from(e)))
-            .toList(),
-        savedAt: DateTime.tryParse((json['saved_at'] ?? '') as String) ??
-            DateTime.now(),
-      );
+    id: (json['id'] ?? '') as String,
+    label: (json['label'] ?? '') as String,
+    courses: (json['courses'] as List<dynamic>? ?? <dynamic>[])
+        .whereType<Map<dynamic, dynamic>>()
+        .map(
+          (Map<dynamic, dynamic> e) =>
+              CourseEntry.fromJson(Map<String, dynamic>.from(e)),
+        )
+        .toList(),
+    savedAt:
+        DateTime.tryParse((json['saved_at'] ?? '') as String) ?? DateTime.now(),
+  );
 }
 
 /// Degree classification bands used by Nigerian institutions.

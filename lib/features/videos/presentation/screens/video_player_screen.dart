@@ -47,8 +47,9 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
     }
 
     try {
-      final VideoPlayerController controller =
-          VideoPlayerController.networkUrl(Uri.parse(widget.video.videoUrl));
+      final VideoPlayerController controller = VideoPlayerController.networkUrl(
+        Uri.parse(widget.video.videoUrl),
+      );
       await controller.initialize();
       await controller.setLooping(false);
       if (!mounted) {
@@ -64,7 +65,8 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
       if (!mounted) return;
       setState(() {
         _initialising = false;
-        _error = 'We could not start this lecture. Please check your '
+        _error =
+            'We could not start this lecture. Please check your '
             'connection and try again.';
       });
     }
@@ -172,10 +174,9 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                   const SizedBox(height: AppSpacing.sm),
                   Text(
                     v.description,
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodyMedium
-                        ?.copyWith(height: 1.6),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodyMedium?.copyWith(height: 1.6),
                   ),
                   const SizedBox(height: AppSpacing.xl),
                 ],
@@ -197,10 +198,9 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                           'Watch once at normal speed, then close the video '
                           'and attempt the questions from memory. Retrieval '
                           'is what makes a lecture stick.',
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodySmall
-                              ?.copyWith(height: 1.55),
+                          style: Theme.of(
+                            context,
+                          ).textTheme.bodySmall?.copyWith(height: 1.55),
                         ),
                       ),
                     ],
@@ -222,9 +222,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
         aspectRatio: 16 / 9,
         child: ColoredBox(
           color: Color(0xFF0F172A),
-          child: Center(
-            child: CircularProgressIndicator(color: Colors.white),
-          ),
+          child: Center(child: CircularProgressIndicator(color: Colors.white)),
         ),
       );
     }
@@ -281,10 +279,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
           child: Stack(
             alignment: Alignment.center,
             children: <Widget>[
-              ColoredBox(
-                color: const Color(0xFF0F172A),
-                child: VideoPlayer(c),
-              ),
+              ColoredBox(color: const Color(0xFF0F172A), child: VideoPlayer(c)),
               GestureDetector(
                 onTap: _togglePlay,
                 behavior: HitTestBehavior.opaque,
@@ -406,20 +401,14 @@ class _ControlButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: primary
-          ? AppColours.accent
-          : Colors.white.withValues(alpha: 0.13),
+      color: primary ? AppColours.accent : Colors.white.withValues(alpha: 0.13),
       shape: const CircleBorder(),
       child: InkWell(
         onTap: onTap,
         customBorder: const CircleBorder(),
         child: Padding(
           padding: EdgeInsets.all(primary ? 9 : 7),
-          child: Icon(
-            icon,
-            size: primary ? 24 : 20,
-            color: Colors.white,
-          ),
+          child: Icon(icon, size: primary ? 24 : 20, color: Colors.white),
         ),
       ),
     );

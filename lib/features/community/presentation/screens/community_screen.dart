@@ -107,65 +107,66 @@ class _CommunityScreenState extends State<CommunityScreen>
               color: AppColours.primary,
               child: FutureBuilder<List<CommunityPost>>(
                 future: _future,
-                builder: (
-                  BuildContext context,
-                  AsyncSnapshot<List<CommunityPost>> snapshot,
-                ) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  List<CommunityPost> posts =
-                      snapshot.data ?? <CommunityPost>[];
-                  if (_topic != null) {
-                    posts = posts
-                        .where((CommunityPost p) => p.topic == _topic)
-                        .toList();
-                  }
+                builder:
+                    (
+                      BuildContext context,
+                      AsyncSnapshot<List<CommunityPost>> snapshot,
+                    ) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      List<CommunityPost> posts =
+                          snapshot.data ?? <CommunityPost>[];
+                      if (_topic != null) {
+                        posts = posts
+                            .where((CommunityPost p) => p.topic == _topic)
+                            .toList();
+                      }
 
-                  if (posts.isEmpty) {
-                    return ListView(
-                      children: <Widget>[
-                        EmptyState(
-                          icon: Icons.forum_outlined,
-                          title: 'Nothing in this channel yet',
-                          message:
-                              'Be the first to post. A plainly asked question '
-                              'helps more people than you would think.',
-                          actionLabel: 'Write a post',
-                          onAction: _compose,
-                        ),
-                      ],
-                    );
-                  }
-
-                  return ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.screenPadding,
-                      0,
-                      AppSpacing.screenPadding,
-                      96,
-                    ),
-                    itemCount: posts.length,
-                    separatorBuilder: (_, _) =>
-                        const SizedBox(height: AppSpacing.md),
-                    itemBuilder: (BuildContext context, int index) {
-                      final CommunityPost post = posts[index];
-                      return PostCard(
-                        post: post,
-                        liked: _liked.contains(post.id),
-                        onLike: () => _toggleLike(post),
-                        onOpen: () async {
-                          await Navigator.of(context).push(
-                            MaterialPageRoute<void>(
-                              builder: (_) => PostDetailScreen(post: post),
+                      if (posts.isEmpty) {
+                        return ListView(
+                          children: <Widget>[
+                            EmptyState(
+                              icon: Icons.forum_outlined,
+                              title: 'Nothing in this channel yet',
+                              message:
+                                  'Be the first to post. A plainly asked question '
+                                  'helps more people than you would think.',
+                              actionLabel: 'Write a post',
+                              onAction: _compose,
                             ),
+                          ],
+                        );
+                      }
+
+                      return ListView.separated(
+                        padding: const EdgeInsets.fromLTRB(
+                          AppSpacing.screenPadding,
+                          0,
+                          AppSpacing.screenPadding,
+                          96,
+                        ),
+                        itemCount: posts.length,
+                        separatorBuilder: (_, _) =>
+                            const SizedBox(height: AppSpacing.md),
+                        itemBuilder: (BuildContext context, int index) {
+                          final CommunityPost post = posts[index];
+                          return PostCard(
+                            post: post,
+                            liked: _liked.contains(post.id),
+                            onLike: () => _toggleLike(post),
+                            onOpen: () async {
+                              await Navigator.of(context).push(
+                                MaterialPageRoute<void>(
+                                  builder: (_) => PostDetailScreen(post: post),
+                                ),
+                              );
+                              if (mounted) await _refresh();
+                            },
                           );
-                          if (mounted) await _refresh();
                         },
                       );
                     },
-                  );
-                },
               ),
             ),
           ),
@@ -214,8 +215,7 @@ class _CommunityScreenState extends State<CommunityScreen>
                       style: TextStyle(
                         fontSize: 12.5,
                         fontWeight: FontWeight.w600,
-                        color:
-                            selected ? Colors.white : AppColours.textMuted,
+                        color: selected ? Colors.white : AppColours.textMuted,
                       ),
                     ),
                   ],
@@ -281,7 +281,7 @@ class PostCard extends StatelessWidget {
                       post.authorHeadline.isEmpty
                           ? relativeTime(post.createdAt)
                           : '${post.authorHeadline} · '
-                              '${relativeTime(post.createdAt)}',
+                                '${relativeTime(post.createdAt)}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
@@ -471,15 +471,13 @@ class _ComposeSheetState extends State<_ComposeSheet> {
                   final CommunityTopic t = CommunityTopic.values[index];
                   final bool selected = _topic == t;
                   return Material(
-                    color:
-                        selected ? t.colour : AppColours.surfaceMuted,
+                    color: selected ? t.colour : AppColours.surfaceMuted,
                     borderRadius: AppRadii.pill,
                     child: InkWell(
                       onTap: () => setState(() => _topic = t),
                       borderRadius: AppRadii.pill,
                       child: Padding(
-                        padding:
-                            const EdgeInsets.symmetric(horizontal: 12),
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
                         child: Center(
                           child: Text(
                             t.label,

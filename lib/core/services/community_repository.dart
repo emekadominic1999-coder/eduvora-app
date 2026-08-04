@@ -46,8 +46,10 @@ class CommunityRepository {
     }
 
     final List<CommunityPost> all = byId.values.toList()
-      ..sort((CommunityPost a, CommunityPost b) =>
-          b.createdAt.compareTo(a.createdAt));
+      ..sort(
+        (CommunityPost a, CommunityPost b) =>
+            b.createdAt.compareTo(a.createdAt),
+      );
 
     if (topic == null) return all;
     return all.where((CommunityPost p) => p.topic == topic).toList();
@@ -80,9 +82,9 @@ class CommunityRepository {
       }
     }
 
-    final List<Map<String, dynamic>> cached =
-        LocalStore.instance.readList(StoreKeys.communityPosts)
-          ..insert(0, post.toJson());
+    final List<Map<String, dynamic>> cached = LocalStore.instance.readList(
+      StoreKeys.communityPosts,
+    )..insert(0, post.toJson());
     await LocalStore.instance.writeList(StoreKeys.communityPosts, cached);
     return post;
   }
@@ -109,8 +111,9 @@ class CommunityRepository {
         await SupabaseService.client
             .from('community_posts')
             .update(<String, dynamic>{
-          'likes': post.likes + (nowLiked ? 1 : -1),
-        }).eq('id', post.id);
+              'likes': post.likes + (nowLiked ? 1 : -1),
+            })
+            .eq('id', post.id);
       } catch (_) {
         // Like counts are best-effort.
       }
@@ -151,9 +154,10 @@ class CommunityRepository {
       byId[c.id] = c;
     }
 
-    return byId.values.toList()
-      ..sort((CommunityComment a, CommunityComment b) =>
-          a.createdAt.compareTo(b.createdAt));
+    return byId.values.toList()..sort(
+      (CommunityComment a, CommunityComment b) =>
+          a.createdAt.compareTo(b.createdAt),
+    );
   }
 
   Future<CommunityComment> addComment({
@@ -180,11 +184,10 @@ class CommunityRepository {
       }
     }
 
-    final List<Map<String, dynamic>> cached =
-        LocalStore.instance.readList(StoreKeys.communityComments)
-          ..add(comment.toJson());
-    await LocalStore.instance
-        .writeList(StoreKeys.communityComments, cached);
+    final List<Map<String, dynamic>> cached = LocalStore.instance.readList(
+      StoreKeys.communityComments,
+    )..add(comment.toJson());
+    await LocalStore.instance.writeList(StoreKeys.communityComments, cached);
     return comment;
   }
 }

@@ -51,8 +51,18 @@ class _UploadMaterialScreenState extends State<UploadMaterialScreen> {
         withData: true,
         type: FileType.custom,
         allowedExtensions: <String>[
-          'pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'txt',
-          'jpg', 'jpeg', 'png', 'zip',
+          'pdf',
+          'doc',
+          'docx',
+          'ppt',
+          'pptx',
+          'xls',
+          'xlsx',
+          'txt',
+          'jpg',
+          'jpeg',
+          'png',
+          'zip',
         ],
       );
       if (result == null || result.files.isEmpty) return;
@@ -150,10 +160,9 @@ class _UploadMaterialScreenState extends State<UploadMaterialScreen> {
                       'Whatever you share goes to students in '
                       '${profile?.department.isNotEmpty == true ? profile!.department : 'your department'}. '
                       'Please keep it to material you are free to pass on.',
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodySmall
-                          ?.copyWith(height: 1.55),
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodySmall?.copyWith(height: 1.55),
                     ),
                   ),
                 ],
@@ -194,10 +203,8 @@ class _UploadMaterialScreenState extends State<UploadMaterialScreen> {
               ),
               items: levels
                   .map(
-                    (String l) => DropdownMenuItem<String>(
-                      value: l,
-                      child: Text(l),
-                    ),
+                    (String l) =>
+                        DropdownMenuItem<String>(value: l, child: Text(l)),
                   )
                   .toList(),
               onChanged: (String? v) => setState(() => _level = v),
@@ -232,8 +239,7 @@ class _UploadMaterialScreenState extends State<UploadMaterialScreen> {
                       height: 20,
                       child: CircularProgressIndicator(
                         strokeWidth: 2.2,
-                        valueColor:
-                            AlwaysStoppedAnimation<Color>(Colors.white),
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                       ),
                     )
                   : const Text('Publish to the library'),
@@ -253,16 +259,16 @@ class _UploadMaterialScreenState extends State<UploadMaterialScreen> {
   }
 
   Widget _label(String value) => Padding(
-        padding: const EdgeInsets.only(bottom: 8, left: 2),
-        child: Text(
-          value,
-          style: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
-            color: AppColours.text,
-          ),
-        ),
-      );
+    padding: const EdgeInsets.only(bottom: 8, left: 2),
+    child: Text(
+      value,
+      style: const TextStyle(
+        fontSize: 13,
+        fontWeight: FontWeight.w700,
+        color: AppColours.text,
+      ),
+    ),
+  );
 
   Widget _kindPicker() {
     return Wrap(

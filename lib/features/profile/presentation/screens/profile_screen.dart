@@ -255,9 +255,7 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   Widget _academicCard(StudentProfile profile) {
     return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.screenPadding,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
       child: EduvoraCard(
         shadows: AppShadows.subtle,
         child: Column(
@@ -275,17 +273,16 @@ class _ProfileScreenState extends State<ProfileScreen>
             const Divider(height: AppSpacing.xl),
             _row(
               icon: Icons.apartment_rounded,
-              label: AcademicStructure.facultyLabelFor(
-                profile.institutionType,
-              ),
+              label: AcademicStructure.facultyLabelFor(profile.institutionType),
               value: profile.faculty.isEmpty ? 'Not set' : profile.faculty,
             ),
             const Divider(height: AppSpacing.xl),
             _row(
               icon: Icons.workspaces_rounded,
               label: 'Department',
-              value:
-                  profile.department.isEmpty ? 'Not set' : profile.department,
+              value: profile.department.isEmpty
+                  ? 'Not set'
+                  : profile.department,
             ),
             const Divider(height: AppSpacing.xl),
             _row(
@@ -307,84 +304,83 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   Widget _contributions(StudentProfile profile) {
     return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.screenPadding,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
       child: FutureBuilder<List<StudyMaterial>>(
         future: _content.myUploads(profile),
-        builder: (
-          BuildContext context,
-          AsyncSnapshot<List<StudyMaterial>> snapshot,
-        ) {
-          final List<StudyMaterial> mine = snapshot.data ?? <StudyMaterial>[];
-          if (mine.isEmpty) {
-            return EduvoraCard(
-              shadows: AppShadows.subtle,
-              child: Row(
-                children: <Widget>[
-                  Container(
-                    width: 42,
-                    height: 42,
-                    decoration: BoxDecoration(
-                      color: AppColours.accent.withValues(alpha: 0.12),
-                      borderRadius: AppRadii.sm,
-                    ),
-                    child: const Icon(
-                      Icons.volunteer_activism_rounded,
-                      size: 20,
-                      color: AppColours.accent,
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    child: Text(
-                      'You have not shared a resource yet. Even one set of '
-                      'notes helps the person coming behind you.',
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodySmall
-                          ?.copyWith(height: 1.55),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          return Column(
-            children: mine
-                .take(5)
-                .map(
-                  (StudyMaterial m) => Padding(
-                    padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                    child: EduvoraCard(
-                      padding: const EdgeInsets.all(AppSpacing.md),
-                      shadows: AppShadows.subtle,
-                      child: Row(
-                        children: <Widget>[
-                          Icon(m.kind.icon, size: 19, color: m.kind.colour),
-                          const SizedBox(width: AppSpacing.md),
-                          Expanded(
-                            child: Text(
-                              m.title,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: AppColours.text,
-                              ),
-                            ),
-                          ),
-                          Pill(label: m.courseCode, dense: true),
-                        ],
+        builder:
+            (
+              BuildContext context,
+              AsyncSnapshot<List<StudyMaterial>> snapshot,
+            ) {
+              final List<StudyMaterial> mine =
+                  snapshot.data ?? <StudyMaterial>[];
+              if (mine.isEmpty) {
+                return EduvoraCard(
+                  shadows: AppShadows.subtle,
+                  child: Row(
+                    children: <Widget>[
+                      Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          color: AppColours.accent.withValues(alpha: 0.12),
+                          borderRadius: AppRadii.sm,
+                        ),
+                        child: const Icon(
+                          Icons.volunteer_activism_rounded,
+                          size: 20,
+                          color: AppColours.accent,
+                        ),
                       ),
-                    ),
+                      const SizedBox(width: AppSpacing.md),
+                      Expanded(
+                        child: Text(
+                          'You have not shared a resource yet. Even one set of '
+                          'notes helps the person coming behind you.',
+                          style: Theme.of(
+                            context,
+                          ).textTheme.bodySmall?.copyWith(height: 1.55),
+                        ),
+                      ),
+                    ],
                   ),
-                )
-                .toList(),
-          );
-        },
+                );
+              }
+
+              return Column(
+                children: mine
+                    .take(5)
+                    .map(
+                      (StudyMaterial m) => Padding(
+                        padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                        child: EduvoraCard(
+                          padding: const EdgeInsets.all(AppSpacing.md),
+                          shadows: AppShadows.subtle,
+                          child: Row(
+                            children: <Widget>[
+                              Icon(m.kind.icon, size: 19, color: m.kind.colour),
+                              const SizedBox(width: AppSpacing.md),
+                              Expanded(
+                                child: Text(
+                                  m.title,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColours.text,
+                                  ),
+                                ),
+                              ),
+                              Pill(label: m.courseCode, dense: true),
+                            ],
+                          ),
+                        ),
+                      ),
+                    )
+                    .toList(),
+              );
+            },
       ),
     );
   }
@@ -392,9 +388,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   Widget _accountCard() {
     final bool connected = sessionController.usingBackend;
     return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.screenPadding,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
       child: EduvoraCard(
         shadows: AppShadows.subtle,
         padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
@@ -410,7 +404,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                   borderRadius: AppRadii.sm,
                 ),
                 child: Icon(
-                  connected ? Icons.cloud_done_rounded : Icons.offline_bolt_rounded,
+                  connected
+                      ? Icons.cloud_done_rounded
+                      : Icons.offline_bolt_rounded,
                   size: 19,
                   color: connected ? AppColours.success : AppColours.info,
                 ),
@@ -420,7 +416,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 connected
                     ? 'Signed in and syncing with the Eduvora backend.'
                     : 'Running entirely on this device. Everything works, and '
-                        'nothing is lost.',
+                          'nothing is lost.',
               ),
               isThreeLine: !connected,
             ),
@@ -457,9 +453,7 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   Widget _aboutCard() {
     return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.screenPadding,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
       child: EduvoraCard(
         shadows: AppShadows.subtle,
         padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
@@ -487,8 +481,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               subtitle: const Text(AppConfig.supportEmail),
               trailing: const Icon(Icons.open_in_new_rounded, size: 17),
               onTap: () async {
-                final Uri uri =
-                    Uri.parse('mailto:${AppConfig.supportEmail}');
+                final Uri uri = Uri.parse('mailto:${AppConfig.supportEmail}');
                 if (await canLaunchUrl(uri)) await launchUrl(uri);
               },
             ),

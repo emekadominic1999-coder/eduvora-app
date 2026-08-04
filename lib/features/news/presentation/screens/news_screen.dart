@@ -47,11 +47,10 @@ class _NewsScreenState extends State<NewsScreen> {
       if (_category != null && n.category != _category) return false;
       if (_savedOnly && !_bookmarks.contains(n.id)) return false;
       return true;
-    }).toList()
-      ..sort((NewsItem a, NewsItem b) {
-        if (a.isFeatured != b.isFeatured) return a.isFeatured ? -1 : 1;
-        return b.publishedAt.compareTo(a.publishedAt);
-      });
+    }).toList()..sort((NewsItem a, NewsItem b) {
+      if (a.isFeatured != b.isFeatured) return a.isFeatured ? -1 : 1;
+      return b.publishedAt.compareTo(a.publishedAt);
+    });
   }
 
   @override
@@ -89,56 +88,58 @@ class _NewsScreenState extends State<NewsScreen> {
               color: AppColours.primary,
               child: FutureBuilder<List<NewsItem>>(
                 future: _future,
-                builder: (
-                  BuildContext context,
-                  AsyncSnapshot<List<NewsItem>> snapshot,
-                ) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  final List<NewsItem> items =
-                      _apply(snapshot.data ?? <NewsItem>[]);
+                builder:
+                    (
+                      BuildContext context,
+                      AsyncSnapshot<List<NewsItem>> snapshot,
+                    ) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      final List<NewsItem> items = _apply(
+                        snapshot.data ?? <NewsItem>[],
+                      );
 
-                  if (items.isEmpty) {
-                    return ListView(
-                      children: <Widget>[
-                        EmptyState(
-                          icon: _savedOnly
-                              ? Icons.bookmark_border_rounded
-                              : Icons.campaign_outlined,
-                          title: _savedOnly
-                              ? 'Nothing saved yet'
-                              : 'No notices in this category',
-                          message: _savedOnly
-                              ? 'Tap the bookmark on any notice to keep it '
-                                  'here for later.'
-                              : 'Try another category, or pull down to '
-                                  'refresh.',
+                      if (items.isEmpty) {
+                        return ListView(
+                          children: <Widget>[
+                            EmptyState(
+                              icon: _savedOnly
+                                  ? Icons.bookmark_border_rounded
+                                  : Icons.campaign_outlined,
+                              title: _savedOnly
+                                  ? 'Nothing saved yet'
+                                  : 'No notices in this category',
+                              message: _savedOnly
+                                  ? 'Tap the bookmark on any notice to keep it '
+                                        'here for later.'
+                                  : 'Try another category, or pull down to '
+                                        'refresh.',
+                            ),
+                          ],
+                        );
+                      }
+
+                      return ListView.separated(
+                        padding: const EdgeInsets.fromLTRB(
+                          AppSpacing.screenPadding,
+                          0,
+                          AppSpacing.screenPadding,
+                          AppSpacing.xxl,
                         ),
-                      ],
-                    );
-                  }
-
-                  return ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.screenPadding,
-                      0,
-                      AppSpacing.screenPadding,
-                      AppSpacing.xxl,
-                    ),
-                    itemCount: items.length,
-                    separatorBuilder: (_, _) =>
-                        const SizedBox(height: AppSpacing.md),
-                    itemBuilder: (BuildContext context, int index) {
-                      final NewsItem item = items[index];
-                      return _NewsCard(
-                        item: item,
-                        saved: _bookmarks.contains(item.id),
-                        onBookmark: () => _toggleBookmark(item),
+                        itemCount: items.length,
+                        separatorBuilder: (_, _) =>
+                            const SizedBox(height: AppSpacing.md),
+                        itemBuilder: (BuildContext context, int index) {
+                          final NewsItem item = items[index];
+                          return _NewsCard(
+                            item: item,
+                            saved: _bookmarks.contains(item.id),
+                            onBookmark: () => _toggleBookmark(item),
+                          );
+                        },
                       );
                     },
-                  );
-                },
               ),
             ),
           ),
@@ -187,8 +188,7 @@ class _NewsScreenState extends State<NewsScreen> {
                       style: TextStyle(
                         fontSize: 12.5,
                         fontWeight: FontWeight.w600,
-                        color:
-                            selected ? Colors.white : AppColours.textMuted,
+                        color: selected ? Colors.white : AppColours.textMuted,
                       ),
                     ),
                   ],
@@ -297,10 +297,9 @@ class _NewsCard extends StatelessWidget {
                 const SizedBox(height: AppSpacing.xl),
                 Text(
                   item.body.isEmpty ? item.summary : item.body,
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodyMedium
-                      ?.copyWith(height: 1.7),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(height: 1.7),
                 ),
                 const SizedBox(height: AppSpacing.xxl),
                 Row(
@@ -440,10 +439,9 @@ class _NewsCard extends StatelessWidget {
             item.summary,
             maxLines: 3,
             overflow: TextOverflow.ellipsis,
-            style: Theme.of(context)
-                .textTheme
-                .bodySmall
-                ?.copyWith(height: 1.55),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(height: 1.55),
           ),
           const SizedBox(height: AppSpacing.md),
           Row(
@@ -467,8 +465,10 @@ class _NewsCard extends StatelessWidget {
               ),
               if (item.hasDeadline)
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: urgent
                         ? AppColours.dangerSoft
@@ -480,8 +480,7 @@ class _NewsCard extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 10.5,
                       fontWeight: FontWeight.w700,
-                      color:
-                          urgent ? AppColours.danger : AppColours.textMuted,
+                      color: urgent ? AppColours.danger : AppColours.textMuted,
                     ),
                   ),
                 ),

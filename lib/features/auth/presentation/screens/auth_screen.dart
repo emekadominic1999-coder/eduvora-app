@@ -67,8 +67,10 @@ class _AuthScreenState extends State<AuthScreen> {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
     if (!_isSignIn && !_agree) {
-      setState(() => _error =
-          'Please accept the community guidelines to create your account.');
+      setState(
+        () => _error =
+            'Please accept the community guidelines to create your account.',
+      );
       return;
     }
 
@@ -303,8 +305,9 @@ class _AuthScreenState extends State<AuthScreen> {
                     hint: _isSignIn
                         ? 'Enter your password'
                         : 'At least 6 characters',
-                    textInputAction:
-                        _isSignIn ? TextInputAction.done : TextInputAction.next,
+                    textInputAction: _isSignIn
+                        ? TextInputAction.done
+                        : TextInputAction.next,
                     onSubmitted: _isSignIn ? (_) => _submit() : null,
                     showStrength: !_isSignIn,
                     autofillHint: _isSignIn
@@ -354,8 +357,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       height: 20,
                       child: CircularProgressIndicator(
                         strokeWidth: 2.2,
-                        valueColor:
-                            AlwaysStoppedAnimation<Color>(Colors.white),
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                       ),
                     )
                   : Text(_isSignIn ? 'Sign in' : 'Create my account'),
@@ -364,9 +366,7 @@ class _AuthScreenState extends State<AuthScreen> {
             _divider(text),
             const SizedBox(height: AppSpacing.lg),
             GoogleButton(
-              label: _isSignIn
-                  ? 'Sign in with Google'
-                  : 'Sign up with Google',
+              label: _isSignIn ? 'Sign in with Google' : 'Sign up with Google',
               onPressed: _submitting ? null : _google,
             ),
             const SizedBox(height: AppSpacing.xl),
@@ -421,16 +421,16 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   Widget _label(String value) => Padding(
-        padding: const EdgeInsets.only(bottom: 7, left: 2),
-        child: Text(
-          value,
-          style: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: AppColours.text,
-          ),
-        ),
-      );
+    padding: const EdgeInsets.only(bottom: 7, left: 2),
+    child: Text(
+      value,
+      style: const TextStyle(
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+        color: AppColours.text,
+      ),
+    ),
+  );
 
   Widget _rememberRow(TextTheme text) {
     return Row(
@@ -564,8 +564,7 @@ class _AuthScreenState extends State<AuthScreen> {
         ),
         const SizedBox(width: 4),
         TextButton(
-          onPressed: () =>
-              _switchMode(_isSignIn ? _Mode.signUp : _Mode.signIn),
+          onPressed: () => _switchMode(_isSignIn ? _Mode.signUp : _Mode.signIn),
           style: TextButton.styleFrom(
             padding: EdgeInsets.zero,
             minimumSize: const Size(0, 32),

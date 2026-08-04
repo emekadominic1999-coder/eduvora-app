@@ -35,11 +35,14 @@ class ContentRepository {
       level: profile.level,
     );
 
-    return _merge<AcademicVideo>(
-      <List<AcademicVideo>>[local, remote, seeded],
-      (AcademicVideo v) => v.id,
-    )..sort((AcademicVideo a, AcademicVideo b) =>
-        (b.createdAt ?? DateTime(2000)).compareTo(a.createdAt ?? DateTime(2000)));
+    return _merge<AcademicVideo>(<List<AcademicVideo>>[
+      local,
+      remote,
+      seeded,
+    ], (AcademicVideo v) => v.id)..sort(
+      (AcademicVideo a, AcademicVideo b) => (b.createdAt ?? DateTime(2000))
+          .compareTo(a.createdAt ?? DateTime(2000)),
+    );
   }
 
   Future<List<AcademicVideo>> _remoteVideos(StudentProfile profile) async {
@@ -88,11 +91,14 @@ class ContentRepository {
       institution: profile.institutionName,
     );
 
-    return _merge<StudyMaterial>(
-      <List<StudyMaterial>>[local, remote, seeded],
-      (StudyMaterial m) => m.id,
-    )..sort((StudyMaterial a, StudyMaterial b) =>
-        (b.createdAt ?? DateTime(2000)).compareTo(a.createdAt ?? DateTime(2000)));
+    return _merge<StudyMaterial>(<List<StudyMaterial>>[
+      local,
+      remote,
+      seeded,
+    ], (StudyMaterial m) => m.id)..sort(
+      (StudyMaterial a, StudyMaterial b) => (b.createdAt ?? DateTime(2000))
+          .compareTo(a.createdAt ?? DateTime(2000)),
+    );
   }
 
   Future<List<StudyMaterial>> _remoteMaterials(StudentProfile profile) async {
@@ -171,9 +177,9 @@ class ContentRepository {
       }
     }
 
-    final List<Map<String, dynamic>> cached =
-        LocalStore.instance.readList(StoreKeys.materials)
-          ..insert(0, material.toJson());
+    final List<Map<String, dynamic>> cached = LocalStore.instance.readList(
+      StoreKeys.materials,
+    )..insert(0, material.toJson());
     await LocalStore.instance.writeList(StoreKeys.materials, cached);
 
     return material;
@@ -199,8 +205,10 @@ class ContentRepository {
             .select()
             .order('published_at', ascending: false)
             .limit(60);
-        final List<NewsItem> remote =
-            rows.whereType<Map<String, dynamic>>().map(NewsItem.fromJson).toList();
+        final List<NewsItem> remote = rows
+            .whereType<Map<String, dynamic>>()
+            .map(NewsItem.fromJson)
+            .toList();
         if (remote.isNotEmpty) return remote;
       } catch (error) {
         debugPrint('[Eduvora] news fetch failed: $error');
@@ -228,10 +236,7 @@ class ContentRepository {
 
   /// Combines several sources, keeping the first occurrence of each key so
   /// locally created records always win over seeded ones.
-  static List<T> _merge<T>(
-    List<List<T>> sources,
-    String Function(T) keyOf,
-  ) {
+  static List<T> _merge<T>(List<List<T>> sources, String Function(T) keyOf) {
     final Map<String, T> byKey = <String, T>{};
     for (final List<T> source in sources) {
       for (final T item in source) {

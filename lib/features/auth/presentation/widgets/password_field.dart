@@ -128,7 +128,10 @@ class _StrengthMeter extends StatelessWidget {
   }
 
   static const List<String> _labels = <String>[
-    'Weak', 'Fair', 'Good', 'Strong',
+    'Weak',
+    'Fair',
+    'Good',
+    'Strong',
   ];
 
   static const List<Color> _colours = <Color>[

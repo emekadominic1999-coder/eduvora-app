@@ -148,8 +148,7 @@ class CbtQuestionBank {
         CbtQuestion(
           id: 'npc-1',
           topic: 'Political structure',
-          question:
-              'How many states make up the Federal Republic of Nigeria?',
+          question: 'How many states make up the Federal Republic of Nigeria?',
           options: <String>['30', '35', '36', '37'],
           correctIndex: 2,
           explanation:
@@ -441,7 +440,8 @@ class CbtQuestionBank {
           question: 'Simplify 2³ × 2⁵.',
           options: <String>['2⁸', '2¹⁵', '4⁸', '2²'],
           correctIndex: 0,
-          explanation: 'When multiplying like bases, add the indices: 3 + 5 = 8.',
+          explanation:
+              'When multiplying like bases, add the indices: 3 + 5 = 8.',
         ),
         CbtQuestion(
           id: 'mth-2',
@@ -457,7 +457,8 @@ class CbtQuestionBank {
           question: 'Find the mean of 4, 8, 10 and 14.',
           options: <String>['8', '9', '10', '12'],
           correctIndex: 1,
-          explanation: 'The sum is 36 and there are 4 values, so the mean is 9.',
+          explanation:
+              'The sum is 36 and there are 4 values, so the mean is 9.',
         ),
         CbtQuestion(
           id: 'mth-4',
@@ -546,7 +547,8 @@ class CbtQuestionBank {
           question: 'The SI unit of force is the:',
           options: <String>['Joule', 'Newton', 'Watt', 'Pascal'],
           correctIndex: 1,
-          explanation: 'One newton accelerates one kilogram at one metre per '
+          explanation:
+              'One newton accelerates one kilogram at one metre per '
               'second squared.',
         ),
         CbtQuestion(
@@ -555,14 +557,10 @@ class CbtQuestionBank {
           question:
               'The acceleration due to gravity at the earth’s surface is '
               'approximately:',
-          options: <String>[
-            '9.8 m/s²',
-            '8.9 m/s²',
-            '10.8 m/s²',
-            '6.7 m/s²',
-          ],
+          options: <String>['9.8 m/s²', '8.9 m/s²', '10.8 m/s²', '6.7 m/s²'],
           correctIndex: 0,
-          explanation: 'The standard value is 9.81 m/s², usually rounded to 9.8.',
+          explanation:
+              'The standard value is 9.81 m/s², usually rounded to 9.8.',
         ),
         CbtQuestion(
           id: 'phy-3',
@@ -579,7 +577,8 @@ class CbtQuestionBank {
           question: 'Which of the following is a vector quantity?',
           options: <String>['Speed', 'Mass', 'Velocity', 'Energy'],
           correctIndex: 2,
-          explanation: 'Velocity has both magnitude and direction; speed has '
+          explanation:
+              'Velocity has both magnitude and direction; speed has '
               'magnitude only.',
         ),
         CbtQuestion(
@@ -624,8 +623,7 @@ class CbtQuestionBank {
         CbtQuestion(
           id: 'phy-9',
           topic: 'Optics',
-          question:
-              'Which lens is used to correct short-sightedness (myopia)?',
+          question: 'Which lens is used to correct short-sightedness (myopia)?',
           options: <String>['Convex', 'Concave', 'Cylindrical', 'Plane'],
           correctIndex: 1,
           explanation:
@@ -649,7 +647,8 @@ class CbtQuestionBank {
     CbtSubject(
       id: 'sci-chemistry',
       name: 'General Chemistry',
-      description: 'Atomic structure, bonding, acids and bases, organic basics.',
+      description:
+          'Atomic structure, bonding, acids and bases, organic basics.',
       minutesPerAttempt: 15,
       faculties: <String>[
         'Faculty of Science',
@@ -706,7 +705,8 @@ class CbtQuestionBank {
             '1.6 × 10⁻¹⁹ mol⁻¹',
           ],
           correctIndex: 0,
-          explanation: 'It is the number of particles in one mole of substance.',
+          explanation:
+              'It is the number of particles in one mole of substance.',
         ),
         CbtQuestion(
           id: 'chm-6',
@@ -714,7 +714,8 @@ class CbtQuestionBank {
           question: 'Which element is an alkali metal?',
           options: <String>['Calcium', 'Sodium', 'Aluminium', 'Iron'],
           correctIndex: 1,
-          explanation: 'Sodium is in Group 1; calcium is an alkaline earth metal.',
+          explanation:
+              'Sodium is in Group 1; calcium is an alkaline earth metal.',
         ),
         CbtQuestion(
           id: 'chm-7',
@@ -743,12 +744,7 @@ class CbtQuestionBank {
           id: 'chm-9',
           topic: 'Gas tests',
           question: 'Which gas turns limewater milky?',
-          options: <String>[
-            'Oxygen',
-            'Hydrogen',
-            'Carbon dioxide',
-            'Nitrogen',
-          ],
+          options: <String>['Oxygen', 'Hydrogen', 'Carbon dioxide', 'Nitrogen'],
           correctIndex: 2,
           explanation:
               'CO₂ forms insoluble calcium carbonate with calcium hydroxide '
@@ -793,13 +789,9 @@ class CbtQuestionBank {
         CbtQuestion(
           id: 'bio-2',
           topic: 'Cell biology',
-          question: 'Which organelle is described as the powerhouse of the cell?',
-          options: <String>[
-            'Nucleus',
-            'Ribosome',
-            'Mitochondrion',
-            'Lysosome',
-          ],
+          question:
+              'Which organelle is described as the powerhouse of the cell?',
+          options: <String>['Nucleus', 'Ribosome', 'Mitochondrion', 'Lysosome'],
           correctIndex: 2,
           explanation: 'Aerobic respiration and ATP synthesis occur there.',
         ),
@@ -815,7 +807,8 @@ class CbtQuestionBank {
         CbtQuestion(
           id: 'bio-4',
           topic: 'Genetics',
-          question: 'A normal human somatic cell contains how many pairs of '
+          question:
+              'A normal human somatic cell contains how many pairs of '
               'chromosomes?',
           options: <String>['21', '22', '23', '46'],
           correctIndex: 2,
@@ -825,7 +818,12 @@ class CbtQuestionBank {
           id: 'bio-5',
           topic: 'Haematology',
           question: 'Which blood group is regarded as the universal donor?',
-          options: <String>['A positive', 'B positive', 'AB positive', 'O negative'],
+          options: <String>[
+            'A positive',
+            'B positive',
+            'AB positive',
+            'O negative',
+          ],
           correctIndex: 3,
           explanation:
               'O negative red cells carry neither A, B nor Rh D antigens.',
@@ -836,13 +834,15 @@ class CbtQuestionBank {
           question: 'Insulin is secreted by the:',
           options: <String>['Liver', 'Pancreas', 'Kidney', 'Spleen'],
           correctIndex: 1,
-          explanation: 'Specifically by the beta cells of the islets of '
+          explanation:
+              'Specifically by the beta cells of the islets of '
               'Langerhans.',
         ),
         CbtQuestion(
           id: 'bio-7',
           topic: 'Plant physiology',
-          question: 'The loss of water vapour from the aerial parts of a plant '
+          question:
+              'The loss of water vapour from the aerial parts of a plant '
               'is called:',
           options: <String>[
             'Respiration',
@@ -1052,8 +1052,7 @@ class CbtQuestionBank {
         CbtQuestion(
           id: 'emt-3',
           topic: 'Matrices',
-          question:
-              'The determinant of the 2 × 2 matrix [[a, b], [c, d]] is:',
+          question: 'The determinant of the 2 × 2 matrix [[a, b], [c, d]] is:',
           options: <String>['ad + bc', 'ad − bc', 'ab − cd', 'ac − bd'],
           correctIndex: 1,
           explanation:
@@ -1162,8 +1161,7 @@ class CbtQuestionBank {
             'Control Processing Unit',
           ],
           correctIndex: 0,
-          explanation:
-              'The CPU fetches, decodes and executes instructions.',
+          explanation: 'The CPU fetches, decodes and executes instructions.',
         ),
         CbtQuestion(
           id: 'csc-2',
@@ -1184,7 +1182,12 @@ class CbtQuestionBank {
           id: 'csc-3',
           topic: 'Data representation',
           question: 'One kilobyte is conventionally equal to:',
-          options: <String>['1000 bits', '1024 bytes', '1024 bits', '100 bytes'],
+          options: <String>[
+            '1000 bits',
+            '1024 bytes',
+            '1024 bits',
+            '100 bytes',
+          ],
           correctIndex: 1,
           explanation: '2¹⁰ = 1024, the binary convention used in computing.',
         ),
@@ -1241,13 +1244,13 @@ class CbtQuestionBank {
             'A type of file',
           ],
           correctIndex: 1,
-          explanation:
-              'It must be finite, unambiguous and produce a result.',
+          explanation: 'It must be finite, unambiguous and produce a result.',
         ),
         CbtQuestion(
           id: 'csc-9',
           topic: 'Data structures',
-          question: 'Which data structure operates on a Last-In-First-Out basis?',
+          question:
+              'Which data structure operates on a Last-In-First-Out basis?',
           options: <String>['Queue', 'Stack', 'Array', 'Tree'],
           correctIndex: 1,
           explanation:
@@ -1273,8 +1276,7 @@ class CbtQuestionBank {
     CbtSubject(
       id: 'mgt-accounting',
       name: 'Principles of Accounting',
-      description:
-          'Double entry, final accounts, concepts and conventions.',
+      description: 'Double entry, final accounts, concepts and conventions.',
       minutesPerAttempt: 15,
       faculties: <String>[
         'Faculty of Management Sciences',
@@ -1450,7 +1452,8 @@ class CbtQuestionBank {
             'International trade only',
           ],
           correctIndex: 1,
-          explanation: 'Scarcity and choice sit at the centre of the discipline.',
+          explanation:
+              'Scarcity and choice sit at the centre of the discipline.',
         ),
         CbtQuestion(
           id: 'eco-2',
@@ -1530,8 +1533,7 @@ class CbtQuestionBank {
             'Nigerian Exchange Group',
           ],
           correctIndex: 1,
-          explanation:
-              'The CBN sets the Monetary Policy Rate through its MPC.',
+          explanation: 'The CBN sets the Monetary Policy Rate through its MPC.',
         ),
         CbtQuestion(
           id: 'eco-8',
@@ -1571,8 +1573,7 @@ class CbtQuestionBank {
               'to:',
           options: <String>['Fall', 'Rise', 'Remain constant', 'Become zero'],
           correctIndex: 1,
-          explanation:
-              'Excess demand bids the price up towards equilibrium.',
+          explanation: 'Excess demand bids the price up towards equilibrium.',
         ),
       ],
     ),
@@ -1594,7 +1595,8 @@ class CbtQuestionBank {
         CbtQuestion(
           id: 'law-1',
           topic: 'Constitution',
-          question: 'The Constitution currently in force in Nigeria is that of:',
+          question:
+              'The Constitution currently in force in Nigeria is that of:',
           options: <String>['1979', '1989', '1999 (as amended)', '1963'],
           correctIndex: 2,
           explanation:
@@ -1669,8 +1671,7 @@ class CbtQuestionBank {
             'An order of the court',
           ],
           correctIndex: 1,
-          explanation:
-              'Only the ratio decidendi binds later courts.',
+          explanation: 'Only the ratio decidendi binds later courts.',
         ),
         CbtQuestion(
           id: 'law-7',
@@ -1683,7 +1684,8 @@ class CbtQuestionBank {
             'Canon law',
           ],
           correctIndex: 1,
-          explanation: 'This follows from the colonial reception of English law.',
+          explanation:
+              'This follows from the colonial reception of English law.',
         ),
         CbtQuestion(
           id: 'law-8',
@@ -1848,8 +1850,7 @@ class CbtQuestionBank {
             'Autonomy versus shame and doubt',
           ],
           correctIndex: 1,
-          explanation:
-              'Adolescents work to form a coherent sense of self.',
+          explanation: 'Adolescents work to form a coherent sense of self.',
         ),
         CbtQuestion(
           id: 'psy-8',
@@ -1884,7 +1885,8 @@ class CbtQuestionBank {
         CbtQuestion(
           id: 'psy-10',
           topic: 'Motivation',
-          question: 'Motivation arising from within the learner is described as:',
+          question:
+              'Motivation arising from within the learner is described as:',
           options: <String>['Extrinsic', 'Intrinsic', 'Negative', 'Social'],
           correctIndex: 1,
           explanation:

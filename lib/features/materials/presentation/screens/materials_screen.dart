@@ -137,48 +137,50 @@ class _MaterialsScreenState extends State<MaterialsScreen>
               color: AppColours.primary,
               child: FutureBuilder<List<StudyMaterial>>(
                 future: _future,
-                builder: (
-                  BuildContext context,
-                  AsyncSnapshot<List<StudyMaterial>> snapshot,
-                ) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  final List<StudyMaterial> items =
-                      _apply(snapshot.data ?? <StudyMaterial>[]);
+                builder:
+                    (
+                      BuildContext context,
+                      AsyncSnapshot<List<StudyMaterial>> snapshot,
+                    ) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      final List<StudyMaterial> items = _apply(
+                        snapshot.data ?? <StudyMaterial>[],
+                      );
 
-                  if (items.isEmpty) {
-                    return ListView(
-                      children: <Widget>[
-                        EmptyState(
-                          icon: Icons.folder_open_rounded,
-                          title: 'Nothing here yet',
-                          message: _query.isEmpty && _kind == null
-                              ? 'Be the first to share notes with your '
-                                  'department. It genuinely helps.'
-                              : 'No resource matches those filters. Try '
-                                  'clearing them.',
-                          actionLabel: 'Share a resource',
-                          onAction: _openUpload,
+                      if (items.isEmpty) {
+                        return ListView(
+                          children: <Widget>[
+                            EmptyState(
+                              icon: Icons.folder_open_rounded,
+                              title: 'Nothing here yet',
+                              message: _query.isEmpty && _kind == null
+                                  ? 'Be the first to share notes with your '
+                                        'department. It genuinely helps.'
+                                  : 'No resource matches those filters. Try '
+                                        'clearing them.',
+                              actionLabel: 'Share a resource',
+                              onAction: _openUpload,
+                            ),
+                          ],
+                        );
+                      }
+
+                      return ListView.separated(
+                        padding: const EdgeInsets.fromLTRB(
+                          AppSpacing.screenPadding,
+                          0,
+                          AppSpacing.screenPadding,
+                          96,
                         ),
-                      ],
-                    );
-                  }
-
-                  return ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.screenPadding,
-                      0,
-                      AppSpacing.screenPadding,
-                      96,
-                    ),
-                    itemCount: items.length,
-                    separatorBuilder: (_, _) =>
-                        const SizedBox(height: AppSpacing.sm),
-                    itemBuilder: (BuildContext context, int index) =>
-                        _MaterialRow(material: items[index]),
-                  );
-                },
+                        itemCount: items.length,
+                        separatorBuilder: (_, _) =>
+                            const SizedBox(height: AppSpacing.sm),
+                        itemBuilder: (BuildContext context, int index) =>
+                            _MaterialRow(material: items[index]),
+                      );
+                    },
               ),
             ),
           ),
@@ -227,8 +229,7 @@ class _MaterialsScreenState extends State<MaterialsScreen>
                       style: TextStyle(
                         fontSize: 12.5,
                         fontWeight: FontWeight.w600,
-                        color:
-                            selected ? Colors.white : AppColours.textMuted,
+                        color: selected ? Colors.white : AppColours.textMuted,
                       ),
                     ),
                   ],
@@ -299,10 +300,9 @@ class _MaterialRow extends StatelessWidget {
               const SizedBox(height: AppSpacing.sm),
               Text(
                 material.description,
-                style: Theme.of(context)
-                    .textTheme
-                    .bodyMedium
-                    ?.copyWith(height: 1.6),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(height: 1.6),
               ),
               const SizedBox(height: AppSpacing.xl),
               _detailRow(context, 'Shared by', material.uploaderName),
@@ -314,11 +314,7 @@ class _MaterialRow extends StatelessWidget {
                 '${material.extension} · ${material.readableSize}',
               ),
               if (material.createdAt != null)
-                _detailRow(
-                  context,
-                  'Added',
-                  relativeTime(material.createdAt!),
-                ),
+                _detailRow(context, 'Added', relativeTime(material.createdAt!)),
               const SizedBox(height: AppSpacing.xl),
               FilledButton.icon(
                 onPressed: () {
@@ -343,10 +339,7 @@ class _MaterialRow extends StatelessWidget {
         children: <Widget>[
           SizedBox(
             width: 96,
-            child: Text(
-              label,
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
+            child: Text(label, style: Theme.of(context).textTheme.bodySmall),
           ),
           Expanded(
             child: Text(

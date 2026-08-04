@@ -73,7 +73,9 @@ class CgpaTrendChart extends StatelessWidget {
     if (parts.length == 1) {
       return label.length > 8 ? label.substring(0, 8) : label;
     }
-    return parts.map((String p) => p.length > 4 ? p.substring(0, 4) : p).join(' ');
+    return parts
+        .map((String p) => p.length > 4 ? p.substring(0, 4) : p)
+        .join(' ');
   }
 }
 
@@ -143,10 +145,7 @@ class _TrendPainter extends CustomPainter {
       labelPainter
         ..text = TextSpan(
           text: '$i',
-          style: const TextStyle(
-            fontSize: 9,
-            color: AppColours.textFaint,
-          ),
+          style: const TextStyle(fontSize: 9, color: AppColours.textFaint),
         )
         ..layout();
       labelPainter.paint(canvas, Offset(6, y - labelPainter.height / 2));
@@ -193,8 +192,9 @@ class _TrendPainter extends CustomPainter {
     for (int i = 0; i < semesters.length; i++) {
       runningUnits += semesters[i].totalUnits;
       runningPoints += semesters[i].totalQualityPoints;
-      final double running =
-          runningUnits == 0 ? 0 : (runningPoints / runningUnits).clamp(0.0, _max);
+      final double running = runningUnits == 0
+          ? 0
+          : (runningPoints / runningUnits).clamp(0.0, _max);
       final double centre = 26 + slot * i + slot / 2;
       final double y = size.height - (running / _max) * size.height;
       points.add(Offset(centre, y));

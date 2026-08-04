@@ -47,12 +47,15 @@ class AppFooter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final int universities =
-        NigerianInstitutions.countOf(InstitutionType.university);
-    final int polytechnics =
-        NigerianInstitutions.countOf(InstitutionType.polytechnic);
-    final int colleges =
-        NigerianInstitutions.countOf(InstitutionType.collegeOfEducation);
+    final int universities = NigerianInstitutions.countOf(
+      InstitutionType.university,
+    );
+    final int polytechnics = NigerianInstitutions.countOf(
+      InstitutionType.polytechnic,
+    );
+    final int colleges = NigerianInstitutions.countOf(
+      InstitutionType.collegeOfEducation,
+    );
 
     return Container(
       width: double.infinity,
@@ -137,9 +140,7 @@ class AppFooter extends StatelessWidget {
               if (onSignIn != null)
                 TextButton(
                   onPressed: onSignIn,
-                  style: TextButton.styleFrom(
-                    foregroundColor: Colors.white,
-                  ),
+                  style: TextButton.styleFrom(foregroundColor: Colors.white),
                   child: const Text('Sign in'),
                 ),
             ],

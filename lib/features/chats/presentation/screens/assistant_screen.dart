@@ -120,15 +120,18 @@ class _AssistantScreenState extends State<AssistantScreen> {
       _pendingRoute = null;
       _pendingRouteLabel = null;
     });
-    WidgetsBinding.instance
-        .addPostFrameCallback((_) => _toBottom(animate: true));
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _toBottom(animate: true),
+    );
 
     // A short pause so the conversation feels considered rather than instant.
     _replyTimer?.cancel();
     _replyTimer = Timer(const Duration(milliseconds: 620), () {
       if (!mounted) return;
-      final AiReply reply =
-          EduvoraAi.respond(question, sessionController.profile);
+      final AiReply reply = EduvoraAi.respond(
+        question,
+        sessionController.profile,
+      );
       setState(() {
         _thinking = false;
         _messages.add(
@@ -146,8 +149,9 @@ class _AssistantScreenState extends State<AssistantScreen> {
         _pendingRouteLabel = reply.routeLabel;
       });
       _persist();
-      WidgetsBinding.instance
-          .addPostFrameCallback((_) => _toBottom(animate: true));
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _toBottom(animate: true),
+      );
     });
   }
 
@@ -258,9 +262,7 @@ class _AssistantScreenState extends State<AssistantScreen> {
                 AppSpacing.md,
               ),
               children: <Widget>[
-                ..._messages.map(
-                  (ChatMessage m) => MessageBubble(message: m),
-                ),
+                ..._messages.map((ChatMessage m) => MessageBubble(message: m)),
                 if (_thinking) const _TypingBubble(),
                 if (_pendingRoute != null && _pendingRouteLabel != null)
                   Padding(
@@ -385,8 +387,10 @@ class _AssistantScreenState extends State<AssistantScreen> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: AppRadii.xl,
-                    borderSide:
-                        BorderSide(color: AppColours.primary, width: 1.4),
+                    borderSide: BorderSide(
+                      color: AppColours.primary,
+                      width: 1.4,
+                    ),
                   ),
                 ),
               ),
@@ -474,8 +478,10 @@ class _TypingBubbleState extends State<_TypingBubble>
                 return Row(
                   mainAxisSize: MainAxisSize.min,
                   children: List<Widget>.generate(3, (int i) {
-                    final double t =
-                        ((_controller.value * 3) - i).clamp(0.0, 1.0);
+                    final double t = ((_controller.value * 3) - i).clamp(
+                      0.0,
+                      1.0,
+                    );
                     final double scale =
                         0.7 + 0.5 * (t < 0.5 ? t * 2 : (1 - t) * 2);
                     return Container(

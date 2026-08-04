@@ -10,11 +10,7 @@ import '../theme/app_theme.dart';
 /// diamonds) into a lightweight vector so it needs no 3D renderer and no
 /// bundled image asset — just brand-exact colours at any size.
 class EduvoraLogo extends StatelessWidget {
-  const EduvoraLogo({
-    super.key,
-    this.size = 48,
-    this.onDark = false,
-  });
+  const EduvoraLogo({super.key, this.size = 48, this.onDark = false});
 
   final double size;
   final bool onDark;
@@ -115,12 +111,7 @@ class _MortarboardPainter extends CustomPainter {
     final Offset cordEnd = Offset(w * 0.80, h * 0.685);
     final Path cord = Path()
       ..moveTo(cordStart.dx, cordStart.dy)
-      ..quadraticBezierTo(
-        w * 0.86,
-        h * 0.55,
-        cordEnd.dx,
-        cordEnd.dy,
-      );
+      ..quadraticBezierTo(w * 0.86, h * 0.55, cordEnd.dx, cordEnd.dy);
     canvas.drawPath(
       cord,
       Paint()

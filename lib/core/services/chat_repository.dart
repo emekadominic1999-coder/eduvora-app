@@ -39,9 +39,12 @@ class ChatRepository {
 
   List<Conversation> _seedConversations(StudentProfile profile) {
     final DateTime now = DateTime.now();
-    final String department =
-        profile.department.isNotEmpty ? profile.department : 'Your department';
-    final String level = profile.level.isNotEmpty ? profile.level : 'Your level';
+    final String department = profile.department.isNotEmpty
+        ? profile.department
+        : 'Your department';
+    final String level = profile.level.isNotEmpty
+        ? profile.level
+        : 'Your level';
 
     return <Conversation>[
       Conversation(
@@ -221,10 +224,12 @@ class ChatRepository {
   }
 
   Future<void> _touchConversation(String id, String preview) async {
-    final List<Map<String, dynamic>> stored =
-        LocalStore.instance.readList(StoreKeys.conversations);
-    final int index =
-        stored.indexWhere((Map<String, dynamic> c) => c['id'] == id);
+    final List<Map<String, dynamic>> stored = LocalStore.instance.readList(
+      StoreKeys.conversations,
+    );
+    final int index = stored.indexWhere(
+      (Map<String, dynamic> c) => c['id'] == id,
+    );
 
     if (index >= 0) {
       stored[index]['last_message'] = preview;
@@ -251,18 +256,21 @@ class ChatRepository {
   }
 
   Future<void> markRead(String conversationId) async {
-    final List<Map<String, dynamic>> stored =
-        LocalStore.instance.readList(StoreKeys.conversations);
-    final int index = stored
-        .indexWhere((Map<String, dynamic> c) => c['id'] == conversationId);
+    final List<Map<String, dynamic>> stored = LocalStore.instance.readList(
+      StoreKeys.conversations,
+    );
+    final int index = stored.indexWhere(
+      (Map<String, dynamic> c) => c['id'] == conversationId,
+    );
     if (index >= 0) {
       stored[index]['unread'] = 0;
       await LocalStore.instance.writeList(StoreKeys.conversations, stored);
     }
   }
 
-  int unreadTotal(StudentProfile profile) => conversations(profile)
-      .fold(0, (int sum, Conversation c) => sum + c.unread);
+  int unreadTotal(StudentProfile profile) => conversations(
+    profile,
+  ).fold(0, (int sum, Conversation c) => sum + c.unread);
 }
 
 extension _FirstOrNull<T> on Iterable<T> {

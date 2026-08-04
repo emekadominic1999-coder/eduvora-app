@@ -117,28 +117,28 @@ class StudentProfile {
   }
 
   StudentProfile withInstitution(Institution institution) => copyWith(
-        institutionName: institution.name,
-        institutionAbbreviation: institution.abbreviation,
-        institutionState: institution.state,
-        institutionType: institution.type,
-      );
+    institutionName: institution.name,
+    institutionAbbreviation: institution.abbreviation,
+    institutionState: institution.state,
+    institutionType: institution.type,
+  );
 
   Map<String, dynamic> toJson() => <String, dynamic>{
-        'id': id,
-        'full_name': fullName,
-        'email': email,
-        'avatar_url': avatarUrl,
-        'institution_name': institutionName,
-        'institution_abbreviation': institutionAbbreviation,
-        'institution_state': institutionState,
-        'institution_type': institutionType.name,
-        'faculty': faculty,
-        'department': department,
-        'level': level,
-        'matric_number': matricNumber,
-        'bio': bio,
-        'joined_at': (joinedAt ?? DateTime.now()).toIso8601String(),
-      };
+    'id': id,
+    'full_name': fullName,
+    'email': email,
+    'avatar_url': avatarUrl,
+    'institution_name': institutionName,
+    'institution_abbreviation': institutionAbbreviation,
+    'institution_state': institutionState,
+    'institution_type': institutionType.name,
+    'faculty': faculty,
+    'department': department,
+    'level': level,
+    'matric_number': matricNumber,
+    'bio': bio,
+    'joined_at': (joinedAt ?? DateTime.now()).toIso8601String(),
+  };
 
   factory StudentProfile.fromJson(Map<String, dynamic> json) {
     return StudentProfile(

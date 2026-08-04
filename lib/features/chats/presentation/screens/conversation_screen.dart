@@ -65,8 +65,9 @@ class _ConversationScreenState extends State<ConversationScreen> {
       senderName: sessionController.profile?.fullName ?? 'You',
     );
     setState(() => _messages = _repo.messages(widget.conversation.id));
-    WidgetsBinding.instance
-        .addPostFrameCallback((_) => _toBottom(animate: true));
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _toBottom(animate: true),
+    );
   }
 
   @override
@@ -157,7 +158,8 @@ class _ConversationScreenState extends State<ConversationScreen> {
                     itemCount: _messages.length,
                     itemBuilder: (BuildContext context, int index) {
                       final ChatMessage m = _messages[index];
-                      final bool showName = widget.conversation.isGroup &&
+                      final bool showName =
+                          widget.conversation.isGroup &&
                           !m.isMine &&
                           (index == 0 ||
                               _messages[index - 1].senderName != m.senderName);
@@ -215,8 +217,10 @@ class _ConversationScreenState extends State<ConversationScreen> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: AppRadii.xl,
-                    borderSide:
-                        BorderSide(color: AppColours.primary, width: 1.4),
+                    borderSide: BorderSide(
+                      color: AppColours.primary,
+                      width: 1.4,
+                    ),
                   ),
                 ),
               ),

@@ -45,12 +45,7 @@ class _GpaCalculatorScreenState extends State<GpaCalculatorScreen> {
   void _addCourse() {
     setState(() {
       _courses.add(
-        CourseEntry(
-          id: _uuid.v4(),
-          code: '',
-          creditUnits: 3,
-          grade: Grade.a,
-        ),
+        CourseEntry(id: _uuid.v4(), code: '', creditUnits: 3, grade: Grade.a),
       );
     });
   }
@@ -77,8 +72,10 @@ class _GpaCalculatorScreenState extends State<GpaCalculatorScreen> {
     final List<SemesterRecord> others = _saved
         .where((SemesterRecord s) => s.id != _editingId)
         .toList();
-    final int units =
-        others.fold(_totalUnits, (int sum, SemesterRecord s) => sum + s.totalUnits);
+    final int units = others.fold(
+      _totalUnits,
+      (int sum, SemesterRecord s) => sum + s.totalUnits,
+    );
     if (units == 0) return 0;
     final int points = others.fold(
       _totalPoints,
@@ -118,12 +115,7 @@ class _GpaCalculatorScreenState extends State<GpaCalculatorScreen> {
       _courses
         ..clear()
         ..add(
-          CourseEntry(
-            id: _uuid.v4(),
-            code: '',
-            creditUnits: 3,
-            grade: Grade.a,
-          ),
+          CourseEntry(id: _uuid.v4(), code: '', creditUnits: 3, grade: Grade.a),
         );
       _label.text = 'Semester ${_saved.length + 1}';
     });
@@ -543,10 +535,9 @@ class _GpaCalculatorScreenState extends State<GpaCalculatorScreen> {
               Text(
                 'First Class from 4.50 · Second Class Upper from 3.50 · '
                 'Second Class Lower from 2.40 · Third Class from 1.50',
-                style: Theme.of(context)
-                    .textTheme
-                    .bodySmall
-                    ?.copyWith(height: 1.6),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(height: 1.6),
               ),
             ],
           ),
@@ -683,8 +674,8 @@ class _CourseRowState extends State<_CourseRow> {
                   ),
                 ),
               ),
-              onChanged: (int? v) => widget
-                  .onChanged(widget.entry.copyWith(creditUnits: v ?? 1)),
+              onChanged: (int? v) =>
+                  widget.onChanged(widget.entry.copyWith(creditUnits: v ?? 1)),
             ),
           ),
           const SizedBox(width: AppSpacing.sm),
@@ -711,8 +702,8 @@ class _CourseRowState extends State<_CourseRow> {
                     ),
                   )
                   .toList(),
-              onChanged: (Grade? v) => widget
-                  .onChanged(widget.entry.copyWith(grade: v ?? Grade.a)),
+              onChanged: (Grade? v) =>
+                  widget.onChanged(widget.entry.copyWith(grade: v ?? Grade.a)),
             ),
           ),
           if (widget.canRemove)

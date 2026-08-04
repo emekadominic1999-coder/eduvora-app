@@ -75,57 +75,59 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
           Expanded(
             child: FutureBuilder<List<CommunityComment>>(
               future: _future,
-              builder: (
-                BuildContext context,
-                AsyncSnapshot<List<CommunityComment>> snapshot,
-              ) {
-                final List<CommunityComment> comments =
-                    snapshot.data ?? <CommunityComment>[];
+              builder:
+                  (
+                    BuildContext context,
+                    AsyncSnapshot<List<CommunityComment>> snapshot,
+                  ) {
+                    final List<CommunityComment> comments =
+                        snapshot.data ?? <CommunityComment>[];
 
-                return ListView(
-                  padding: const EdgeInsets.all(AppSpacing.screenPadding),
-                  children: <Widget>[
-                    PostCard(
-                      post: widget.post,
-                      liked: _liked.contains(widget.post.id),
-                      onLike: _toggleLike,
-                      onOpen: () {},
-                      expanded: true,
-                    ),
-                    const SizedBox(height: AppSpacing.xl),
-                    Row(
+                    return ListView(
+                      padding: const EdgeInsets.all(AppSpacing.screenPadding),
                       children: <Widget>[
-                        Text(
-                          comments.isEmpty
-                              ? 'No replies yet'
-                              : '${comments.length} '
-                                  '${comments.length == 1 ? 'reply' : 'replies'}',
-                          style: Theme.of(context).textTheme.titleSmall,
+                        PostCard(
+                          post: widget.post,
+                          liked: _liked.contains(widget.post.id),
+                          onLike: _toggleLike,
+                          onOpen: () {},
+                          expanded: true,
                         ),
+                        const SizedBox(height: AppSpacing.xl),
+                        Row(
+                          children: <Widget>[
+                            Text(
+                              comments.isEmpty
+                                  ? 'No replies yet'
+                                  : '${comments.length} '
+                                        '${comments.length == 1 ? 'reply' : 'replies'}',
+                              style: Theme.of(context).textTheme.titleSmall,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                        if (comments.isEmpty)
+                          const EmptyState(
+                            icon: Icons.chat_bubble_outline_rounded,
+                            title: 'Be the first to reply',
+                            message:
+                                'A short, kind answer is worth a great deal to '
+                                'whoever asked.',
+                            compact: true,
+                          )
+                        else
+                          ...comments.map(
+                            (CommunityComment c) => Padding(
+                              padding: const EdgeInsets.only(
+                                bottom: AppSpacing.sm,
+                              ),
+                              child: _CommentRow(comment: c),
+                            ),
+                          ),
+                        const SizedBox(height: AppSpacing.xl),
                       ],
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    if (comments.isEmpty)
-                      const EmptyState(
-                        icon: Icons.chat_bubble_outline_rounded,
-                        title: 'Be the first to reply',
-                        message:
-                            'A short, kind answer is worth a great deal to '
-                            'whoever asked.',
-                        compact: true,
-                      )
-                    else
-                      ...comments.map(
-                        (CommunityComment c) => Padding(
-                          padding:
-                              const EdgeInsets.only(bottom: AppSpacing.sm),
-                          child: _CommentRow(comment: c),
-                        ),
-                      ),
-                    const SizedBox(height: AppSpacing.xl),
-                  ],
-                );
-              },
+                    );
+                  },
             ),
           ),
           _composer(),
@@ -174,8 +176,10 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                   ),
                   focusedBorder: const OutlineInputBorder(
                     borderRadius: AppRadii.xl,
-                    borderSide:
-                        BorderSide(color: AppColours.primary, width: 1.4),
+                    borderSide: BorderSide(
+                      color: AppColours.primary,
+                      width: 1.4,
+                    ),
                   ),
                 ),
               ),
@@ -195,8 +199,9 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                           height: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(Colors.white),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
                           ),
                         )
                       : const Icon(

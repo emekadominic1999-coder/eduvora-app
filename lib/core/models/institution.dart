@@ -73,20 +73,20 @@ class Institution {
   }
 
   Map<String, dynamic> toJson() => <String, dynamic>{
-        'name': name,
-        'abbreviation': abbreviation,
-        'state': state,
-        'type': type.name,
-        'ownership': ownership.name,
-      };
+    'name': name,
+    'abbreviation': abbreviation,
+    'state': state,
+    'type': type.name,
+    'ownership': ownership.name,
+  };
 
   factory Institution.fromJson(Map<String, dynamic> json) => Institution(
-        name: (json['name'] ?? '') as String,
-        abbreviation: (json['abbreviation'] ?? '') as String,
-        state: (json['state'] ?? '') as String,
-        type: InstitutionType.fromName(json['type'] as String?),
-        ownership: Ownership.fromName(json['ownership'] as String?),
-      );
+    name: (json['name'] ?? '') as String,
+    abbreviation: (json['abbreviation'] ?? '') as String,
+    state: (json['state'] ?? '') as String,
+    type: InstitutionType.fromName(json['type'] as String?),
+    ownership: Ownership.fromName(json['ownership'] as String?),
+  );
 
   @override
   bool operator ==(Object other) =>

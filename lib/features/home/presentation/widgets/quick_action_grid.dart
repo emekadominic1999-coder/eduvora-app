@@ -23,6 +23,12 @@ class QuickActionGrid extends StatelessWidget {
       route: AppRouter.cbt,
     ),
     _Action(
+      label: 'Course\noutline',
+      icon: Icons.list_alt_rounded,
+      colour: Color(0xFF0891B2),
+      route: AppRouter.courses,
+    ),
+    _Action(
       label: 'GP\ncalculator',
       icon: Icons.calculate_rounded,
       colour: AppColours.success,
@@ -62,9 +68,9 @@ class QuickActionGrid extends StatelessWidget {
 
   void _go(BuildContext context, String route) {
     if (route == AppRouter.assistant) {
-      Navigator.of(context).push(
-        MaterialPageRoute<void>(builder: (_) => const AssistantScreen()),
-      );
+      Navigator.of(
+        context,
+      ).push(MaterialPageRoute<void>(builder: (_) => const AssistantScreen()));
       return;
     }
     AppRouter.go(context, route);
@@ -73,9 +79,7 @@ class QuickActionGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.screenPadding,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
       child: GridView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),

@@ -160,25 +160,18 @@ class EmptyState extends StatelessWidget {
               ),
             ),
             const SizedBox(height: AppSpacing.lg),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: text.titleMedium,
-            ),
+            Text(title, textAlign: TextAlign.center, style: text.titleMedium),
             const SizedBox(height: AppSpacing.sm),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: text.bodySmall,
-            ),
+            Text(message, textAlign: TextAlign.center, style: text.bodySmall),
             if (actionLabel != null && onAction != null) ...<Widget>[
               const SizedBox(height: AppSpacing.lg),
               FilledButton(
                 onPressed: onAction,
                 style: FilledButton.styleFrom(
                   minimumSize: const Size(0, 46),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.xl,
+                  ),
                 ),
                 child: Text(actionLabel!),
               ),
@@ -419,8 +412,7 @@ class FilterChipRow<T> extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color:
-                            isSelected ? Colors.white : AppColours.textMuted,
+                        color: isSelected ? Colors.white : AppColours.textMuted,
                       ),
                     ),
                   ],

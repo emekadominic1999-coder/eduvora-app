@@ -84,69 +84,75 @@ class _HomeScreenState extends State<HomeScreen>
             color: AppColours.primary,
             child: FutureBuilder<_DashboardData>(
               future: _future,
-              builder: (
-                BuildContext context,
-                AsyncSnapshot<_DashboardData> snapshot,
-              ) {
-                final _DashboardData data = snapshot.data ??
-                    const _DashboardData(
-                      videos: <AcademicVideo>[],
-                      news: <NewsItem>[],
-                    );
-                final bool loading =
-                    snapshot.connectionState == ConnectionState.waiting;
+              builder:
+                  (
+                    BuildContext context,
+                    AsyncSnapshot<_DashboardData> snapshot,
+                  ) {
+                    final _DashboardData data =
+                        snapshot.data ??
+                        const _DashboardData(
+                          videos: <AcademicVideo>[],
+                          news: <NewsItem>[],
+                        );
+                    final bool loading =
+                        snapshot.connectionState == ConnectionState.waiting;
 
-                return CustomScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  slivers: <Widget>[
-                    SliverToBoxAdapter(child: _Greeting(profile: profile)),
-                    SliverToBoxAdapter(child: _ProgressStrip(study: _study)),
-                    const SliverToBoxAdapter(
-                      child: SectionHeader(
-                        title: 'Everything you need',
-                        subtitle: 'Tap any tile to jump straight in',
-                      ),
-                    ),
-                    const SliverToBoxAdapter(child: QuickActionGrid()),
-                    SliverToBoxAdapter(
-                      child: SectionHeader(
-                        title: 'Latest for ${_shorten(profile.department)}',
-                        subtitle: profile.level.isEmpty
-                            ? 'Recorded lectures for your course'
-                            : '${profile.level} · recorded lectures',
-                        actionLabel: 'See all',
-                        onAction: () => Navigator.of(context)
-                            .pushNamed(AppRouter.videos),
-                      ),
-                    ),
-                    SliverToBoxAdapter(
-                      child: _VideoStrip(
-                        videos: data.videos.take(6).toList(),
-                        loading: loading,
-                      ),
-                    ),
-                    SliverToBoxAdapter(
-                      child: SectionHeader(
-                        title: 'Noticeboard',
-                        subtitle: 'Scholarships and opportunities worth a look',
-                        actionLabel: 'Open',
-                        onAction: () =>
-                            Navigator.of(context).pushNamed(AppRouter.news),
-                      ),
-                    ),
-                    SliverToBoxAdapter(
-                      child: _NewsStrip(
-                        items: data.news.take(5).toList(),
-                        loading: loading,
-                      ),
-                    ),
-                    const SliverToBoxAdapter(child: _AdaPrompt()),
-                    const SliverToBoxAdapter(
-                      child: SizedBox(height: AppSpacing.xxxl + 24),
-                    ),
-                  ],
-                );
-              },
+                    return CustomScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      slivers: <Widget>[
+                        SliverToBoxAdapter(child: _Greeting(profile: profile)),
+                        SliverToBoxAdapter(
+                          child: _ProgressStrip(study: _study),
+                        ),
+                        const SliverToBoxAdapter(
+                          child: SectionHeader(
+                            title: 'Everything you need',
+                            subtitle: 'Tap any tile to jump straight in',
+                          ),
+                        ),
+                        const SliverToBoxAdapter(child: QuickActionGrid()),
+                        SliverToBoxAdapter(
+                          child: SectionHeader(
+                            title: 'Latest for ${_shorten(profile.department)}',
+                            subtitle: profile.level.isEmpty
+                                ? 'Recorded lectures for your course'
+                                : '${profile.level} · recorded lectures',
+                            actionLabel: 'See all',
+                            onAction: () => Navigator.of(
+                              context,
+                            ).pushNamed(AppRouter.videos),
+                          ),
+                        ),
+                        SliverToBoxAdapter(
+                          child: _VideoStrip(
+                            videos: data.videos.take(6).toList(),
+                            loading: loading,
+                          ),
+                        ),
+                        SliverToBoxAdapter(
+                          child: SectionHeader(
+                            title: 'Noticeboard',
+                            subtitle:
+                                'Scholarships and opportunities worth a look',
+                            actionLabel: 'Open',
+                            onAction: () =>
+                                Navigator.of(context).pushNamed(AppRouter.news),
+                          ),
+                        ),
+                        SliverToBoxAdapter(
+                          child: _NewsStrip(
+                            items: data.news.take(5).toList(),
+                            loading: loading,
+                          ),
+                        ),
+                        const SliverToBoxAdapter(child: _AdaPrompt()),
+                        const SliverToBoxAdapter(
+                          child: SizedBox(height: AppSpacing.xxxl + 24),
+                        ),
+                      ],
+                    );
+                  },
             ),
           ),
         );
@@ -531,9 +537,7 @@ class _NewsStrip extends StatelessWidget {
     }
 
     return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.screenPadding,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
       child: Column(
         children: items.map((NewsItem item) {
           return Padding(
@@ -670,10 +674,7 @@ class _AdaPrompt extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(
-              Icons.chevron_right_rounded,
-              color: AppColours.primary,
-            ),
+            const Icon(Icons.chevron_right_rounded, color: AppColours.primary),
           ],
         ),
       ),

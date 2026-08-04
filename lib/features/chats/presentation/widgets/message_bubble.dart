@@ -26,8 +26,9 @@ class MessageBubble extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: Column(
-        crossAxisAlignment:
-            mine ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        crossAxisAlignment: mine
+            ? CrossAxisAlignment.end
+            : CrossAxisAlignment.start,
         children: <Widget>[
           if (showSenderName)
             Padding(
@@ -42,8 +43,9 @@ class MessageBubble extends StatelessWidget {
               ),
             ),
           Row(
-            mainAxisAlignment:
-                mine ? MainAxisAlignment.end : MainAxisAlignment.start,
+            mainAxisAlignment: mine
+                ? MainAxisAlignment.end
+                : MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.end,
             children: <Widget>[
               if (_isAssistant) ...<Widget>[
@@ -157,11 +159,7 @@ class _RichBody extends StatelessWidget {
       TextSpan(
         children: spans.isEmpty ? <TextSpan>[TextSpan(text: text)] : spans,
       ),
-      style: TextStyle(
-        fontSize: 14.5,
-        height: 1.55,
-        color: colour,
-      ),
+      style: TextStyle(fontSize: 14.5, height: 1.55, color: colour),
     );
   }
 }
