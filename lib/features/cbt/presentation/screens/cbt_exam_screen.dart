@@ -12,9 +12,13 @@ import 'cbt_result_screen.dart';
 /// The exam itself: a countdown, one question at a time, a jump grid and
 /// flags for questions worth revisiting.
 class CbtExamScreen extends StatefulWidget {
-  const CbtExamScreen({super.key, required this.subject});
+  const CbtExamScreen({super.key, required this.subject, this.config});
 
   final CbtSubject subject;
+
+  /// How the student chose to sit this paper. Falls back to the paper's own
+  /// standard settings when the screen is opened without a choice.
+  final CbtExamConfig? config;
 
   @override
   State<CbtExamScreen> createState() => _CbtExamScreenState();
@@ -27,18 +31,21 @@ class _CbtExamScreenState extends State<CbtExamScreen> {
   final Map<String, int> _answers = <String, int>{};
   final Set<String> _flagged = <String>{};
 
+  late final CbtExamConfig _config;
+  late final List<CbtQuestion> _questions;
   late final int _totalSeconds;
   late int _remaining;
   Timer? _timer;
   int _index = 0;
   bool _submitted = false;
 
-  List<CbtQuestion> get _questions => widget.subject.questions;
-
   @override
   void initState() {
     super.initState();
-    _totalSeconds = widget.subject.minutesPerAttempt * 60;
+    _config = widget.config ?? CbtExamConfig.standard(widget.subject);
+    // Built once, so the paper cannot reshuffle underneath the student.
+    _questions = _config.buildPaper(widget.subject);
+    _totalSeconds = _config.minutes * 60;
     _remaining = _totalSeconds;
     _timer = Timer.periodic(const Duration(seconds: 1), _tick);
   }
@@ -87,9 +94,9 @@ class _CbtExamScreenState extends State<CbtExamScreen> {
             content: Text(
               unanswered == 1
                   ? 'You have one question still unanswered. Would you like to '
-                      'go back to it, or submit as you are?'
+                        'go back to it, or submit as you are?'
                   : 'You have $unanswered questions still unanswered. Would '
-                      'you like to go back to them, or submit as you are?',
+                        'you like to go back to them, or submit as you are?',
             ),
             actions: <Widget>[
               TextButton(
@@ -136,6 +143,8 @@ class _CbtExamScreenState extends State<CbtExamScreen> {
         builder: (_) => CbtResultScreen(
           subject: widget.subject,
           attempt: attempt,
+          questions: _questions,
+          config: _config,
           autoSubmitted: auto,
         ),
       ),
@@ -224,8 +233,7 @@ class _CbtExamScreenState extends State<CbtExamScreen> {
                   Icon(
                     Icons.timer_outlined,
                     size: 15,
-                    color:
-                        _lowTime ? AppColours.danger : AppColours.primary,
+                    color: _lowTime ? AppColours.danger : AppColours.primary,
                   ),
                   const SizedBox(width: 5),
                   Text(
@@ -236,8 +244,7 @@ class _CbtExamScreenState extends State<CbtExamScreen> {
                       fontFeatures: const <FontFeature>[
                         FontFeature.tabularFigures(),
                       ],
-                      color:
-                          _lowTime ? AppColours.danger : AppColours.primary,
+                      color: _lowTime ? AppColours.danger : AppColours.primary,
                     ),
                   ),
                 ],
@@ -285,8 +292,9 @@ class _CbtExamScreenState extends State<CbtExamScreen> {
               value: fraction,
               minHeight: 6,
               backgroundColor: AppColours.border,
-              valueColor:
-                  const AlwaysStoppedAnimation<Color>(AppColours.primary),
+              valueColor: const AlwaysStoppedAnimation<Color>(
+                AppColours.primary,
+              ),
             ),
           ),
           const SizedBox(height: 7),
@@ -402,8 +410,9 @@ class _CbtExamScreenState extends State<CbtExamScreen> {
                 size: 17,
               ),
               style: TextButton.styleFrom(
-                foregroundColor:
-                    flagged ? AppColours.warning : AppColours.textMuted,
+                foregroundColor: flagged
+                    ? AppColours.warning
+                    : AppColours.textMuted,
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 minimumSize: const Size(0, 34),
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -454,8 +463,7 @@ class _CbtExamScreenState extends State<CbtExamScreen> {
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w800,
-                        color:
-                            active ? Colors.white : AppColours.textMuted,
+                        color: active ? Colors.white : AppColours.textMuted,
                       ),
                     ),
                   ),
@@ -468,8 +476,9 @@ class _CbtExamScreenState extends State<CbtExamScreen> {
                         style: TextStyle(
                           fontSize: 14.5,
                           height: 1.45,
-                          fontWeight:
-                              active ? FontWeight.w600 : FontWeight.w400,
+                          fontWeight: active
+                              ? FontWeight.w600
+                              : FontWeight.w400,
                           color: active
                               ? AppColours.primaryDeep
                               : AppColours.text,

@@ -7,6 +7,7 @@ import '../../../../core/services/study_repository.dart';
 import '../../../../core/state/session_controller.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/common.dart';
+import '../widgets/exam_setup_sheet.dart';
 import 'cbt_exam_screen.dart';
 
 /// The CBT lobby: papers relevant to the student, plus their own record.
@@ -50,8 +51,14 @@ class _CbtHomeScreenState extends State<CbtHomeScreen> {
   }
 
   Future<void> _start(CbtSubject subject) async {
+    // Ask how they want to sit it before the clock starts.
+    final CbtExamConfig? config = await showExamSetupSheet(context, subject);
+    if (config == null || !mounted) return;
+
     final bool? completed = await Navigator.of(context).push<bool>(
-      MaterialPageRoute<bool>(builder: (_) => CbtExamScreen(subject: subject)),
+      MaterialPageRoute<bool>(
+        builder: (_) => CbtExamScreen(subject: subject, config: config),
+      ),
     );
     if ((completed ?? false) && mounted) setState(() {});
   }

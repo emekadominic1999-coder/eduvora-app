@@ -16,11 +16,20 @@ class CbtResultScreen extends StatelessWidget {
     super.key,
     required this.subject,
     required this.attempt,
+    required this.questions,
+    this.config,
     this.autoSubmitted = false,
   });
 
   final CbtSubject subject;
   final CbtAttempt attempt;
+
+  /// The paper as actually sat — after any shuffling or shortening — so the
+  /// review matches what the student saw rather than the original order.
+  final List<CbtQuestion> questions;
+
+  /// Carried through so "Try again" repeats the same settings.
+  final CbtExamConfig? config;
   final bool autoSubmitted;
 
   Color get _colour {
@@ -94,7 +103,8 @@ class CbtResultScreen extends StatelessWidget {
                   child: FilledButton(
                     onPressed: () => Navigator.of(context).pushReplacement(
                       MaterialPageRoute<void>(
-                        builder: (_) => CbtExamScreen(subject: subject),
+                        builder: (_) =>
+                            CbtExamScreen(subject: subject, config: config),
                       ),
                     ),
                     child: const Text('Try again'),
@@ -154,9 +164,8 @@ class CbtResultScreen extends StatelessWidget {
                 horizontal: AppSpacing.screenPadding,
               ),
               child: Column(
-                children: List<Widget>.generate(subject.questions.length,
-                    (int index) {
-                  final CbtQuestion q = subject.questions[index];
+                children: List<Widget>.generate(questions.length, (int index) {
+                  final CbtQuestion q = questions[index];
                   return Padding(
                     padding: const EdgeInsets.only(bottom: AppSpacing.md),
                     child: _ReviewCard(
@@ -322,10 +331,7 @@ class _MetricCell extends StatelessWidget {
         ),
         Text(
           label,
-          style: const TextStyle(
-            fontSize: 11,
-            color: AppColours.textMuted,
-          ),
+          style: const TextStyle(fontSize: 11, color: AppColours.textMuted),
         ),
       ],
     );
@@ -370,9 +376,7 @@ class _ReviewCard extends StatelessWidget {
                 child: Icon(
                   _skipped
                       ? Icons.remove_rounded
-                      : (_correct
-                          ? Icons.check_rounded
-                          : Icons.close_rounded),
+                      : (_correct ? Icons.check_rounded : Icons.close_rounded),
                   size: 15,
                   color: statusColour,
                 ),
@@ -441,14 +445,12 @@ class _ReviewCard extends StatelessWidget {
               );
             }
 
-            final Color colour =
-                isCorrect ? AppColours.success : AppColours.danger;
+            final Color colour = isCorrect
+                ? AppColours.success
+                : AppColours.danger;
             return Container(
               margin: const EdgeInsets.only(bottom: 6),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 10,
-                vertical: 8,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               decoration: BoxDecoration(
                 color: colour.withValues(alpha: 0.08),
                 borderRadius: AppRadii.sm,
