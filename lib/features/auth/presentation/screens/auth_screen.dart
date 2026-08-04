@@ -237,6 +237,10 @@ class _AuthScreenState extends State<AuthScreen> {
       shadows: AppShadows.raised,
       child: Form(
         key: _formKey,
+        // Once a field has been touched, re-validate it live as the student
+        // types rather than leaving a stale error (e.g. "passwords do not
+        // match") sitting there after they've already fixed it.
+        autovalidateMode: AutovalidateMode.onUserInteraction,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
@@ -284,38 +288,57 @@ class _AuthScreenState extends State<AuthScreen> {
             ),
             const SizedBox(height: AppSpacing.lg),
             _label('Password'),
-            PasswordField(
-              controller: _password,
-              hint: _isSignIn ? 'Enter your password' : 'At least 6 characters',
-              textInputAction:
-                  _isSignIn ? TextInputAction.done : TextInputAction.next,
-              onSubmitted: _isSignIn ? (_) => _submit() : null,
-              showStrength: !_isSignIn,
-              validator: (String? value) {
-                final String v = value ?? '';
-                if (v.isEmpty) return 'Please enter your password.';
-                if (!_isSignIn && v.length < 6) {
-                  return 'Use at least six characters to keep your account safe.';
-                }
-                return null;
-              },
-            ),
-            if (!_isSignIn) ...<Widget>[
-              const SizedBox(height: AppSpacing.lg),
-              _label('Confirm password'),
-              PasswordField(
-                controller: _confirm,
-                hint: 'Type it once more',
-                textInputAction: TextInputAction.done,
-                onSubmitted: (_) => _submit(),
-                validator: (String? value) {
-                  if ((value ?? '') != _password.text) {
-                    return 'The two passwords do not match.';
-                  }
-                  return null;
-                },
+            // The password and confirm fields are wrapped in their own
+            // AutofillGroup, and use the "new password" hint rather than
+            // "password" (which means *current* password). Two sibling
+            // fields both hinted as the current password confuses some
+            // browsers' password managers into intercepting keystrokes meant
+            // for the second field.
+            AutofillGroup(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  PasswordField(
+                    controller: _password,
+                    hint: _isSignIn
+                        ? 'Enter your password'
+                        : 'At least 6 characters',
+                    textInputAction:
+                        _isSignIn ? TextInputAction.done : TextInputAction.next,
+                    onSubmitted: _isSignIn ? (_) => _submit() : null,
+                    showStrength: !_isSignIn,
+                    autofillHint: _isSignIn
+                        ? AutofillHints.password
+                        : AutofillHints.newPassword,
+                    validator: (String? value) {
+                      final String v = value ?? '';
+                      if (v.isEmpty) return 'Please enter your password.';
+                      if (!_isSignIn && v.length < 6) {
+                        return 'Use at least six characters to keep your account safe.';
+                      }
+                      return null;
+                    },
+                  ),
+                  if (!_isSignIn) ...<Widget>[
+                    const SizedBox(height: AppSpacing.lg),
+                    _label('Confirm password'),
+                    PasswordField(
+                      controller: _confirm,
+                      hint: 'Type it once more',
+                      textInputAction: TextInputAction.done,
+                      onSubmitted: (_) => _submit(),
+                      autofillHint: AutofillHints.newPassword,
+                      validator: (String? value) {
+                        if ((value ?? '') != _password.text) {
+                          return 'The two passwords do not match.';
+                        }
+                        return null;
+                      },
+                    ),
+                  ],
+                ],
               ),
-            ],
+            ),
             const SizedBox(height: AppSpacing.md),
             if (_isSignIn) _rememberRow(text) else _agreeRow(text),
             if (_error != null) ...<Widget>[
