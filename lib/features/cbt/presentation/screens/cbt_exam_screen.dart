@@ -6,6 +6,7 @@ import '../../../../core/models/cbt.dart';
 import '../../../../core/services/study_repository.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/common.dart';
+import '../../../../core/widgets/math_text.dart';
 import 'cbt_result_screen.dart';
 
 /// The exam itself: a countdown, one question at a time, a jump grid and
@@ -412,7 +413,7 @@ class _CbtExamScreenState extends State<CbtExamScreen> {
           ],
         ),
         const SizedBox(height: AppSpacing.md),
-        Text(
+        MathText(
           _stripMarkdown(question.question),
           style: const TextStyle(
             fontSize: 17,
@@ -462,7 +463,7 @@ class _CbtExamScreenState extends State<CbtExamScreen> {
                   Expanded(
                     child: Padding(
                       padding: const EdgeInsets.only(top: 4),
-                      child: Text(
+                      child: MathText(
                         question.options[i],
                         style: TextStyle(
                           fontSize: 14.5,

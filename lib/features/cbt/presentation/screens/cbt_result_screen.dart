@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/models/cbt.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/common.dart';
+import '../../../../core/widgets/math_text.dart';
 import 'cbt_exam_screen.dart';
 
 /// The score report and full answer review.
@@ -396,7 +397,7 @@ class _ReviewCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AppSpacing.md),
-          Text(
+          MathText(
             question.question.replaceAll('**', ''),
             style: const TextStyle(
               fontSize: 14.5,
@@ -426,7 +427,7 @@ class _ReviewCard extends StatelessWidget {
                       ),
                     ),
                     Expanded(
-                      child: Text(
+                      child: MathText(
                         question.options[i],
                         style: const TextStyle(
                           fontSize: 12.5,
@@ -465,7 +466,7 @@ class _ReviewCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 7),
                   Expanded(
-                    child: Text(
+                    child: MathText(
                       question.options[i],
                       style: TextStyle(
                         fontSize: 12.5,
@@ -506,7 +507,7 @@ class _ReviewCard extends StatelessWidget {
                   ),
                   const SizedBox(width: AppSpacing.sm),
                   Expanded(
-                    child: Text(
+                    child: MathText(
                       question.explanation,
                       style: const TextStyle(
                         fontSize: 12.5,
