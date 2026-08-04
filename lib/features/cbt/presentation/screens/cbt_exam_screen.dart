@@ -425,7 +425,7 @@ class _CbtExamScreenState extends State<CbtExamScreen> {
         MathText(
           _stripMarkdown(question.question),
           style: const TextStyle(
-            fontSize: 17,
+            fontSize: 20,
             height: 1.5,
             fontWeight: FontWeight.w600,
             color: AppColours.text,
@@ -449,8 +449,8 @@ class _CbtExamScreenState extends State<CbtExamScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   Container(
-                    width: 28,
-                    height: 28,
+                    width: 32,
+                    height: 32,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       color: active
@@ -461,7 +461,7 @@ class _CbtExamScreenState extends State<CbtExamScreen> {
                     child: Text(
                       CbtQuestion.letterFor(i),
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: 15,
                         fontWeight: FontWeight.w800,
                         color: active ? Colors.white : AppColours.textMuted,
                       ),
@@ -470,11 +470,11 @@ class _CbtExamScreenState extends State<CbtExamScreen> {
                   const SizedBox(width: AppSpacing.md),
                   Expanded(
                     child: Padding(
-                      padding: const EdgeInsets.only(top: 4),
+                      padding: const EdgeInsets.only(top: 5),
                       child: MathText(
                         question.options[i],
                         style: TextStyle(
-                          fontSize: 14.5,
+                          fontSize: 17,
                           height: 1.45,
                           fontWeight: active
                               ? FontWeight.w600

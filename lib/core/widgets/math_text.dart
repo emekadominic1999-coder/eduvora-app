@@ -22,11 +22,19 @@ class MathText extends StatelessWidget {
     super.key,
     this.style,
     this.textAlign = TextAlign.start,
+    this.mathScale = 1.12,
   });
 
   final String text;
   final TextStyle? style;
   final TextAlign textAlign;
+
+  /// Formulae are drawn slightly larger than the surrounding prose.
+  ///
+  /// Maths sets optically smaller than text at the same point size —
+  /// subscripts, fraction bars and radicals all shrink — so a small bump
+  /// keeps a formula reading at the same weight as the sentence around it.
+  final double mathScale;
 
   /// Matches a balanced `$…$` pair with no dollar sign inside it.
   static final RegExp _maths = RegExp(r'\$([^$]+)\$');
@@ -63,17 +71,21 @@ class MathText extends StatelessWidget {
       }
 
       final String expression = match.group(1)!;
+      final TextStyle mathsStyle = style.copyWith(
+        fontSize: (style.fontSize ?? 14) * mathScale,
+      );
+
       spans.add(
         WidgetSpan(
           alignment: PlaceholderAlignment.middle,
           baseline: TextBaseline.alphabetic,
           child: Math.tex(
             expression,
-            textStyle: style,
+            textStyle: mathsStyle,
             mathStyle: MathStyle.text,
             onErrorFallback: (FlutterMathException _) => Text(
               '\$$expression\$',
-              style: style.copyWith(color: AppColours.danger),
+              style: mathsStyle.copyWith(color: AppColours.danger),
             ),
           ),
         ),

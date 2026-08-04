@@ -404,7 +404,7 @@ class _ReviewCard extends StatelessWidget {
           MathText(
             question.question.replaceAll('**', ''),
             style: const TextStyle(
-              fontSize: 14.5,
+              fontSize: 16.5,
               height: 1.5,
               fontWeight: FontWeight.w600,
               color: AppColours.text,
@@ -421,11 +421,11 @@ class _ReviewCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     SizedBox(
-                      width: 20,
+                      width: 22,
                       child: Text(
                         '${CbtQuestion.letterFor(i)}.',
                         style: const TextStyle(
-                          fontSize: 12.5,
+                          fontSize: 14.5,
                           color: AppColours.textFaint,
                         ),
                       ),
@@ -434,7 +434,7 @@ class _ReviewCard extends StatelessWidget {
                       child: MathText(
                         question.options[i],
                         style: const TextStyle(
-                          fontSize: 12.5,
+                          fontSize: 14.5,
                           height: 1.45,
                           color: AppColours.textMuted,
                         ),
@@ -471,7 +471,7 @@ class _ReviewCard extends StatelessWidget {
                     child: MathText(
                       question.options[i],
                       style: TextStyle(
-                        fontSize: 12.5,
+                        fontSize: 14.5,
                         height: 1.45,
                         fontWeight: FontWeight.w600,
                         color: colour,
@@ -512,7 +512,7 @@ class _ReviewCard extends StatelessWidget {
                     child: MathText(
                       question.explanation,
                       style: const TextStyle(
-                        fontSize: 12.5,
+                        fontSize: 14,
                         height: 1.55,
                         color: AppColours.primaryDeep,
                       ),
