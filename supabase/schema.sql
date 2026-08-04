@@ -325,6 +325,47 @@ create policy "students own their attempts"
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
 
+-- ------------------------------------------------------------- cbt_questions
+-- Real past-question banks, one row per question. The app groups rows by
+-- subject_id into a paper (a CbtSubject) and filters by faculty, exactly the
+-- way the bundled starter bank does — the difference is these rows can be
+-- added at any time from the Supabase Table Editor or SQL Editor, with no
+-- app rebuild required.
+create table if not exists public.cbt_questions (
+  id              uuid primary key default gen_random_uuid(),
+  subject_id      text not null,
+  subject_name    text not null,
+  institution     text not null default '',
+  faculty         text not null default '',
+  department      text not null default '',
+  level           text not null default '',
+  question        text not null,
+  options         jsonb not null,
+  correct_index   integer not null,
+  explanation     text not null default '',
+  topic           text not null default '',
+  is_general      boolean not null default false,
+  created_by      uuid references auth.users (id) on delete set null,
+  created_at      timestamptz not null default now()
+);
+
+create index if not exists cbt_questions_subject_idx on public.cbt_questions (subject_id);
+create index if not exists cbt_questions_faculty_idx on public.cbt_questions (faculty);
+
+alter table public.cbt_questions enable row level security;
+
+drop policy if exists "cbt questions are readable by authenticated users" on public.cbt_questions;
+create policy "cbt questions are readable by authenticated users"
+  on public.cbt_questions for select
+  to authenticated
+  using (true);
+
+drop policy if exists "authenticated users contribute cbt questions" on public.cbt_questions;
+create policy "authenticated users contribute cbt questions"
+  on public.cbt_questions for insert
+  to authenticated
+  with check (true);
+
 -- ---------------------------------------------------------------------- news
 create table if not exists public.news (
   id           uuid primary key default gen_random_uuid(),

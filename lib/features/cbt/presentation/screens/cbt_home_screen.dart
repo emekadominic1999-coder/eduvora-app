@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/data/cbt_question_bank.dart';
 import '../../../../core/models/cbt.dart';
 import '../../../../core/models/student_profile.dart';
+import '../../../../core/services/cbt_repository.dart';
 import '../../../../core/services/study_repository.dart';
 import '../../../../core/state/session_controller.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -19,8 +19,35 @@ class CbtHomeScreen extends StatefulWidget {
 
 class _CbtHomeScreenState extends State<CbtHomeScreen> {
   static const StudyRepository _study = StudyRepository();
+  static const CbtRepository _cbt = CbtRepository();
 
   bool _showAllPapers = false;
+  late Future<List<CbtSubject>> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = _load();
+  }
+
+  Future<List<CbtSubject>> _load() {
+    final StudentProfile? profile = sessionController.profile;
+    return _showAllPapers
+        ? _cbt.all()
+        : _cbt.forFaculty(profile?.faculty ?? '');
+  }
+
+  void _toggleShowAll() {
+    setState(() {
+      _showAllPapers = !_showAllPapers;
+      _future = _load();
+    });
+  }
+
+  Future<void> _refresh() async {
+    setState(() => _future = _load());
+    await _future;
+  }
 
   Future<void> _start(CbtSubject subject) async {
     final bool? completed = await Navigator.of(context).push<bool>(
@@ -32,10 +59,6 @@ class _CbtHomeScreenState extends State<CbtHomeScreen> {
   @override
   Widget build(BuildContext context) {
     final StudentProfile? profile = sessionController.profile;
-    final List<CbtSubject> papers = _showAllPapers
-        ? CbtQuestionBank.subjects
-        : CbtQuestionBank.forFaculty(profile?.faculty ?? '');
-
     final List<CbtAttempt> attempts = _study.attempts();
     final double average = _study.averageScore();
 
@@ -43,69 +66,110 @@ class _CbtHomeScreenState extends State<CbtHomeScreen> {
       backgroundColor: AppColours.background,
       appBar: AppBar(
         title: const Text('CBT practice'),
+        actions: <Widget>[
+          IconButton(
+            onPressed: _refresh,
+            icon: const Icon(Icons.refresh_rounded),
+            tooltip: 'Refresh',
+          ),
+          const SizedBox(width: 4),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
           child: Container(height: 1, color: AppColours.border),
         ),
       ),
-      body: ListView(
-        padding: const EdgeInsets.only(bottom: AppSpacing.xxl),
-        children: <Widget>[
-          _summary(attempts.length, average),
-          SectionHeader(
-            title: _showAllPapers ? 'All papers' : 'Papers for you',
-            subtitle: _showAllPapers
-                ? 'Every paper in the Eduvora bank'
-                : 'Matched to ${profile?.faculty.isNotEmpty == true ? profile!.faculty : 'your faculty'}',
-            actionLabel: _showAllPapers ? 'Show mine' : 'Show all',
-            onAction: () => setState(() => _showAllPapers = !_showAllPapers),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.screenPadding,
-            ),
-            child: Column(
-              children: papers.map((CbtSubject s) {
-                final CbtAttempt? best = _study.bestAttemptFor(s.id);
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: AppSpacing.md),
-                  child: _PaperCard(
-                    subject: s,
-                    best: best,
-                    onStart: () => _start(s),
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
-          if (attempts.isNotEmpty) ...<Widget>[
-            const SectionHeader(
-              title: 'Your record',
-              subtitle: 'Every paper you have sat, most recent first',
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.screenPadding,
-              ),
-              child: Column(
-                children: attempts
-                    .take(12)
-                    .map(
-                      (CbtAttempt a) => Padding(
-                        padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                        child: _AttemptRow(attempt: a),
+      body: RefreshIndicator(
+        onRefresh: _refresh,
+        color: AppColours.primary,
+        child: FutureBuilder<List<CbtSubject>>(
+          future: _future,
+          builder:
+              (BuildContext context, AsyncSnapshot<List<CbtSubject>> snapshot) {
+                final List<CbtSubject> papers = snapshot.data ?? <CbtSubject>[];
+                final bool loading =
+                    snapshot.connectionState == ConnectionState.waiting;
+
+                return ListView(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.xxl),
+                  children: <Widget>[
+                    _summary(
+                      attempts.length,
+                      average,
+                      papers.fold(
+                        0,
+                        (int sum, CbtSubject s) => sum + s.questions.length,
                       ),
-                    )
-                    .toList(),
-              ),
-            ),
-          ],
-        ],
+                    ),
+                    SectionHeader(
+                      title: _showAllPapers ? 'All papers' : 'Papers for you',
+                      subtitle: _showAllPapers
+                          ? 'Every paper in the Eduvora bank'
+                          : 'Matched to ${profile?.faculty.isNotEmpty == true ? profile!.faculty : 'your faculty'}',
+                      actionLabel: _showAllPapers ? 'Show mine' : 'Show all',
+                      onAction: _toggleShowAll,
+                    ),
+                    if (loading && papers.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: AppSpacing.xxl),
+                        child: Center(child: CircularProgressIndicator()),
+                      )
+                    else
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.screenPadding,
+                        ),
+                        child: Column(
+                          children: papers.map((CbtSubject s) {
+                            final CbtAttempt? best = _study.bestAttemptFor(
+                              s.id,
+                            );
+                            return Padding(
+                              padding: const EdgeInsets.only(
+                                bottom: AppSpacing.md,
+                              ),
+                              child: _PaperCard(
+                                subject: s,
+                                best: best,
+                                onStart: () => _start(s),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    if (attempts.isNotEmpty) ...<Widget>[
+                      const SectionHeader(
+                        title: 'Your record',
+                        subtitle: 'Every paper you have sat, most recent first',
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.screenPadding,
+                        ),
+                        child: Column(
+                          children: attempts
+                              .take(12)
+                              .map(
+                                (CbtAttempt a) => Padding(
+                                  padding: const EdgeInsets.only(
+                                    bottom: AppSpacing.sm,
+                                  ),
+                                  child: _AttemptRow(attempt: a),
+                                ),
+                              )
+                              .toList(),
+                        ),
+                      ),
+                    ],
+                  ],
+                );
+              },
+        ),
       ),
     );
   }
 
-  Widget _summary(int papers, double average) {
+  Widget _summary(int papers, double average, int totalQuestions) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.screenPadding,
@@ -160,10 +224,7 @@ class _CbtHomeScreenState extends State<CbtHomeScreen> {
                   label: 'average score',
                 ),
                 const SizedBox(width: AppSpacing.xl),
-                _MiniStat(
-                  value: '${CbtQuestionBank.totalQuestions}',
-                  label: 'in the bank',
-                ),
+                _MiniStat(value: '$totalQuestions', label: 'in the bank'),
               ],
             ),
           ],
@@ -231,10 +292,11 @@ class _PaperCard extends StatelessWidget {
                 width: 42,
                 height: 42,
                 decoration: BoxDecoration(
-                  color: (subject.isGeneralStudies
-                          ? AppColours.accent
-                          : AppColours.primary)
-                      .withValues(alpha: 0.12),
+                  color:
+                      (subject.isGeneralStudies
+                              ? AppColours.accent
+                              : AppColours.primary)
+                          .withValues(alpha: 0.12),
                   borderRadius: AppRadii.sm,
                 ),
                 child: Icon(
@@ -259,10 +321,9 @@ class _PaperCard extends StatelessWidget {
                     const SizedBox(height: 3),
                     Text(
                       subject.description,
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodySmall
-                          ?.copyWith(height: 1.5),
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodySmall?.copyWith(height: 1.5),
                     ),
                   ],
                 ),
