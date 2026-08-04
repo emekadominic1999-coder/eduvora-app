@@ -1,0 +1,19 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "eduvora-web",
+      "runtimeExecutable": "flutter",
+      "runtimeArgs": [
+        "run",
+        "-d",
+        "web-server",
+        "--web-hostname",
+        "127.0.0.1",
+        "--web-port",
+        "8123"
+      ],
+      "port": 8123
+    }
+  ]
+}

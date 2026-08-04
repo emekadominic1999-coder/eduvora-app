@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell($py = \\(Get-Command python -ErrorAction SilentlyContinue\\).Source; Write-Output \"python: $py\"; $py3 = \\(Get-Command python3 -ErrorAction SilentlyContinue\\).Source; Write-Output \"python3: $py3\"; $fl = \\(Get-Command flutter -ErrorAction SilentlyContinue\\).Source; Write-Output \"flutter: $fl\"; $dt = \\(Get-Command dart -ErrorAction SilentlyContinue\\).Source; Write-Output \"dart: $dt\"; $gt = \\(Get-Command git -ErrorAction SilentlyContinue\\).Source; Write-Output \"git: $gt\")"
+    ]
+  }
+}
