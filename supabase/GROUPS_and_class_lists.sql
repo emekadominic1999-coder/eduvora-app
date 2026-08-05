@@ -6,15 +6,141 @@
 -- Adds real, student-created study groups (joined by a short code) and class
 -- lists. Creating a class list also creates its group, so a course rep can set
 -- the class up once and have somewhere for everyone to talk immediately.
+--
+-- Order matters here: every table is created first, then the helper functions
+-- that read them, then the policies that call those functions. Postgres checks
+-- the body of a SQL function when it is created, so a function defined above
+-- its tables fails outright.
 -- =============================================================================
 
 create extension if not exists "pgcrypto";
 
--- -------------------------------------------------------------- admin check
+-- =============================================================================
+-- 1. TABLES
+-- =============================================================================
+
+-- ------------------------------------------------------------- chat_groups
+create table if not exists public.chat_groups (
+  id           uuid primary key default gen_random_uuid(),
+  name         text not null,
+  description  text not null default '',
+  join_code    text not null unique,
+  institution  text not null default '',
+  faculty      text not null default '',
+  department   text not null default '',
+  level        text not null default '',
+  course_code  text not null default '',
+  created_by   uuid references auth.users (id) on delete set null,
+  creator_name text not null default '',
+  -- Set when the group was spun up automatically from a class list.
+  class_list_id uuid,
+  created_at   timestamptz not null default now()
+);
+
+create index if not exists groups_code_idx on public.chat_groups (join_code);
+create index if not exists groups_dept_idx
+  on public.chat_groups (institution, department, level);
+
+alter table public.chat_groups enable row level security;
+
+-- ------------------------------------------------------ chat_group_members
+create table if not exists public.chat_group_members (
+  id         uuid primary key default gen_random_uuid(),
+  group_id   uuid not null references public.chat_groups (id) on delete cascade,
+  user_id    uuid not null references auth.users (id) on delete cascade,
+  full_name  text not null default '',
+  headline   text not null default '',
+  is_admin   boolean not null default false,
+  joined_at  timestamptz not null default now(),
+  unique (group_id, user_id)
+);
+
+create index if not exists members_group_idx on public.chat_group_members (group_id);
+create index if not exists members_user_idx on public.chat_group_members (user_id);
+
+alter table public.chat_group_members enable row level security;
+
+-- ----------------------------------------------------- chat_group_messages
+create table if not exists public.chat_group_messages (
+  id          uuid primary key default gen_random_uuid(),
+  group_id    uuid not null references public.chat_groups (id) on delete cascade,
+  author_id   uuid references auth.users (id) on delete set null,
+  author_name text not null default '',
+  body        text not null,
+  -- Lets a message be flagged as a question so the group can filter to them.
+  is_question boolean not null default false,
+  -- The message this one replies to. Kept as a plain uuid with the author and
+  -- body copied alongside, so a quoted reply still reads correctly after the
+  -- original is deleted.
+  reply_to_id     uuid,
+  reply_to_author text not null default '',
+  reply_to_body   text not null default '',
+  -- Deleting keeps the row and blanks the body, so the thread does not lose
+  -- its shape and a reply above it still makes sense.
+  deleted_at  timestamptz,
+  sent_at     timestamptz not null default now()
+);
+
+-- For anyone who ran an earlier version of this file.
+alter table public.chat_group_messages
+  add column if not exists reply_to_id uuid,
+  add column if not exists reply_to_author text not null default '',
+  add column if not exists reply_to_body text not null default '',
+  add column if not exists deleted_at timestamptz;
+
+create index if not exists group_messages_idx
+  on public.chat_group_messages (group_id, sent_at);
+
+alter table public.chat_group_messages enable row level security;
+
+-- ------------------------------------------------------------- class_lists
+create table if not exists public.class_lists (
+  id           uuid primary key default gen_random_uuid(),
+  name         text not null,
+  institution  text not null default '',
+  faculty      text not null default '',
+  department   text not null default '',
+  level        text not null default '',
+  session      text not null default '',
+  owner_id     uuid references auth.users (id) on delete set null,
+  owner_name   text not null default '',
+  -- The group created alongside this list.
+  group_id     uuid references public.chat_groups (id) on delete set null,
+  created_at   timestamptz not null default now()
+);
+
+create index if not exists class_lists_owner_idx on public.class_lists (owner_id);
+create index if not exists class_lists_dept_idx
+  on public.class_lists (institution, department, level);
+
+alter table public.class_lists enable row level security;
+
+-- ----------------------------------------------------- class_list_entries
+create table if not exists public.class_list_entries (
+  id            uuid primary key default gen_random_uuid(),
+  class_list_id uuid not null references public.class_lists (id) on delete cascade,
+  full_name     text not null,
+  matric_number text not null default '',
+  email         text not null default '',
+  phone         text not null default '',
+  note          text not null default '',
+  position      integer not null default 0,
+  created_at    timestamptz not null default now()
+);
+
+create index if not exists entries_list_idx
+  on public.class_list_entries (class_list_id, position);
+
+alter table public.class_list_entries enable row level security;
+
+-- =============================================================================
+-- 2. HELPER FUNCTIONS
+-- =============================================================================
 -- Asking "is this person an admin of that group?" means reading
 -- chat_group_members, and a policy ON chat_group_members that reads
 -- chat_group_members recurses forever. security definer breaks the loop: the
 -- function runs as its owner and skips RLS, so the policies below can call it.
+
 create or replace function public.is_group_admin(gid uuid)
 returns boolean
 language sql
@@ -43,35 +169,30 @@ as $$
   );
 $$;
 
+-- Who created a group. Used to protect the founder from being removed or
+-- dismissed by an admin they themselves appointed.
+create or replace function public.group_founder(gid uuid)
+returns uuid
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select g.created_by from public.chat_groups g where g.id = gid;
+$$;
+
 revoke all on function public.is_group_admin(uuid) from public;
 revoke all on function public.is_group_member(uuid) from public;
+revoke all on function public.group_founder(uuid) from public;
 grant execute on function public.is_group_admin(uuid) to authenticated;
 grant execute on function public.is_group_member(uuid) to authenticated;
+grant execute on function public.group_founder(uuid) to authenticated;
+
+-- =============================================================================
+-- 3. POLICIES
+-- =============================================================================
 
 -- ------------------------------------------------------------- chat_groups
-create table if not exists public.chat_groups (
-  id           uuid primary key default gen_random_uuid(),
-  name         text not null,
-  description  text not null default '',
-  join_code    text not null unique,
-  institution  text not null default '',
-  faculty      text not null default '',
-  department   text not null default '',
-  level        text not null default '',
-  course_code  text not null default '',
-  created_by   uuid references auth.users (id) on delete set null,
-  creator_name text not null default '',
-  -- Set when the group was spun up automatically from a class list.
-  class_list_id uuid,
-  created_at   timestamptz not null default now()
-);
-
-create index if not exists groups_code_idx on public.chat_groups (join_code);
-create index if not exists groups_dept_idx
-  on public.chat_groups (institution, department, level);
-
-alter table public.chat_groups enable row level security;
-
 -- Readable by any signed-in student: that is how a group is found and joined
 -- by its code in the first place.
 drop policy if exists "groups are readable by authenticated users" on public.chat_groups;
@@ -98,27 +219,11 @@ create policy "creators delete their groups"
   using (auth.uid() = created_by);
 
 -- ------------------------------------------------------ chat_group_members
-create table if not exists public.chat_group_members (
-  id         uuid primary key default gen_random_uuid(),
-  group_id   uuid not null references public.chat_groups (id) on delete cascade,
-  user_id    uuid not null references auth.users (id) on delete cascade,
-  full_name  text not null default '',
-  headline   text not null default '',
-  is_admin   boolean not null default false,
-  joined_at  timestamptz not null default now(),
-  unique (group_id, user_id)
-);
-
-create index if not exists members_group_idx on public.chat_group_members (group_id);
-create index if not exists members_user_idx on public.chat_group_members (user_id);
-
-alter table public.chat_group_members enable row level security;
-
 drop policy if exists "members are readable by authenticated users" on public.chat_group_members;
 create policy "members are readable by authenticated users"
   on public.chat_group_members for select to authenticated using (true);
 
--- A student may only add or remove themselves; joining is self-service.
+-- Joining is self-service: a student may only add themselves.
 drop policy if exists "students join groups themselves" on public.chat_group_members;
 create policy "students join groups themselves"
   on public.chat_group_members for insert to authenticated
@@ -134,10 +239,9 @@ create policy "students leave and admins remove"
   using (
     auth.uid() = user_id
     or (
-      public.is_group_admin(group_id)
-      and user_id <> (
-        select g.created_by from public.chat_groups g where g.id = group_id
-      )
+      public.is_group_admin(chat_group_members.group_id)
+      and chat_group_members.user_id
+          is distinct from public.group_founder(chat_group_members.group_id)
     )
   );
 
@@ -147,68 +251,25 @@ drop policy if exists "admins change admin rights" on public.chat_group_members;
 create policy "admins change admin rights"
   on public.chat_group_members for update to authenticated
   using (
-    public.is_group_admin(group_id)
-    and user_id <> (
-      select g.created_by from public.chat_groups g where g.id = group_id
-    )
+    public.is_group_admin(chat_group_members.group_id)
+    and chat_group_members.user_id
+        is distinct from public.group_founder(chat_group_members.group_id)
   )
-  with check (public.is_group_admin(group_id));
+  with check (public.is_group_admin(chat_group_members.group_id));
 
 -- ----------------------------------------------------- chat_group_messages
-create table if not exists public.chat_group_messages (
-  id          uuid primary key default gen_random_uuid(),
-  group_id    uuid not null references public.chat_groups (id) on delete cascade,
-  author_id   uuid references auth.users (id) on delete set null,
-  author_name text not null default '',
-  body        text not null,
-  -- Lets a message be flagged as a question so the group can filter to them.
-  is_question boolean not null default false,
-  -- The message this one replies to. Kept as a plain uuid with the author and
-  -- body copied alongside, so a quoted reply still reads correctly after the
-  -- original is deleted.
-  reply_to_id     uuid,
-  reply_to_author text not null default '',
-  reply_to_body   text not null default '',
-  -- Deleting keeps the row and blanks the body, so the thread does not lose
-  -- its shape and a reply above still makes sense.
-  deleted_at  timestamptz,
-  sent_at     timestamptz not null default now()
-);
-
--- Columns added after the first release of this file.
-alter table public.chat_group_messages
-  add column if not exists reply_to_id uuid,
-  add column if not exists reply_to_author text not null default '',
-  add column if not exists reply_to_body text not null default '',
-  add column if not exists deleted_at timestamptz;
-
-create index if not exists group_messages_idx
-  on public.chat_group_messages (group_id, sent_at);
-
-alter table public.chat_group_messages enable row level security;
-
 -- Only members of a group may read or post in it.
 drop policy if exists "members read group messages" on public.chat_group_messages;
 create policy "members read group messages"
   on public.chat_group_messages for select to authenticated
-  using (
-    exists (
-      select 1 from public.chat_group_members m
-       where m.group_id = chat_group_messages.group_id
-         and m.user_id = auth.uid()
-    )
-  );
+  using (public.is_group_member(chat_group_messages.group_id));
 
 drop policy if exists "members post group messages" on public.chat_group_messages;
 create policy "members post group messages"
   on public.chat_group_messages for insert to authenticated
   with check (
     auth.uid() = author_id
-    and exists (
-      select 1 from public.chat_group_members m
-       where m.group_id = chat_group_messages.group_id
-         and m.user_id = auth.uid()
-    )
+    and public.is_group_member(chat_group_messages.group_id)
   );
 
 -- Deleting is a blanking update rather than a row delete, so an admin can
@@ -216,64 +277,24 @@ create policy "members post group messages"
 drop policy if exists "authors and admins delete messages" on public.chat_group_messages;
 create policy "authors and admins delete messages"
   on public.chat_group_messages for update to authenticated
-  using (auth.uid() = author_id or public.is_group_admin(group_id))
-  with check (auth.uid() = author_id or public.is_group_admin(group_id));
+  using (
+    auth.uid() = author_id
+    or public.is_group_admin(chat_group_messages.group_id)
+  )
+  with check (
+    auth.uid() = author_id
+    or public.is_group_admin(chat_group_messages.group_id)
+  );
 
 drop policy if exists "authors delete their messages" on public.chat_group_messages;
 create policy "authors delete their messages"
   on public.chat_group_messages for delete to authenticated
-  using (auth.uid() = author_id or public.is_group_admin(group_id));
-
--- --------------------------------------------------------------- realtime
--- Without this, a message only appears when the other person pulls to
--- refresh. With it, it lands the moment it is sent — which is the whole
--- difference between a message board and a chat.
-do $$
-begin
-  if not exists (
-    select 1 from pg_publication_tables
-     where pubname = 'supabase_realtime'
-       and schemaname = 'public'
-       and tablename = 'chat_group_messages'
-  ) then
-    alter publication supabase_realtime add table public.chat_group_messages;
-  end if;
-
-  if not exists (
-    select 1 from pg_publication_tables
-     where pubname = 'supabase_realtime'
-       and schemaname = 'public'
-       and tablename = 'chat_group_members'
-  ) then
-    alter publication supabase_realtime add table public.chat_group_members;
-  end if;
-exception
-  when undefined_object then
-    raise notice 'supabase_realtime publication not found — skipping.';
-end $$;
+  using (
+    auth.uid() = author_id
+    or public.is_group_admin(chat_group_messages.group_id)
+  );
 
 -- ------------------------------------------------------------- class_lists
-create table if not exists public.class_lists (
-  id           uuid primary key default gen_random_uuid(),
-  name         text not null,
-  institution  text not null default '',
-  faculty      text not null default '',
-  department   text not null default '',
-  level        text not null default '',
-  session      text not null default '',
-  owner_id     uuid references auth.users (id) on delete set null,
-  owner_name   text not null default '',
-  -- The group created alongside this list.
-  group_id     uuid references public.chat_groups (id) on delete set null,
-  created_at   timestamptz not null default now()
-);
-
-create index if not exists class_lists_owner_idx on public.class_lists (owner_id);
-create index if not exists class_lists_dept_idx
-  on public.class_lists (institution, department, level);
-
-alter table public.class_lists enable row level security;
-
 drop policy if exists "class lists are readable by authenticated users" on public.class_lists;
 create policy "class lists are readable by authenticated users"
   on public.class_lists for select to authenticated using (true);
@@ -294,23 +315,6 @@ create policy "owners delete class lists"
   using (auth.uid() = owner_id);
 
 -- ----------------------------------------------------- class_list_entries
-create table if not exists public.class_list_entries (
-  id            uuid primary key default gen_random_uuid(),
-  class_list_id uuid not null references public.class_lists (id) on delete cascade,
-  full_name     text not null,
-  matric_number text not null default '',
-  email         text not null default '',
-  phone         text not null default '',
-  note          text not null default '',
-  position      integer not null default 0,
-  created_at    timestamptz not null default now()
-);
-
-create index if not exists entries_list_idx
-  on public.class_list_entries (class_list_id, position);
-
-alter table public.class_list_entries enable row level security;
-
 drop policy if exists "entries are readable by authenticated users" on public.class_list_entries;
 create policy "entries are readable by authenticated users"
   on public.class_list_entries for select to authenticated using (true);
@@ -348,3 +352,54 @@ create policy "owners remove entries"
          and l.owner_id = auth.uid()
     )
   );
+
+-- =============================================================================
+-- 4. REALTIME
+-- =============================================================================
+-- Without this, a message only appears when the other person pulls to refresh.
+-- With it, it lands the moment it is sent — which is the whole difference
+-- between a message board and a chat.
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+     where pubname = 'supabase_realtime'
+       and schemaname = 'public'
+       and tablename = 'chat_group_messages'
+  ) then
+    alter publication supabase_realtime add table public.chat_group_messages;
+  end if;
+
+  if not exists (
+    select 1 from pg_publication_tables
+     where pubname = 'supabase_realtime'
+       and schemaname = 'public'
+       and tablename = 'chat_group_members'
+  ) then
+    alter publication supabase_realtime add table public.chat_group_members;
+  end if;
+exception
+  -- Realtime is an enhancement, not the foundation. If the publication is
+  -- missing or not ours to alter, everything else must still install; the
+  -- chat then falls back to refreshing rather than streaming.
+  when others then
+    raise notice 'Realtime not enabled (%). Groups still work; messages will arrive on refresh.', sqlerrm;
+end $$;
+
+-- =============================================================================
+-- 5. CHECK IT WORKED
+-- =============================================================================
+-- Should list all five tables.
+
+select table_name
+  from information_schema.tables
+ where table_schema = 'public'
+   and table_name in (
+     'chat_groups',
+     'chat_group_members',
+     'chat_group_messages',
+     'class_lists',
+     'class_list_entries'
+   )
+ order by table_name;
