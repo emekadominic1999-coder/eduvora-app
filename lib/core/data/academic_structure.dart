@@ -143,6 +143,7 @@ class AcademicStructure {
         'Physics',
         'Physics and Astronomy',
         'Physics with Electronics',
+        'Pure and Industrial Chemistry',
         'Science Laboratory Technology',
         'Statistics',
         'Zoology',
