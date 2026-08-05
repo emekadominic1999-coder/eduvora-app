@@ -75,14 +75,16 @@ class StudyGroup {
   }
 
   StudyGroup copyWith({
+    String? name,
+    String? description,
     int? memberCount,
     String? lastMessage,
     DateTime? lastActivity,
   }) => StudyGroup(
     id: id,
-    name: name,
+    name: name ?? this.name,
     joinCode: joinCode,
-    description: description,
+    description: description ?? this.description,
     institution: institution,
     faculty: faculty,
     department: department,
@@ -154,6 +156,14 @@ class GroupMember {
   final bool isAdmin;
   final DateTime? joinedAt;
 
+  /// Used wherever a full name would be too formal — "Remove Chidera?" reads
+  /// better than "Remove Chidera Okoye?".
+  String get firstName {
+    final String trimmed = fullName.trim();
+    if (trimmed.isEmpty) return 'this student';
+    return trimmed.split(RegExp(r'\s+')).first;
+  }
+
   String get initials {
     final List<String> parts = fullName
         .trim()
@@ -198,6 +208,10 @@ class GroupMessage {
     required this.body,
     required this.sentAt,
     this.isQuestion = false,
+    this.replyToId,
+    this.replyToAuthor = '',
+    this.replyToBody = '',
+    this.deletedAt,
   });
 
   final String id;
@@ -210,6 +224,38 @@ class GroupMessage {
   /// Marked by the sender so the group can filter down to questions only.
   final bool isQuestion;
 
+  /// The message being replied to. The author and body are copied rather than
+  /// looked up, so a quoted reply still reads correctly once the original has
+  /// been deleted.
+  final String? replyToId;
+  final String replyToAuthor;
+  final String replyToBody;
+
+  /// Deleted messages keep their place in the thread with the body blanked,
+  /// so a reply above them does not become nonsense.
+  final DateTime? deletedAt;
+
+  bool get isDeleted => deletedAt != null;
+  bool get isReply => replyToId != null && replyToId!.isNotEmpty;
+
+  /// What to actually draw in the bubble.
+  String get displayBody =>
+      isDeleted ? 'This message was deleted' : body;
+
+  GroupMessage copyWith({String? body, DateTime? deletedAt}) => GroupMessage(
+    id: id,
+    groupId: groupId,
+    authorId: authorId,
+    authorName: authorName,
+    body: body ?? this.body,
+    sentAt: sentAt,
+    isQuestion: isQuestion,
+    replyToId: replyToId,
+    replyToAuthor: replyToAuthor,
+    replyToBody: replyToBody,
+    deletedAt: deletedAt ?? this.deletedAt,
+  );
+
   Map<String, dynamic> toJson() => <String, dynamic>{
     'id': id,
     'group_id': groupId,
@@ -217,6 +263,10 @@ class GroupMessage {
     'author_name': authorName,
     'body': body,
     'is_question': isQuestion,
+    'reply_to_id': replyToId,
+    'reply_to_author': replyToAuthor,
+    'reply_to_body': replyToBody,
+    'deleted_at': deletedAt?.toIso8601String(),
     'sent_at': sentAt.toIso8601String(),
   };
 
@@ -227,6 +277,10 @@ class GroupMessage {
     authorName: (json['author_name'] ?? '') as String,
     body: (json['body'] ?? '') as String,
     isQuestion: (json['is_question'] ?? false) as bool,
+    replyToId: json['reply_to_id'] as String?,
+    replyToAuthor: (json['reply_to_author'] ?? '') as String,
+    replyToBody: (json['reply_to_body'] ?? '') as String,
+    deletedAt: DateTime.tryParse((json['deleted_at'] ?? '') as String),
     sentAt:
         DateTime.tryParse((json['sent_at'] ?? '') as String) ?? DateTime.now(),
   );

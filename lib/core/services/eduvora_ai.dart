@@ -286,6 +286,13 @@ class EduvoraAi {
         'class group',
         'ask a question in the group',
         'discussion group',
+        'admin',
+        'group admin',
+        'make someone admin',
+        'change admin',
+        'remove a member',
+        'delete a message',
+        'reply to a message',
       ],
       build: (StudentProfile? p) => AiReply(
         message:
@@ -301,12 +308,19 @@ class EduvoraAi {
             'chatting, tap "Mark as question" before you send. Anyone can then '
             'switch the group to questions only and read straight through what '
             'the class is stuck on — which, close to an exam, is worth a great '
-            'deal.',
+            'deal.\n\nWhoever creates a group is its admin from the start. Tap '
+            'the group name at the top to open Group info, where you can see '
+            'every member, make somebody else an admin, or remove a member. '
+            'Handing over matters when a course rep graduates and the group '
+            'has to carry on without them. The person who created the group '
+            'always keeps their rights, so a group cannot be taken from '
+            'them.\n\nLong-press any message to reply to it, copy it, or '
+            'delete it — admins can delete anybody\'s.',
         route: '/groups',
         routeLabel: 'Open Study groups',
         suggestions: <String>[
           'How do I create a class list?',
-          'How do I mark a message as a question?',
+          'How do I make somebody an admin?',
         ],
       ),
     ),

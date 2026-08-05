@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
 import '../models/class_list.dart';
@@ -267,11 +270,50 @@ class GroupRepository {
     }
   }
 
+  /// Live messages for a group.
+  ///
+  /// Without this a message only arrives when somebody pulls to refresh,
+  /// which is the difference between a message board and a chat. The stream
+  /// carries inserts and updates — a deletion is an update, since deleting
+  /// blanks the body rather than removing the row.
+  Stream<GroupMessage> watchMessages(String groupId) {
+    if (!SupabaseService.isReady) return const Stream<GroupMessage>.empty();
+
+    final StreamController<GroupMessage> controller =
+        StreamController<GroupMessage>.broadcast();
+
+    final RealtimeChannel channel = SupabaseService.client
+        .channel('group:$groupId')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'chat_group_messages',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'group_id',
+            value: groupId,
+          ),
+          callback: (PostgresChangePayload payload) {
+            if (payload.newRecord.isEmpty) return;
+            try {
+              controller.add(GroupMessage.fromJson(payload.newRecord));
+            } catch (error) {
+              debugPrint('[Eduvora] realtime decode failed: $error');
+            }
+          },
+        );
+
+    channel.subscribe();
+    controller.onCancel = () => SupabaseService.client.removeChannel(channel);
+    return controller.stream;
+  }
+
   Future<GroupMessage> sendMessage({
     required StudentProfile profile,
     required String groupId,
     required String body,
     bool isQuestion = false,
+    GroupMessage? replyTo,
   }) async {
     final GroupMessage message = GroupMessage(
       id: _uuid.v4(),
@@ -280,8 +322,17 @@ class GroupRepository {
       authorName: profile.fullName,
       body: body.trim(),
       isQuestion: isQuestion,
+      replyToId: replyTo?.id,
+      replyToAuthor: replyTo?.authorName ?? '',
+      // Quoted text is trimmed here rather than in the bubble, so a very long
+      // original does not bloat every reply row in the database.
+      replyToBody: _shortQuote(replyTo?.displayBody ?? ''),
       sentAt: DateTime.now(),
     );
+
+    // Cache first: the message should appear in the thread instantly even if
+    // the network is slow, which is how a chat is expected to feel.
+    await _cacheMessage(message);
 
     if (SupabaseService.isReady) {
       try {
@@ -290,18 +341,167 @@ class GroupRepository {
             .insert(message.toJson());
       } catch (error) {
         debugPrint('[Eduvora] group send failed: $error');
+        throw const GroupFailure(
+          'That message stayed on your phone — we could not reach the group '
+          'just now. Check your connection and send it again.',
+        );
       }
     }
 
-    final List<Map<String, dynamic>> cached = LocalStore.instance.readList(
-      '${StoreKeys.groupMessages}.$groupId',
-    )..add(message.toJson());
-    await LocalStore.instance.writeList(
-      '${StoreKeys.groupMessages}.$groupId',
-      cached.length > 300 ? cached.sublist(cached.length - 300) : cached,
+    return message;
+  }
+
+  /// Blanks a message. Authors may clear their own; admins may clear anyone's.
+  Future<GroupMessage> deleteMessage({
+    required GroupMessage message,
+  }) async {
+    final GroupMessage cleared = message.copyWith(
+      body: '',
+      deletedAt: DateTime.now(),
     );
 
-    return message;
+    if (SupabaseService.isReady) {
+      try {
+        await SupabaseService.client
+            .from('chat_group_messages')
+            .update(<String, dynamic>{
+              'body': '',
+              'deleted_at': cleared.deletedAt!.toIso8601String(),
+            })
+            .eq('id', message.id);
+      } catch (error) {
+        debugPrint('[Eduvora] message delete failed: $error');
+        throw const GroupFailure(
+          'We could not delete that message just now. Please try again.',
+        );
+      }
+    }
+
+    await _replaceCachedMessage(cleared);
+    return cleared;
+  }
+
+  static String _shortQuote(String body) =>
+      body.length <= 160 ? body : '${body.substring(0, 158)}…';
+
+  Future<void> _cacheMessage(GroupMessage message) async {
+    final List<Map<String, dynamic>> cached = LocalStore.instance.readList(
+      '${StoreKeys.groupMessages}.${message.groupId}',
+    )..add(message.toJson());
+    await LocalStore.instance.writeList(
+      '${StoreKeys.groupMessages}.${message.groupId}',
+      cached.length > 300 ? cached.sublist(cached.length - 300) : cached,
+    );
+  }
+
+  Future<void> _replaceCachedMessage(GroupMessage message) async {
+    final List<Map<String, dynamic>> cached = LocalStore.instance
+        .readList('${StoreKeys.groupMessages}.${message.groupId}')
+        .map(
+          (Map<String, dynamic> row) =>
+              row['id'] == message.id ? message.toJson() : row,
+        )
+        .toList();
+    await LocalStore.instance.writeList(
+      '${StoreKeys.groupMessages}.${message.groupId}',
+      cached,
+    );
+  }
+
+  // ------------------------------------------------------------------ admins
+
+  /// Promotes or dismisses an admin. The person who created the group keeps
+  /// their rights permanently — the database enforces this too, so a group
+  /// cannot be taken from its founder by an admin they appointed.
+  Future<void> setAdmin({
+    required StudyGroup group,
+    required GroupMember member,
+    required bool isAdmin,
+  }) async {
+    if (member.userId == group.createdBy) {
+      throw const GroupFailure(
+        'The student who created this group always stays an admin.',
+      );
+    }
+    if (!SupabaseService.isReady) {
+      throw const GroupFailure(
+        'Admins can only be changed once the group is online.',
+      );
+    }
+
+    try {
+      await SupabaseService.client
+          .from('chat_group_members')
+          .update(<String, dynamic>{'is_admin': isAdmin})
+          .eq('id', member.id);
+    } catch (error) {
+      debugPrint('[Eduvora] admin change failed: $error');
+      throw GroupFailure(
+        isAdmin
+            ? 'We could not make ${member.fullName} an admin just now.'
+            : 'We could not dismiss ${member.fullName} as an admin just now.',
+      );
+    }
+  }
+
+  /// Removes somebody from a group. Admins only, and never the founder.
+  Future<void> removeMember({
+    required StudyGroup group,
+    required GroupMember member,
+  }) async {
+    if (member.userId == group.createdBy) {
+      throw const GroupFailure(
+        'The student who created this group cannot be removed from it.',
+      );
+    }
+    if (!SupabaseService.isReady) {
+      throw const GroupFailure(
+        'Members can only be removed once the group is online.',
+      );
+    }
+
+    try {
+      await SupabaseService.client
+          .from('chat_group_members')
+          .delete()
+          .eq('id', member.id);
+    } catch (error) {
+      debugPrint('[Eduvora] member removal failed: $error');
+      throw GroupFailure(
+        'We could not remove ${member.fullName} just now. Please try again.',
+      );
+    }
+  }
+
+  /// Renames a group or changes its description. Admins only.
+  Future<StudyGroup> updateGroup({
+    required StudyGroup group,
+    String? name,
+    String? description,
+  }) async {
+    final StudyGroup updated = group.copyWith(
+      name: name?.trim(),
+      description: description?.trim(),
+    );
+
+    if (SupabaseService.isReady) {
+      try {
+        await SupabaseService.client
+            .from('chat_groups')
+            .update(<String, dynamic>{
+              if (name != null) 'name': updated.name,
+              if (description != null) 'description': updated.description,
+            })
+            .eq('id', group.id);
+      } catch (error) {
+        debugPrint('[Eduvora] group update failed: $error');
+        throw const GroupFailure(
+          'We could not save that change just now. Please try again.',
+        );
+      }
+    }
+
+    return updated;
   }
 
   // ------------------------------------------------------------ class lists

@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:eduvora/core/models/class_list.dart';
 import 'package:eduvora/core/models/study_group.dart';
+import 'package:eduvora/core/services/group_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -285,6 +286,109 @@ void main() {
         isNotEmpty,
       );
     });
+
+    test('gives a first name for confirmation prompts', () {
+      expect(
+        const GroupMember(
+          id: 'm1',
+          groupId: 'g1',
+          userId: 'u1',
+          fullName: 'Chidera Okoye',
+        ).firstName,
+        'Chidera',
+      );
+    });
+
+    test('never leaves a prompt reading "Remove ?"', () {
+      expect(
+        const GroupMember(
+          id: 'm1',
+          groupId: 'g1',
+          userId: 'u1',
+          fullName: '',
+        ).firstName,
+        isNotEmpty,
+      );
+    });
+
+    test('carries the admin flag through a JSON round trip', () {
+      const GroupMember admin = GroupMember(
+        id: 'm1',
+        groupId: 'g1',
+        userId: 'u1',
+        fullName: 'Chidera Okoye',
+        isAdmin: true,
+      );
+      expect(GroupMember.fromJson(admin.toJson()).isAdmin, isTrue);
+
+      const GroupMember ordinary = GroupMember(
+        id: 'm2',
+        groupId: 'g1',
+        userId: 'u2',
+        fullName: 'Aisha Bello',
+      );
+      expect(GroupMember.fromJson(ordinary.toJson()).isAdmin, isFalse);
+    });
+  });
+
+  group('group admin rules', () {
+    const GroupRepository repo = GroupRepository();
+
+    const StudyGroup group = StudyGroup(
+      id: 'g1',
+      name: 'Geology 300 Level',
+      joinCode: 'K7M2PQ',
+      createdBy: 'founder-id',
+    );
+
+    const GroupMember founder = GroupMember(
+      id: 'm1',
+      groupId: 'g1',
+      userId: 'founder-id',
+      fullName: 'Chidera Okoye',
+      isAdmin: true,
+    );
+
+    const GroupMember member = GroupMember(
+      id: 'm2',
+      groupId: 'g1',
+      userId: 'other-id',
+      fullName: 'Aisha Bello',
+    );
+
+    test('the founder can never be dismissed as admin', () async {
+      await expectLater(
+        repo.setAdmin(group: group, member: founder, isAdmin: false),
+        throwsA(isA<GroupFailure>()),
+      );
+    });
+
+    test('the founder can never be removed from the group', () async {
+      await expectLater(
+        repo.removeMember(group: group, member: founder),
+        throwsA(isA<GroupFailure>()),
+      );
+    });
+
+    test('the refusal explains itself in plain words', () async {
+      try {
+        await repo.removeMember(group: group, member: founder);
+        fail('expected a GroupFailure');
+      } on GroupFailure catch (error) {
+        expect(error.message, contains('created this group'));
+      }
+    });
+
+    test('an ordinary member gets past the founder guard', () async {
+      // Without a backend this fails at the connection check rather than the
+      // founder check — which is the point: the guard did not block them.
+      try {
+        await repo.setAdmin(group: group, member: member, isAdmin: true);
+        fail('expected a GroupFailure about being offline');
+      } on GroupFailure catch (error) {
+        expect(error.message, contains('online'));
+      }
+    });
   });
 
   group('GroupMessage', () {
@@ -309,6 +413,104 @@ void main() {
 
       expect(question.isQuestion, isTrue);
       expect(chat.isQuestion, isFalse);
+    });
+
+    test('a fresh message is neither deleted nor a reply', () {
+      final GroupMessage m = GroupMessage(
+        id: 'm1',
+        groupId: 'g1',
+        authorId: 'u1',
+        authorName: 'Chidera',
+        body: 'Hello',
+        sentAt: DateTime(2026, 8, 5),
+      );
+      expect(m.isDeleted, isFalse);
+      expect(m.isReply, isFalse);
+      expect(m.displayBody, 'Hello');
+    });
+
+    test('a deleted message shows a notice instead of its body', () {
+      final GroupMessage m = GroupMessage(
+        id: 'm1',
+        groupId: 'g1',
+        authorId: 'u1',
+        authorName: 'Chidera',
+        body: '',
+        sentAt: DateTime(2026, 8, 5),
+        deletedAt: DateTime(2026, 8, 5, 10),
+      );
+      expect(m.isDeleted, isTrue);
+      expect(m.displayBody, 'This message was deleted');
+    });
+
+    test('a reply carries the quoted original', () {
+      final GroupMessage m = GroupMessage(
+        id: 'm2',
+        groupId: 'g1',
+        authorId: 'u2',
+        authorName: 'Aisha',
+        body: 'Use the quadratic formula',
+        sentAt: DateTime(2026, 8, 5, 11),
+        replyToId: 'm1',
+        replyToAuthor: 'Chidera',
+        replyToBody: 'How do we solve part b?',
+      );
+      expect(m.isReply, isTrue);
+      expect(m.replyToAuthor, 'Chidera');
+      expect(m.replyToBody, 'How do we solve part b?');
+    });
+
+    test('the quote survives the original being deleted', () {
+      // The reply stores its own copy of the quoted text, so clearing the
+      // original must not blank the quote above the reply.
+      final GroupMessage reply = GroupMessage(
+        id: 'm2',
+        groupId: 'g1',
+        authorId: 'u2',
+        authorName: 'Aisha',
+        body: 'Use the quadratic formula',
+        sentAt: DateTime(2026, 8, 5, 11),
+        replyToId: 'm1',
+        replyToAuthor: 'Chidera',
+        replyToBody: 'How do we solve part b?',
+      );
+      final GroupMessage restored = GroupMessage.fromJson(reply.toJson());
+      expect(restored.replyToBody, 'How do we solve part b?');
+    });
+
+    test('copyWith marks a message deleted without losing its identity', () {
+      final GroupMessage original = GroupMessage(
+        id: 'm1',
+        groupId: 'g1',
+        authorId: 'u1',
+        authorName: 'Chidera',
+        body: 'Oops, wrong group',
+        sentAt: DateTime(2026, 8, 5),
+        isQuestion: true,
+      );
+      final GroupMessage cleared = original.copyWith(
+        body: '',
+        deletedAt: DateTime(2026, 8, 5, 12),
+      );
+
+      expect(cleared.id, original.id);
+      expect(cleared.authorName, 'Chidera');
+      expect(cleared.sentAt, original.sentAt);
+      expect(cleared.isDeleted, isTrue);
+      expect(cleared.body, isEmpty);
+    });
+
+    test('a deletion survives a JSON round trip', () {
+      final GroupMessage cleared = GroupMessage(
+        id: 'm1',
+        groupId: 'g1',
+        authorId: 'u1',
+        authorName: 'Chidera',
+        body: '',
+        sentAt: DateTime(2026, 8, 5),
+        deletedAt: DateTime(2026, 8, 5, 12),
+      );
+      expect(GroupMessage.fromJson(cleared.toJson()).isDeleted, isTrue);
     });
 
     test('survives a JSON round trip with the question flag intact', () {
