@@ -29,6 +29,18 @@ class QuickActionGrid extends StatelessWidget {
       route: AppRouter.courses,
     ),
     _Action(
+      label: 'Study\ngroups',
+      icon: Icons.groups_rounded,
+      colour: Color(0xFF2563EB),
+      route: AppRouter.groups,
+    ),
+    _Action(
+      label: 'Class\nlists',
+      icon: Icons.fact_check_rounded,
+      colour: Color(0xFFEA580C),
+      route: AppRouter.classLists,
+    ),
+    _Action(
       label: 'GP\ncalculator',
       icon: Icons.calculate_rounded,
       colour: AppColours.success,

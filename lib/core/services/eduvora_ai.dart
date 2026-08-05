@@ -237,6 +237,80 @@ class EduvoraAi {
       ),
     ),
 
+    // ------------------------------------------------- groups & class lists
+    _Intent(
+      weight: 2,
+      keywords: <String>[
+        'class list',
+        'classlist',
+        'class register',
+        'register of students',
+        'attendance list',
+        'download the list',
+        'export the list',
+        'course rep',
+        'course representative',
+        'class rep',
+      ],
+      build: (StudentProfile? p) => AiReply(
+        message:
+            'Class lists live on your home dashboard, ${_name(p)} — the orange '
+            'tick icon labelled "Class lists".\n\nYou create one for your '
+            'class, then add each student: full name, matric number, email, '
+            'phone, and a short note if you need one. Eduvora numbers them as '
+            'you go, so the order never gets muddled.\n\nTwo things make it '
+            'worth doing once. First, leave "Create the group chat too" '
+            'switched on and Eduvora sets up the group for that class straight '
+            'away, with a join code you can paste into your class WhatsApp. '
+            'Second, the list exports as a spreadsheet file whenever the '
+            'department asks for one — no retyping at the end of the semester.',
+        route: '/class-lists',
+        routeLabel: 'Open Class lists',
+        suggestions: <String>[
+          'How do my classmates join the group?',
+          'How do I export the class list?',
+        ],
+      ),
+    ),
+    _Intent(
+      weight: 2,
+      keywords: <String>[
+        'group chat',
+        'study group',
+        'study groups',
+        'join code',
+        'group code',
+        'create a group',
+        'join a group',
+        'classmates',
+        'class group',
+        'ask a question in the group',
+        'discussion group',
+      ],
+      build: (StudentProfile? p) => AiReply(
+        message:
+            'Study groups are on your home dashboard, and also at the top of '
+            'the Chats tab.\n\nTap "Study groups", then "New group" — give it a '
+            'name like '
+            '"${p?.department.isNotEmpty == true ? p!.department : 'Geology'} '
+            '${p?.level.isNotEmpty == true ? p!.level : '300 Level'}" and '
+            'Eduvora generates a six-character join code. Share that code and '
+            'your classmates tap "Join with a code" to come in. No phone '
+            'numbers change hands.\n\nInside the group, the thing I would use '
+            'most is the question filter. When you are asking rather than '
+            'chatting, tap "Mark as question" before you send. Anyone can then '
+            'switch the group to questions only and read straight through what '
+            'the class is stuck on — which, close to an exam, is worth a great '
+            'deal.',
+        route: '/groups',
+        routeLabel: 'Open Study groups',
+        suggestions: <String>[
+          'How do I create a class list?',
+          'How do I mark a message as a question?',
+        ],
+      ),
+    ),
+
     // ------------------------------------------------------------- videos
     _Intent(
       keywords: <String>[

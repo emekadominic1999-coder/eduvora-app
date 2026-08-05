@@ -115,4 +115,8 @@ class StoreKeys {
   static const String cbtAttempts = 'eduvora.cbt_attempts';
   static const String bookmarkedNews = 'eduvora.bookmarked_news';
   static const String courseOutlines = 'eduvora.course_outlines';
+  static const String myGroups = 'eduvora.my_groups';
+  static const String groupMessages = 'eduvora.group_messages';
+  static const String classLists = 'eduvora.class_lists';
+  static const String classEntries = 'eduvora.class_entries';
 }

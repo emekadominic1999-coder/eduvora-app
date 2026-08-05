@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/models/chat.dart';
 import '../../../../core/models/student_profile.dart';
+import '../../../../core/routing/app_router.dart';
 import '../../../../core/services/chat_repository.dart';
 import '../../../../core/state/session_controller.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -89,6 +90,60 @@ class _ChatsScreenState extends State<ChatsScreen>
             child: SearchField(
               hint: 'Search chats and study groups',
               onChanged: (String v) => setState(() => _query = v),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.screenPadding,
+              0,
+              AppSpacing.screenPadding,
+              AppSpacing.md,
+            ),
+            child: EduvoraCard(
+              onTap: () =>
+                  Navigator.of(context).pushNamed(AppRouter.groups),
+              colour: AppColours.primaryTint,
+              shadows: const <BoxShadow>[],
+              border: Border.all(color: AppColours.primarySoft),
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: Row(
+                children: <Widget>[
+                  Container(
+                    width: 42,
+                    height: 42,
+                    decoration: const BoxDecoration(
+                      color: AppColours.primary,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.groups_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(
+                          'Your study groups',
+                          style: Theme.of(context).textTheme.titleSmall,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Create one for your class, or join with a code',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(
+                    Icons.chevron_right_rounded,
+                    color: AppColours.primary,
+                  ),
+                ],
+              ),
             ),
           ),
           Expanded(

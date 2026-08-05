@@ -8,6 +8,8 @@ import '../../features/chats/presentation/screens/assistant_screen.dart';
 import '../../features/chats/presentation/screens/chats_screen.dart';
 import '../../features/community/presentation/screens/community_screen.dart';
 import '../../features/gpa/presentation/screens/gpa_calculator_screen.dart';
+import '../../features/groups/presentation/screens/class_lists_screen.dart';
+import '../../features/groups/presentation/screens/groups_screen.dart';
 import '../../features/home/presentation/screens/home_shell.dart';
 import '../../features/landing/presentation/screens/landing_screen.dart';
 import '../../features/materials/presentation/screens/materials_screen.dart';
@@ -34,6 +36,8 @@ class AppRouter {
   static const String upload = '/upload';
   static const String cbt = '/cbt';
   static const String courses = '/courses';
+  static const String groups = '/groups';
+  static const String classLists = '/class-lists';
   static const String gpa = '/gpa';
   static const String community = '/community';
   static const String chats = '/chats';
@@ -73,6 +77,10 @@ class AppRouter {
         page = const MaterialsScreen();
       case upload:
         page = const UploadMaterialScreen();
+      case groups:
+        page = const GroupsScreen();
+      case classLists:
+        page = const ClassListsScreen();
       case courses:
         page = const CourseOutlineScreen();
       case cbt:
