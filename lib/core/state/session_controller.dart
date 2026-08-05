@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
@@ -360,9 +361,12 @@ class SessionController extends ChangeNotifier {
   }) async {
     final String name = fallbackName.isNotEmpty
         ? fallbackName
-        : (user.userMetadata?['full_name'] as String?) ??
-              (user.userMetadata?['name'] as String?) ??
-              (user.email?.split('@').first ?? 'Student');
+        : _firstNonEmpty(<String?>[
+            user.userMetadata?['full_name'] as String?,
+            user.userMetadata?['name'] as String?,
+            user.userMetadata?['preferred_username'] as String?,
+            _nameFromEmail(user.email),
+          ]);
 
     StudentProfile resolved = StudentProfile.empty(
       user.id,
@@ -377,7 +381,18 @@ class SessionController extends ChangeNotifier {
           .eq('id', user.id)
           .maybeSingle();
       if (row != null) {
-        resolved = StudentProfile.fromJson(row);
+        final StudentProfile stored = StudentProfile.fromJson(row);
+        // A profiles row created before the name was known — by a database
+        // trigger, or by an early sign-up — comes back with a blank name, and
+        // the student is then greeted as "Scholar" forever. Keep the name we
+        // derived from the account whenever the stored one is empty, and
+        // write it back so the greeting settles.
+        resolved = stored.fullName.trim().isEmpty
+            ? stored.copyWith(fullName: name)
+            : stored;
+        if (stored.fullName.trim().isEmpty && name.isNotEmpty) {
+          unawaited(_repairStoredName(user.id, name));
+        }
       }
     } catch (error) {
       debugPrint('[Eduvora] profile fetch failed, using cache: $error');
@@ -393,6 +408,46 @@ class SessionController extends ChangeNotifier {
         ? AuthStatus.ready
         : AuthStatus.needsOnboarding;
     notifyListeners();
+  }
+
+  static String _firstNonEmpty(List<String?> candidates) {
+    for (final String? c in candidates) {
+      if (c != null && c.trim().isNotEmpty) return c.trim();
+    }
+    return 'Student';
+  }
+
+  /// Last resort when nothing carries a real name: turn the local part of an
+  /// address into something a person would recognise as theirs.
+  /// "emeka.dominic99@gmail.com" becomes "Emeka Dominic".
+  static String _nameFromEmail(String? email) {
+    if (email == null || !email.contains('@')) return '';
+    final List<String> words = email
+        .split('@')
+        .first
+        .replaceAll(RegExp(r'[0-9_.\-+]+'), ' ')
+        .split(RegExp(r'\s+'))
+        .where((String w) => w.isNotEmpty)
+        .map(
+          (String w) =>
+              w[0].toUpperCase() + (w.length > 1 ? w.substring(1) : ''),
+        )
+        .toList();
+    return words.join(' ');
+  }
+
+  /// Writes a recovered name back to the profiles row. Best effort — the
+  /// greeting is already correct in memory, so a failure here is not worth
+  /// interrupting sign-in for.
+  Future<void> _repairStoredName(String userId, String name) async {
+    try {
+      await SupabaseService.client
+          .from('profiles')
+          .update(<String, dynamic>{'full_name': name})
+          .eq('id', userId);
+    } catch (error) {
+      debugPrint('[Eduvora] could not save recovered name: $error');
+    }
   }
 
   Future<void> _persistLocalSession(StudentProfile p) async {

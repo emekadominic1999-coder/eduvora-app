@@ -10,6 +10,7 @@ import '../../../../core/services/study_repository.dart';
 import '../../../../core/state/session_controller.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/common.dart';
+import '../../../../core/widgets/institution_crest.dart';
 import '../../../auth/presentation/screens/auth_screen.dart';
 import '../../../onboarding/presentation/screens/onboarding_screen.dart';
 
@@ -38,6 +39,76 @@ class _ProfileScreenState extends State<ProfileScreen>
       ),
     );
     if ((changed ?? false) && mounted) setState(() {});
+  }
+
+  /// Lets a student correct the name Eduvora greets them by. Accounts created
+  /// through Google, or before the name was captured, can arrive without one.
+  Future<void> _editName() async {
+    final StudentProfile? profile = sessionController.profile;
+    if (profile == null) return;
+
+    final TextEditingController controller = TextEditingController(
+      text: profile.fullName,
+    );
+    final String? name = await showDialog<String>(
+      context: context,
+      builder: (BuildContext context) => AlertDialog(
+        title: const Text('Your name'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            const Text(
+              'This is how Eduvora greets you, and how your coursemates see '
+              'you in study groups.',
+              style: TextStyle(fontSize: 13, color: AppColours.textMuted),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            TextField(
+              controller: controller,
+              autofocus: true,
+              textCapitalization: TextCapitalization.words,
+              textInputAction: TextInputAction.done,
+              decoration: const InputDecoration(
+                labelText: 'Full name',
+                hintText: 'e.g. Chidera Okoye',
+              ),
+              onSubmitted: (String v) => Navigator.of(context).pop(v),
+            ),
+          ],
+        ),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(controller.text),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+
+    final String cleaned = (name ?? '').trim();
+    if (cleaned.isEmpty || !mounted) return;
+
+    try {
+      await sessionController.saveProfile(
+        profile.copyWith(fullName: cleaned),
+      );
+      if (!mounted) return;
+      setState(() {});
+      showEduvoraSnack(context, 'Saved. Welcome, ${cleaned.split(' ').first}.');
+    } catch (error) {
+      if (!mounted) return;
+      showEduvoraSnack(
+        context,
+        SessionController.describeError(error),
+        isError: true,
+      );
+    }
   }
 
   Future<void> _signOut() async {
@@ -156,17 +227,38 @@ class _ProfileScreenState extends State<ProfileScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Text(
-                    profile.fullName.isEmpty ? 'Student' : profile.fullName,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 20,
-                      height: 1.25,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.5,
-                      color: Colors.white,
-                    ),
+                  Row(
+                    children: <Widget>[
+                      Flexible(
+                        child: Text(
+                          profile.fullName.isEmpty
+                              ? 'Add your name'
+                              : profile.fullName,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 20,
+                            height: 1.25,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.5,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      InkResponse(
+                        onTap: _editName,
+                        radius: 20,
+                        child: Padding(
+                          padding: const EdgeInsets.all(4),
+                          child: Icon(
+                            Icons.edit_rounded,
+                            size: 16,
+                            color: Colors.white.withValues(alpha: 0.85),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 3),
                   Text(
@@ -260,16 +352,51 @@ class _ProfileScreenState extends State<ProfileScreen>
         shadows: AppShadows.subtle,
         child: Column(
           children: <Widget>[
-            _row(
-              icon: profile.institutionType.icon,
-              label: 'Institution',
-              value: profile.institutionName.isEmpty
-                  ? 'Not set'
-                  : profile.institutionName,
-              trailing: profile.institutionState.isEmpty
-                  ? null
-                  : profile.institutionState,
-            ),
+            if (profile.institutionName.isNotEmpty) ...<Widget>[
+              Row(
+                children: <Widget>[
+                  InstitutionCrest(
+                    abbreviation: profile.institutionAbbreviation,
+                    name: profile.institutionName,
+                    size: 46,
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(
+                          profile.institutionName,
+                          style: const TextStyle(
+                            fontSize: 14.5,
+                            height: 1.3,
+                            fontWeight: FontWeight.w700,
+                            color: AppColours.text,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          <String>[
+                            profile.institutionType.label,
+                            if (profile.institutionState.isNotEmpty)
+                              profile.institutionState,
+                          ].join(' · '),
+                          style: const TextStyle(
+                            fontSize: 11.5,
+                            color: AppColours.textMuted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ] else
+              _row(
+                icon: profile.institutionType.icon,
+                label: 'Institution',
+                value: 'Not set',
+              ),
             const Divider(height: AppSpacing.xl),
             _row(
               icon: Icons.apartment_rounded,

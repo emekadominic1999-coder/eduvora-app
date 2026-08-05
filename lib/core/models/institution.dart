@@ -51,6 +51,7 @@ class Institution {
     required this.state,
     required this.type,
     required this.ownership,
+    this.logoUrl,
   });
 
   final String name;
@@ -58,6 +59,11 @@ class Institution {
   final String state;
   final InstitutionType type;
   final Ownership ownership;
+
+  /// An official crest, where the institution has one published and has
+  /// permitted its use. Left null for every entry Eduvora ships: the app
+  /// draws a generated shield instead rather than copying a trademark.
+  final String? logoUrl;
 
   /// Everything a student might type when hunting for their school.
   String get searchIndex =>
@@ -78,6 +84,7 @@ class Institution {
     'state': state,
     'type': type.name,
     'ownership': ownership.name,
+    'logo_url': logoUrl,
   };
 
   factory Institution.fromJson(Map<String, dynamic> json) => Institution(
@@ -86,6 +93,7 @@ class Institution {
     state: (json['state'] ?? '') as String,
     type: InstitutionType.fromName(json['type'] as String?),
     ownership: Ownership.fromName(json['ownership'] as String?),
+    logoUrl: json['logo_url'] as String?,
   );
 
   @override

@@ -8,6 +8,7 @@ import '../../../../core/state/session_controller.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/common.dart';
 import '../../../../core/widgets/eduvora_logo.dart';
+import '../../../../core/widgets/institution_crest.dart';
 import '../../../home/presentation/screens/home_shell.dart';
 
 /// Five short steps that establish a student's academic identity.
@@ -452,30 +453,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       ),
                       child: Row(
                         children: <Widget>[
-                          Container(
-                            width: 44,
-                            height: 44,
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              color: selected
-                                  ? AppColours.primary
-                                  : AppColours.surfaceMuted,
-                              borderRadius: AppRadii.sm,
-                            ),
-                            child: Text(
-                              i.abbreviation.length > 6
-                                  ? i.abbreviation.substring(0, 6)
-                                  : i.abbreviation,
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 9.5,
-                                fontWeight: FontWeight.w800,
-                                color: selected
-                                    ? Colors.white
-                                    : AppColours.textMuted,
-                              ),
-                            ),
-                          ),
+                          InstitutionCrest.of(i, size: 40),
                           const SizedBox(width: AppSpacing.md),
                           Expanded(
                             child: Column(

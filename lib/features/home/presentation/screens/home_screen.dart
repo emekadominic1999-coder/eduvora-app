@@ -10,6 +10,7 @@ import '../../../../core/state/session_controller.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/common.dart';
 import '../../../../core/widgets/eduvora_logo.dart';
+import '../../../../core/widgets/institution_crest.dart';
 import '../../../chats/presentation/screens/assistant_screen.dart';
 import '../../../videos/presentation/screens/video_player_screen.dart';
 import '../widgets/quick_action_grid.dart';
@@ -233,23 +234,49 @@ class _Greeting extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AppSpacing.xl),
-          Text(
-            '$_salutation, ${profile.firstName}',
-            style: const TextStyle(
-              fontSize: 25,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -0.6,
-              color: Colors.white,
-            ),
-          ),
-          const SizedBox(height: 5),
-          Text(
-            profile.academicSummary,
-            style: TextStyle(
-              fontSize: 13.5,
-              fontWeight: FontWeight.w500,
-              color: Colors.white.withValues(alpha: 0.8),
-            ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: <Widget>[
+              if (profile.institutionName.isNotEmpty) ...<Widget>[
+                InstitutionCrest(
+                  abbreviation: profile.institutionAbbreviation,
+                  name: profile.institutionName,
+                  size: 46,
+                  onDark: true,
+                ),
+                const SizedBox(width: AppSpacing.md),
+              ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      '$_salutation, ${profile.firstName}',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 25,
+                        height: 1.2,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.6,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      profile.academicSummary,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.white.withValues(alpha: 0.8),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
           if (profile.institutionName.isNotEmpty) ...<Widget>[
             const SizedBox(height: AppSpacing.md),
