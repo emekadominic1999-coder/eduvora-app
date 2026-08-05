@@ -136,7 +136,6 @@ class AcademicStructure {
         'Chemistry',
         'Environmental Biology',
         'Geology',
-        'Industrial Chemistry',
         'Marine Biology',
         'Mathematics',
         'Microbiology',
