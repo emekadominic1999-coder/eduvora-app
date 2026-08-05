@@ -54,6 +54,23 @@ class NewsItem {
 
   bool get hasDeadline => deadline != null;
 
+  /// True only for a link that a browser can actually open.
+  ///
+  /// Entries added by hand carry an internal placeholder rather than a URL,
+  /// because the news table keys on `link` to avoid storing the same story
+  /// twice. Those must not be offered as something to tap.
+  bool get hasExternalLink =>
+      link.startsWith('http://') || link.startsWith('https://');
+
+  /// What the button on a card should say. "Apply" is right for a scholarship
+  /// and wrong for a report on an ASUU meeting.
+  String get actionLabel => switch (category) {
+    NewsCategory.scholarship ||
+    NewsCategory.opportunity ||
+    NewsCategory.competition => 'Apply',
+    NewsCategory.admission || NewsCategory.academic => 'Read full story',
+  };
+
   int? get daysLeft {
     final DateTime? close = deadline;
     if (close == null) return null;

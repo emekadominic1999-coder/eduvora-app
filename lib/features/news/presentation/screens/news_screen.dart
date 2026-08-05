@@ -319,7 +319,7 @@ class _NewsCard extends StatelessWidget {
                         label: Text(saved ? 'Saved' : 'Save'),
                       ),
                     ),
-                    if (item.link.isNotEmpty) ...<Widget>[
+                    if (item.hasExternalLink) ...<Widget>[
                       const SizedBox(width: AppSpacing.md),
                       Expanded(
                         child: FilledButton.icon(
@@ -333,7 +333,11 @@ class _NewsCard extends StatelessWidget {
                             }
                           },
                           icon: const Icon(Icons.open_in_new_rounded, size: 18),
-                          label: const Text('Apply'),
+                          label: Text(
+                            item.actionLabel,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                       ),
                     ],
