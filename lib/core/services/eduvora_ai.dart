@@ -293,6 +293,15 @@ class EduvoraAi {
         'remove a member',
         'delete a message',
         'reply to a message',
+        'emoji',
+        'react to a message',
+        'reaction',
+        'send a photo',
+        'send a picture',
+        'share a document',
+        'share a pdf',
+        'upload in the group',
+        'attach a file',
       ],
       build: (StudentProfile? p) => AiReply(
         message:
@@ -314,13 +323,19 @@ class EduvoraAi {
             'Handing over matters when a course rep graduates and the group '
             'has to carry on without them. The person who created the group '
             'always keeps their rights, so a group cannot be taken from '
-            'them.\n\nLong-press any message to reply to it, copy it, or '
-            'delete it — admins can delete anybody\'s.',
+            'them.\n\nLong-press any message to react to it, reply, copy it, or '
+            'delete it — admins can delete anybody\'s. A reaction is one emoji '
+            'per person; tapping the same one again takes it back.\n\nThe clip '
+            'icon beside the message box shares a photo or a document — past '
+            'questions, a scanned handout, a timetable, a picture of the '
+            'whiteboard. PDFs, Word, PowerPoint and Excel files all work. '
+            'Everyone in the group can open it from their own phone, and it '
+            'stays in the chat for anyone who joins later.',
         route: '/groups',
         routeLabel: 'Open Study groups',
         suggestions: <String>[
           'How do I create a class list?',
-          'How do I make somebody an admin?',
+          'How do I share a document in the group?',
         ],
       ),
     ),

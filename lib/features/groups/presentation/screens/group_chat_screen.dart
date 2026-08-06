@@ -1,8 +1,11 @@
 import 'dart:async';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 
+import '../../../../core/config/app_config.dart';
 import '../../../../core/models/chat.dart';
 import '../../../../core/models/student_profile.dart';
 import '../../../../core/models/study_group.dart';
@@ -12,6 +15,10 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/common.dart';
 import '../../../chats/presentation/widgets/message_bubble.dart';
 import 'group_info_screen.dart';
+
+/// Emoji offered on every message — small and deliberate, the way a
+/// classroom's reactions are a handful of gestures, not an open keyboard.
+const List<String> _quickReactions = <String>['👍', '❤️', '😂', '😮', '😢', '🙏'];
 
 /// A real group conversation: members, messages, and a question filter.
 class GroupChatScreen extends StatefulWidget {
@@ -38,22 +45,31 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
   /// The message being replied to, shown above the composer until sent.
   GroupMessage? _replyTo;
 
+  /// A photo or document chosen but not yet sent, shown above the composer
+  /// the same way a pending reply is.
+  PlatformFile? _pendingAttachment;
+  GroupAttachmentType? _pendingAttachmentType;
+  bool _uploading = false;
+
   /// True when the signed-in student is an admin here — admins may delete
   /// anybody's message, not only their own.
   bool _iAmAdmin = false;
 
   StreamSubscription<GroupMessage>? _live;
+  StreamSubscription<GroupMessageReaction>? _liveReactions;
 
   @override
   void initState() {
     super.initState();
     _load();
     _listen();
+    _listenReactions();
   }
 
   @override
   void dispose() {
     _live?.cancel();
+    _liveReactions?.cancel();
     _input.dispose();
     _scroll.dispose();
     super.dispose();
@@ -82,6 +98,9 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
 
   /// Inserts or replaces a message, keeping the thread in time order. An
   /// update — a deletion, say — replaces the row rather than duplicating it.
+  /// A message already carrying reactions keeps them, since neither the
+  /// realtime message stream nor a plain refetch of `messages` knows
+  /// anything about reactions — those come from their own table.
   static List<GroupMessage> _merge(
     List<GroupMessage> current,
     GroupMessage incoming,
@@ -89,7 +108,9 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
     final List<GroupMessage> next = List<GroupMessage>.from(current);
     final int at = next.indexWhere((GroupMessage m) => m.id == incoming.id);
     if (at >= 0) {
-      next[at] = incoming;
+      next[at] = incoming.reactions.isEmpty
+          ? incoming.copyWith(reactions: next[at].reactions)
+          : incoming;
     } else {
       next.add(incoming);
     }
@@ -97,14 +118,56 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
       ..sort((GroupMessage a, GroupMessage b) => a.sentAt.compareTo(b.sentAt));
   }
 
+  /// Reactions arrive from their own table, one change at a time. Rather than
+  /// trust the shape of the changed row — a deleted row's payload can be
+  /// partial depending on the database's replica settings — this simply
+  /// refetches the affected message's reactions and replaces them wholesale.
+  /// Reactions are rare next to messages, so the extra round trip costs
+  /// nothing worth avoiding.
+  void _listenReactions() {
+    _liveReactions = _repo.watchReactions(widget.group.id).listen((
+      GroupMessageReaction event,
+    ) async {
+      if (!mounted || event.messageId.isEmpty) return;
+      final List<GroupMessageReaction> fresh = await _repo.reactionsFor(
+        <String>[event.messageId],
+      );
+      if (!mounted) return;
+      setState(() {
+        _messages = _messages
+            .map(
+              (GroupMessage m) => m.id == event.messageId
+                  ? m.copyWith(reactions: fresh)
+                  : m,
+            )
+            .toList();
+      });
+    });
+  }
+
   Future<void> _load() async {
     final StudentProfile? me = sessionController.profile;
     final List<GroupMessage> messages = await _repo.messages(widget.group.id);
     final List<GroupMember> members = await _repo.members(widget.group.id);
+    final List<GroupMessageReaction> reactions = await _repo.reactionsFor(
+      messages.map((GroupMessage m) => m.id).toList(),
+    );
     if (!mounted) return;
 
+    final Map<String, List<GroupMessageReaction>> byMessage =
+        <String, List<GroupMessageReaction>>{};
+    for (final GroupMessageReaction r in reactions) {
+      byMessage.putIfAbsent(r.messageId, () => <GroupMessageReaction>[]).add(r);
+    }
+
     setState(() {
-      _messages = messages;
+      _messages = messages
+          .map(
+            (GroupMessage m) => m.copyWith(
+              reactions: byMessage[m.id] ?? const <GroupMessageReaction>[],
+            ),
+          )
+          .toList();
       _iAmAdmin = members.any(
         (GroupMember m) => m.userId == me?.id && m.isAdmin,
       );
@@ -113,12 +176,76 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) => _toBottom());
   }
 
-  /// Long-press actions on a message: reply, copy, delete.
+  /// Sets or clears this student's reaction, updating the screen immediately
+  /// and reconciling with the server in the background — a reaction should
+  /// feel instant, the way tapping a like does anywhere else.
+  Future<void> _toggleReaction(GroupMessage message, String emoji) async {
+    final StudentProfile? profile = sessionController.profile;
+    if (profile == null) return;
+
+    final String? current = message.myReaction(profile.id);
+    final bool removing = current == emoji;
+
+    final List<GroupMessageReaction> optimistic = removing
+        ? message.reactions
+              .where((GroupMessageReaction r) => r.userId != profile.id)
+              .toList()
+        : <GroupMessageReaction>[
+            ...message.reactions.where(
+              (GroupMessageReaction r) => r.userId != profile.id,
+            ),
+            GroupMessageReaction(
+              id: 'pending',
+              messageId: message.id,
+              userId: profile.id,
+              userName: profile.fullName,
+              emoji: emoji,
+            ),
+          ];
+
+    setState(() {
+      _messages = _messages
+          .map(
+            (GroupMessage m) =>
+                m.id == message.id ? m.copyWith(reactions: optimistic) : m,
+          )
+          .toList();
+    });
+
+    try {
+      if (removing) {
+        await _repo.unreact(profile: profile, message: message);
+      } else {
+        await _repo.react(profile: profile, message: message, emoji: emoji);
+      }
+    } catch (error) {
+      if (!mounted) return;
+      final List<GroupMessageReaction> fresh = await _repo.reactionsFor(
+        <String>[message.id],
+      );
+      if (!mounted) return;
+      setState(() {
+        _messages = _messages
+            .map(
+              (GroupMessage m) =>
+                  m.id == message.id ? m.copyWith(reactions: fresh) : m,
+            )
+            .toList();
+      });
+      showEduvoraSnack(context, '$error', isError: true);
+    }
+  }
+
+  /// Long-press actions on a message: react, reply, copy, delete.
   Future<void> _messageActions(GroupMessage message) async {
     if (message.isDeleted) return;
 
-    final String myId = sessionController.profile?.id ?? '';
+    final StudentProfile? profile = sessionController.profile;
+    final String myId = profile?.id ?? '';
     final bool canDelete = message.authorId == myId || _iAmAdmin;
+    final String? myReaction = profile == null
+        ? null
+        : message.myReaction(profile.id);
 
     final String? action = await showModalBottomSheet<String>(
       context: context,
@@ -126,16 +253,40 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: _quickReactions
+                    .map(
+                      (String emoji) => GestureDetector(
+                        onTap: () =>
+                            Navigator.of(context).pop('react:$emoji'),
+                        child: AnimatedScale(
+                          scale: myReaction == emoji ? 1.25 : 1,
+                          duration: const Duration(milliseconds: 150),
+                          child: Text(
+                            emoji,
+                            style: const TextStyle(fontSize: 27),
+                          ),
+                        ),
+                      ),
+                    )
+                    .toList(),
+              ),
+            ),
+            const Divider(height: 1),
             ListTile(
               leading: const Icon(Icons.reply_rounded),
               title: const Text('Reply'),
               onTap: () => Navigator.of(context).pop('reply'),
             ),
-            ListTile(
-              leading: const Icon(Icons.copy_rounded),
-              title: const Text('Copy text'),
-              onTap: () => Navigator.of(context).pop('copy'),
-            ),
+            if (message.body.isNotEmpty)
+              ListTile(
+                leading: const Icon(Icons.copy_rounded),
+                title: const Text('Copy text'),
+                onTap: () => Navigator.of(context).pop('copy'),
+              ),
             if (canDelete)
               ListTile(
                 leading: const Icon(
@@ -155,6 +306,11 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
       ),
     );
     if (action == null || !mounted) return;
+
+    if (action.startsWith('react:')) {
+      await _toggleReaction(message, action.substring(6));
+      return;
+    }
 
     switch (action) {
       case 'reply':
@@ -194,7 +350,10 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
 
   Future<void> _send() async {
     final String body = _input.text.trim();
-    if (body.isEmpty || _sending) return;
+    final PlatformFile? attachment = _pendingAttachment;
+    final GroupAttachmentType? attachmentType = _pendingAttachmentType;
+    if (body.isEmpty && attachment == null) return;
+    if (_sending) return;
 
     final StudentProfile? profile = sessionController.profile;
     if (profile == null) return;
@@ -204,18 +363,35 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
     _input.clear();
 
     try {
+      String attachmentUrl = '';
+      if (attachment != null) {
+        setState(() => _uploading = true);
+        attachmentUrl = await _repo.uploadAttachment(
+          profile: profile,
+          groupId: widget.group.id,
+          fileName: attachment.name,
+          bytes: attachment.bytes!,
+        );
+      }
+
       final GroupMessage sent = await _repo.sendMessage(
         profile: profile,
         groupId: widget.group.id,
         body: body,
         isQuestion: _askingQuestion,
         replyTo: replyTo,
+        attachmentUrl: attachmentUrl,
+        attachmentName: attachment?.name ?? '',
+        attachmentType: attachment == null ? null : attachmentType,
+        attachmentSize: attachment?.size ?? 0,
       );
       if (!mounted) return;
       setState(() {
         _messages = _merge(_messages, sent);
         _askingQuestion = false;
         _replyTo = null;
+        _pendingAttachment = null;
+        _pendingAttachmentType = null;
       });
       WidgetsBinding.instance
           .addPostFrameCallback((_) => _toBottom(animate: true));
@@ -233,7 +409,98 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
       });
       showEduvoraSnack(context, '$error', isError: true);
     } finally {
-      if (mounted) setState(() => _sending = false);
+      if (mounted) {
+        setState(() {
+          _sending = false;
+          _uploading = false;
+        });
+      }
+    }
+  }
+
+  /// Offers a photo or a document, then hands the picked file to the pending
+  /// attachment preview above the composer.
+  Future<void> _pickAttachment() async {
+    final String? kind = await showModalBottomSheet<String>(
+      context: context,
+      builder: (BuildContext context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            ListTile(
+              leading: const Icon(
+                Icons.photo_rounded,
+                color: AppColours.primary,
+              ),
+              title: const Text('Photo'),
+              onTap: () => Navigator.of(context).pop('image'),
+            ),
+            ListTile(
+              leading: const Icon(
+                Icons.description_rounded,
+                color: AppColours.accent,
+              ),
+              title: const Text('Document'),
+              subtitle: const Text('PDF, Word, PowerPoint, Excel'),
+              onTap: () => Navigator.of(context).pop('file'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (kind == null || !mounted) return;
+
+    try {
+      final FilePickerResult? result = await FilePicker.platform.pickFiles(
+        withData: true,
+        type: kind == 'image' ? FileType.image : FileType.custom,
+        allowedExtensions: kind == 'image'
+            ? null
+            : const <String>[
+                'pdf',
+                'doc',
+                'docx',
+                'ppt',
+                'pptx',
+                'xls',
+                'xlsx',
+                'txt',
+              ],
+      );
+      if (result == null || result.files.isEmpty || !mounted) return;
+
+      final PlatformFile picked = result.files.first;
+      if (picked.bytes == null) {
+        showEduvoraSnack(
+          context,
+          'We could not read that file on this device.',
+          isError: true,
+        );
+        return;
+      }
+      if (picked.size > AppConfig.maxAttachmentBytes) {
+        final int limitMb = AppConfig.maxAttachmentBytes ~/ (1024 * 1024);
+        showEduvoraSnack(
+          context,
+          'That file is larger than ${limitMb}MB. Please share a smaller one.',
+          isError: true,
+        );
+        return;
+      }
+
+      setState(() {
+        _pendingAttachment = picked;
+        _pendingAttachmentType = kind == 'image'
+            ? GroupAttachmentType.image
+            : GroupAttachmentType.file;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      showEduvoraSnack(
+        context,
+        'We could not open the file picker on this device.',
+        isError: true,
+      );
     }
   }
 
@@ -494,6 +761,12 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                             onLongPress: () => _messageActions(m),
                             child: m.isDeleted
                                 ? _DeletedBubble(mine: mine)
+                                : m.hasAttachment
+                                ? _AttachmentBubble(
+                                    message: m,
+                                    mine: mine,
+                                    showSenderName: showName,
+                                  )
                                 : MessageBubble(
                                     message: ChatMessage(
                                       id: m.id,
@@ -508,6 +781,14 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                                     showSenderName: showName,
                                   ),
                           ),
+                          if (!m.isDeleted)
+                            _ReactionsRow(
+                              message: m,
+                              mine: mine,
+                              myUserId: myId,
+                              onTap: (String emoji) =>
+                                  _toggleReaction(m, emoji),
+                            ),
                         ],
                       );
                     },
@@ -582,6 +863,81 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
               ),
               const SizedBox(height: AppSpacing.sm),
             ],
+            if (_pendingAttachment != null) ...<Widget>[
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColours.surfaceMuted,
+                  borderRadius: AppRadii.md,
+                  border: const Border(
+                    left: BorderSide(color: AppColours.accent, width: 3),
+                  ),
+                ),
+                child: Row(
+                  children: <Widget>[
+                    if (_pendingAttachmentType == GroupAttachmentType.image)
+                      ClipRRect(
+                        borderRadius: AppRadii.sm,
+                        child: Image.memory(
+                          _pendingAttachment!.bytes!,
+                          width: 40,
+                          height: 40,
+                          fit: BoxFit.cover,
+                        ),
+                      )
+                    else
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: AppColours.accent.withValues(alpha: 0.14),
+                          borderRadius: AppRadii.sm,
+                        ),
+                        child: const Icon(
+                          Icons.insert_drive_file_rounded,
+                          color: AppColours.accent,
+                          size: 20,
+                        ),
+                      ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Text(
+                            _pendingAttachment!.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w600,
+                              color: AppColours.text,
+                            ),
+                          ),
+                          Text(
+                            _uploading ? 'Uploading…' : 'Ready to send',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: AppColours.textMuted,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (!_uploading)
+                      IconButton(
+                        onPressed: () => setState(() {
+                          _pendingAttachment = null;
+                          _pendingAttachmentType = null;
+                        }),
+                        icon: const Icon(Icons.close_rounded, size: 18),
+                        tooltip: 'Remove attachment',
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+            ],
             // Marking a message as a question makes it findable later, which
             // is the difference between a group chat and a study group.
             Row(
@@ -633,6 +989,25 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
             Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: <Widget>[
+                Material(
+                  color: AppColours.surfaceMuted,
+                  shape: const CircleBorder(),
+                  child: InkWell(
+                    onTap: _pendingAttachment != null || _sending
+                        ? null
+                        : _pickAttachment,
+                    customBorder: const CircleBorder(),
+                    child: const Padding(
+                      padding: EdgeInsets.all(11),
+                      child: Icon(
+                        Icons.attach_file_rounded,
+                        size: 20,
+                        color: AppColours.textMuted,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: TextField(
                     controller: _input,
@@ -640,7 +1015,9 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                     maxLines: 5,
                     textCapitalization: TextCapitalization.sentences,
                     decoration: InputDecoration(
-                      hintText: _askingQuestion
+                      hintText: _pendingAttachment != null
+                          ? 'Add a caption (optional)…'
+                          : _askingQuestion
                           ? 'Ask your question…'
                           : 'Message the group…',
                       fillColor: AppColours.surfaceMuted,
@@ -872,6 +1249,303 @@ class _DeletedBubble extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A photo shown inline, or a document card, in the same bubble language as
+/// an ordinary text message. Tapping either opens it — a photo full-size in
+/// the browser or gallery, a document in whatever app the phone hands it to.
+class _AttachmentBubble extends StatelessWidget {
+  const _AttachmentBubble({
+    required this.message,
+    required this.mine,
+    required this.showSenderName,
+  });
+
+  final GroupMessage message;
+  final bool mine;
+  final bool showSenderName;
+
+  Future<void> _open() async {
+    final Uri uri = Uri.tryParse(message.attachmentUrl) ?? Uri();
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bool image = message.isImageAttachment;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: Column(
+        crossAxisAlignment: mine
+            ? CrossAxisAlignment.end
+            : CrossAxisAlignment.start,
+        children: <Widget>[
+          if (showSenderName)
+            Padding(
+              padding: const EdgeInsets.only(left: 14, bottom: 3),
+              child: Text(
+                message.authorName,
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: AppColours.primary,
+                ),
+              ),
+            ),
+          Align(
+            alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.of(context).size.width * 0.72,
+              ),
+              child: GestureDetector(
+                onTap: _open,
+                child: Container(
+                  clipBehavior: Clip.antiAlias,
+                  decoration: BoxDecoration(
+                    color: mine ? AppColours.primary : AppColours.surface,
+                    borderRadius: BorderRadius.only(
+                      topLeft: const Radius.circular(18),
+                      topRight: const Radius.circular(18),
+                      bottomLeft: Radius.circular(mine ? 18 : 5),
+                      bottomRight: Radius.circular(mine ? 5 : 18),
+                    ),
+                    boxShadow: AppShadows.subtle,
+                    border: mine
+                        ? null
+                        : Border.all(color: AppColours.border),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      if (image)
+                        AspectRatio(
+                          aspectRatio: 4 / 3,
+                          child: Image.network(
+                            message.attachmentUrl,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, _, _) => Container(
+                              color: AppColours.surfaceMuted,
+                              alignment: Alignment.center,
+                              child: const Icon(
+                                Icons.broken_image_rounded,
+                                color: AppColours.textFaint,
+                              ),
+                            ),
+                            loadingBuilder:
+                                (
+                                  BuildContext context,
+                                  Widget child,
+                                  ImageChunkEvent? progress,
+                                ) => progress == null
+                                ? child
+                                : const Center(
+                                    child: Padding(
+                                      padding: EdgeInsets.all(28),
+                                      child: SizedBox(
+                                        width: 22,
+                                        height: 22,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                          ),
+                        )
+                      else
+                        Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: <Widget>[
+                              Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color:
+                                      (mine ? Colors.white : AppColours.primary)
+                                          .withValues(alpha: mine ? 0.18 : 0.10),
+                                  borderRadius: AppRadii.sm,
+                                ),
+                                child: Icon(
+                                  Icons.insert_drive_file_rounded,
+                                  color: mine ? Colors.white : AppColours.primary,
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Flexible(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: <Widget>[
+                                    Text(
+                                      message.attachmentName,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                        color: mine
+                                            ? Colors.white
+                                            : AppColours.text,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      _fileSize(message.attachmentSize),
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: mine
+                                            ? Colors.white.withValues(alpha: 0.75)
+                                            : AppColours.textMuted,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      if (message.body.isNotEmpty)
+                        Padding(
+                          padding: EdgeInsets.fromLTRB(
+                            14,
+                            image ? 10 : 0,
+                            14,
+                            4,
+                          ),
+                          child: Text(
+                            message.body,
+                            style: TextStyle(
+                              fontSize: 14.5,
+                              height: 1.4,
+                              color: mine ? Colors.white : AppColours.text,
+                            ),
+                          ),
+                        ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(14, 0, 14, 8),
+                        child: Text(
+                          _time(message.sentAt),
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: mine
+                                ? Colors.white.withValues(alpha: 0.7)
+                                : AppColours.textFaint,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static String _fileSize(int bytes) {
+    if (bytes <= 0) return '';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(0)} KB';
+    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+  }
+
+  static String _time(DateTime moment) {
+    final int hour = moment.hour % 12 == 0 ? 12 : moment.hour % 12;
+    final String minute = moment.minute.toString().padLeft(2, '0');
+    final String period = moment.hour < 12 ? 'am' : 'pm';
+    return '$hour:$minute $period';
+  }
+}
+
+/// The emoji picked under a message, each showing how many members chose it.
+/// Tapping one joins it — or, if it is already this student's, removes it.
+class _ReactionsRow extends StatelessWidget {
+  const _ReactionsRow({
+    required this.message,
+    required this.mine,
+    required this.myUserId,
+    required this.onTap,
+  });
+
+  final GroupMessage message;
+  final bool mine;
+  final String myUserId;
+  final ValueChanged<String> onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final List<MapEntry<String, List<GroupMessageReaction>>> groups =
+        message.reactionGroups;
+    if (groups.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: EdgeInsets.only(
+        left: mine ? 0 : 14,
+        right: mine ? 14 : 0,
+        bottom: 6,
+      ),
+      child: Align(
+        alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
+        child: Wrap(
+          spacing: 5,
+          runSpacing: 4,
+          children: groups.map((
+            MapEntry<String, List<GroupMessageReaction>> entry,
+          ) {
+            final bool isMine = entry.value.any(
+              (GroupMessageReaction r) => r.userId == myUserId,
+            );
+            return GestureDetector(
+              onTap: () => onTap(entry.key),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 3,
+                ),
+                decoration: BoxDecoration(
+                  color: isMine
+                      ? AppColours.primaryTint
+                      : AppColours.surfaceMuted,
+                  borderRadius: AppRadii.pill,
+                  border: Border.all(
+                    color: isMine
+                        ? AppColours.primarySoft
+                        : AppColours.border,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Text(entry.key, style: const TextStyle(fontSize: 13)),
+                    const SizedBox(width: 3),
+                    Text(
+                      '${entry.value.length}',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: isMine
+                            ? AppColours.primary
+                            : AppColours.textMuted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
         ),
       ),
     );

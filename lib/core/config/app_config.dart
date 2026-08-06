@@ -42,4 +42,12 @@ class AppConfig {
 
   /// Storage bucket holding academic video files and thumbnails.
   static const String videosBucket = 'academic-videos';
+
+  /// Storage bucket holding photos and documents shared inside study groups.
+  static const String groupAttachmentsBucket = 'group-attachments';
+
+  /// A shared attachment above this size is refused client-side, so a
+  /// student on a weak campus connection gets a clear message instead of a
+  /// long silent hang.
+  static const int maxAttachmentBytes = 20 * 1024 * 1024;
 }

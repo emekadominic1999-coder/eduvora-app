@@ -529,5 +529,300 @@ void main() {
       expect(restored.isQuestion, isTrue);
       expect(restored.authorName, 'Chidera');
     });
+
+    test('a fresh message has no attachment', () {
+      final GroupMessage m = GroupMessage(
+        id: 'm1',
+        groupId: 'g1',
+        authorId: 'u1',
+        authorName: 'Chidera',
+        body: 'Hello',
+        sentAt: DateTime(2026, 8, 5),
+      );
+      expect(m.hasAttachment, isFalse);
+      expect(m.isImageAttachment, isFalse);
+    });
+
+    test('a photo attachment is recognised as an image', () {
+      final GroupMessage m = GroupMessage(
+        id: 'm1',
+        groupId: 'g1',
+        authorId: 'u1',
+        authorName: 'Chidera',
+        body: '',
+        sentAt: DateTime(2026, 8, 5),
+        attachmentUrl: 'https://example.com/bucket/photo.jpg',
+        attachmentName: 'photo.jpg',
+        attachmentType: GroupAttachmentType.image,
+        attachmentSize: 204800,
+      );
+      expect(m.hasAttachment, isTrue);
+      expect(m.isImageAttachment, isTrue);
+    });
+
+    test('a document attachment is not treated as an image', () {
+      final GroupMessage m = GroupMessage(
+        id: 'm1',
+        groupId: 'g1',
+        authorId: 'u1',
+        authorName: 'Chidera',
+        body: 'Past questions for the resit',
+        sentAt: DateTime(2026, 8, 5),
+        attachmentUrl: 'https://example.com/bucket/questions.pdf',
+        attachmentName: 'questions.pdf',
+        attachmentType: GroupAttachmentType.file,
+        attachmentSize: 1048576,
+      );
+      expect(m.hasAttachment, isTrue);
+      expect(m.isImageAttachment, isFalse);
+    });
+
+    test('an attachment survives a JSON round trip', () {
+      final GroupMessage original = GroupMessage(
+        id: 'm1',
+        groupId: 'g1',
+        authorId: 'u1',
+        authorName: 'Chidera',
+        body: 'See page 4',
+        sentAt: DateTime(2026, 8, 5),
+        attachmentUrl: 'https://example.com/bucket/notes.pdf',
+        attachmentName: 'notes.pdf',
+        attachmentType: GroupAttachmentType.file,
+        attachmentSize: 512000,
+      );
+      final GroupMessage restored = GroupMessage.fromJson(original.toJson());
+
+      expect(restored.attachmentUrl, original.attachmentUrl);
+      expect(restored.attachmentName, 'notes.pdf');
+      expect(restored.attachmentType, GroupAttachmentType.file);
+      expect(restored.attachmentSize, 512000);
+      expect(restored.hasAttachment, isTrue);
+    });
+
+    test('a caption sent with a photo is kept as the body', () {
+      final GroupMessage m = GroupMessage(
+        id: 'm1',
+        groupId: 'g1',
+        authorId: 'u1',
+        authorName: 'Chidera',
+        body: 'Whiteboard from today',
+        sentAt: DateTime(2026, 8, 5),
+        attachmentUrl: 'https://example.com/bucket/board.jpg',
+        attachmentType: GroupAttachmentType.image,
+      );
+      expect(m.body, 'Whiteboard from today');
+      expect(m.displayBody, 'Whiteboard from today');
+    });
+
+    test('a message with no attachment_type in JSON has none', () {
+      final GroupMessage m = GroupMessage.fromJson(<String, dynamic>{
+        'id': 'm1',
+        'group_id': 'g1',
+        'author_id': 'u1',
+        'author_name': 'Chidera',
+        'body': 'Hello',
+        'sent_at': '2026-08-05T09:00:00.000Z',
+      });
+      expect(m.attachmentType, isNull);
+      expect(m.hasAttachment, isFalse);
+    });
+
+    test('reactionGroups is empty when nobody has reacted', () {
+      final GroupMessage m = GroupMessage(
+        id: 'm1',
+        groupId: 'g1',
+        authorId: 'u1',
+        authorName: 'Chidera',
+        body: 'Hello',
+        sentAt: DateTime(2026, 8, 5),
+      );
+      expect(m.reactionGroups, isEmpty);
+      expect(m.myReaction('u1'), isNull);
+    });
+
+    test('reactionGroups folds reactions by emoji', () {
+      final GroupMessage m = GroupMessage(
+        id: 'm1',
+        groupId: 'g1',
+        authorId: 'u1',
+        authorName: 'Chidera',
+        body: 'Result is out',
+        sentAt: DateTime(2026, 8, 5),
+        reactions: const <GroupMessageReaction>[
+          GroupMessageReaction(
+            id: 'r1',
+            messageId: 'm1',
+            userId: 'u1',
+            userName: 'Chidera',
+            emoji: '👍',
+          ),
+          GroupMessageReaction(
+            id: 'r2',
+            messageId: 'm1',
+            userId: 'u2',
+            userName: 'Aisha',
+            emoji: '👍',
+          ),
+          GroupMessageReaction(
+            id: 'r3',
+            messageId: 'm1',
+            userId: 'u3',
+            userName: 'Tunde',
+            emoji: '😂',
+          ),
+        ],
+      );
+
+      final List<MapEntry<String, List<GroupMessageReaction>>> groups =
+          m.reactionGroups;
+
+      expect(groups.length, 2);
+      // 👍 has two votes to 😂's one, so it sorts first.
+      expect(groups.first.key, '👍');
+      expect(groups.first.value.length, 2);
+      expect(groups.last.key, '😂');
+      expect(groups.last.value.length, 1);
+    });
+
+    test('myReaction finds the current student among several reactors', () {
+      final GroupMessage m = GroupMessage(
+        id: 'm1',
+        groupId: 'g1',
+        authorId: 'u1',
+        authorName: 'Chidera',
+        body: 'Result is out',
+        sentAt: DateTime(2026, 8, 5),
+        reactions: const <GroupMessageReaction>[
+          GroupMessageReaction(
+            id: 'r1',
+            messageId: 'm1',
+            userId: 'u1',
+            userName: 'Chidera',
+            emoji: '👍',
+          ),
+          GroupMessageReaction(
+            id: 'r2',
+            messageId: 'm1',
+            userId: 'u2',
+            userName: 'Aisha',
+            emoji: '😢',
+          ),
+        ],
+      );
+
+      expect(m.myReaction('u2'), '😢');
+      expect(m.myReaction('u1'), '👍');
+      expect(m.myReaction('u9'), isNull);
+    });
+
+    test('copyWith can replace the reaction list', () {
+      const GroupMessageReaction reaction = GroupMessageReaction(
+        id: 'r1',
+        messageId: 'm1',
+        userId: 'u1',
+        userName: 'Chidera',
+        emoji: '❤️',
+      );
+      final GroupMessage original = GroupMessage(
+        id: 'm1',
+        groupId: 'g1',
+        authorId: 'u1',
+        authorName: 'Chidera',
+        body: 'Hello',
+        sentAt: DateTime(2026, 8, 5),
+      );
+      final GroupMessage reacted = original.copyWith(
+        reactions: const <GroupMessageReaction>[reaction],
+      );
+
+      expect(original.reactions, isEmpty);
+      expect(reacted.reactions, hasLength(1));
+      expect(reacted.myReaction('u1'), '❤️');
+    });
+
+    test('copyWith without a reactions argument keeps the existing ones', () {
+      const GroupMessageReaction reaction = GroupMessageReaction(
+        id: 'r1',
+        messageId: 'm1',
+        userId: 'u1',
+        userName: 'Chidera',
+        emoji: '🙏',
+      );
+      final GroupMessage original = GroupMessage(
+        id: 'm1',
+        groupId: 'g1',
+        authorId: 'u1',
+        authorName: 'Chidera',
+        body: 'Hello',
+        sentAt: DateTime(2026, 8, 5),
+        reactions: const <GroupMessageReaction>[reaction],
+      );
+      final GroupMessage edited = original.copyWith(body: 'Hello there');
+
+      expect(edited.reactions, hasLength(1));
+      expect(edited.body, 'Hello there');
+    });
+  });
+
+  group('GroupAttachmentType', () {
+    test('parses image and file by name', () {
+      expect(
+        GroupAttachmentType.fromName('image'),
+        GroupAttachmentType.image,
+      );
+      expect(GroupAttachmentType.fromName('file'), GroupAttachmentType.file);
+    });
+
+    test('returns null for an absent or empty value', () {
+      expect(GroupAttachmentType.fromName(null), isNull);
+      expect(GroupAttachmentType.fromName(''), isNull);
+    });
+
+    test('falls back to file for an unrecognised value rather than throwing', () {
+      expect(
+        GroupAttachmentType.fromName('nonsense'),
+        GroupAttachmentType.file,
+      );
+    });
+  });
+
+  group('GroupMessageReaction', () {
+    test('survives a JSON round trip', () {
+      final GroupMessageReaction original = GroupMessageReaction(
+        id: 'r1',
+        messageId: 'm1',
+        userId: 'u1',
+        userName: 'Chidera Okoye',
+        emoji: '👍',
+        createdAt: DateTime(2026, 8, 5, 9),
+      );
+      final GroupMessageReaction restored = GroupMessageReaction.fromJson(
+        original.toJson(),
+      );
+
+      expect(restored.messageId, 'm1');
+      expect(restored.userId, 'u1');
+      expect(restored.userName, 'Chidera Okoye');
+      expect(restored.emoji, '👍');
+    });
+
+    test('two reactions on the same message by different students are distinct', () {
+      const GroupMessageReaction a = GroupMessageReaction(
+        id: 'r1',
+        messageId: 'm1',
+        userId: 'u1',
+        userName: 'Chidera',
+        emoji: '👍',
+      );
+      const GroupMessageReaction b = GroupMessageReaction(
+        id: 'r2',
+        messageId: 'm1',
+        userId: 'u2',
+        userName: 'Aisha',
+        emoji: '👍',
+      );
+      expect(a.userId, isNot(b.userId));
+      expect(a.emoji, b.emoji);
+    });
   });
 }

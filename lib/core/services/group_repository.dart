@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
+import '../config/app_config.dart';
 import '../models/class_list.dart';
 import '../models/student_profile.dart';
 import '../models/study_group.dart';
@@ -314,6 +315,10 @@ class GroupRepository {
     required String body,
     bool isQuestion = false,
     GroupMessage? replyTo,
+    String attachmentUrl = '',
+    String attachmentName = '',
+    GroupAttachmentType? attachmentType,
+    int attachmentSize = 0,
   }) async {
     final GroupMessage message = GroupMessage(
       id: _uuid.v4(),
@@ -327,6 +332,10 @@ class GroupRepository {
       // Quoted text is trimmed here rather than in the bubble, so a very long
       // original does not bloat every reply row in the database.
       replyToBody: _shortQuote(replyTo?.displayBody ?? ''),
+      attachmentUrl: attachmentUrl,
+      attachmentName: attachmentName,
+      attachmentType: attachmentType,
+      attachmentSize: attachmentSize,
       sentAt: DateTime.now(),
     );
 
@@ -379,6 +388,157 @@ class GroupRepository {
 
     await _replaceCachedMessage(cleared);
     return cleared;
+  }
+
+  /// Uploads a photo or document to the group's storage folder and returns
+  /// its public URL. Called before [sendMessage] so the message row is
+  /// written with a working link rather than a placeholder.
+  ///
+  /// The bucket is public, the same trade-off already accepted for lecture
+  /// materials: a file is reachable by anyone holding the exact link, which
+  /// is a long, unguessable, per-message path rather than something
+  /// listable. What stays private is the group's message thread itself —
+  /// only members can see that the link exists at all.
+  Future<String> uploadAttachment({
+    required StudentProfile profile,
+    required String groupId,
+    required String fileName,
+    required Uint8List bytes,
+  }) async {
+    if (bytes.lengthInBytes > AppConfig.maxAttachmentBytes) {
+      final int limitMb = AppConfig.maxAttachmentBytes ~/ (1024 * 1024);
+      throw GroupFailure(
+        'That file is larger than ${limitMb}MB. Please share a smaller one.',
+      );
+    }
+    if (!SupabaseService.isReady) {
+      throw const GroupFailure(
+        'Sharing a file needs a connection, so it can reach the group. '
+        'Please try again once you are online.',
+      );
+    }
+
+    final String safeName = fileName.replaceAll(RegExp(r'[\\/]'), '_');
+    final String path = '$groupId/${profile.id}/${_uuid.v4()}-$safeName';
+
+    try {
+      await SupabaseService.client.storage
+          .from(AppConfig.groupAttachmentsBucket)
+          .uploadBinary(path, bytes);
+      return SupabaseService.client.storage
+          .from(AppConfig.groupAttachmentsBucket)
+          .getPublicUrl(path);
+    } catch (error) {
+      debugPrint('[Eduvora] attachment upload failed: $error');
+      throw const GroupFailure(
+        'We could not upload that file just now. Please try again.',
+      );
+    }
+  }
+
+  // ----------------------------------------------------------- reactions
+
+  /// Live reactions for a group's visible messages. One event per change —
+  /// the chat screen folds these into the right message as they arrive.
+  Stream<GroupMessageReaction> watchReactions(String groupId) {
+    if (!SupabaseService.isReady) {
+      return const Stream<GroupMessageReaction>.empty();
+    }
+
+    final StreamController<GroupMessageReaction> controller =
+        StreamController<GroupMessageReaction>.broadcast();
+
+    final RealtimeChannel channel = SupabaseService.client
+        .channel('group-reactions:$groupId')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'chat_group_message_reactions',
+          callback: (PostgresChangePayload payload) {
+            final Map<String, dynamic> row = payload.newRecord.isNotEmpty
+                ? payload.newRecord
+                : payload.oldRecord;
+            if (row.isEmpty) return;
+            try {
+              controller.add(GroupMessageReaction.fromJson(row));
+            } catch (error) {
+              debugPrint('[Eduvora] reaction decode failed: $error');
+            }
+          },
+        );
+
+    channel.subscribe();
+    controller.onCancel = () => SupabaseService.client.removeChannel(channel);
+    return controller.stream;
+  }
+
+  Future<List<GroupMessageReaction>> reactionsFor(
+    List<String> messageIds,
+  ) async {
+    if (!SupabaseService.isReady || messageIds.isEmpty) {
+      return <GroupMessageReaction>[];
+    }
+    try {
+      final List<dynamic> rows = await SupabaseService.client
+          .from('chat_group_message_reactions')
+          .select()
+          .inFilter('message_id', messageIds);
+      return rows
+          .whereType<Map<String, dynamic>>()
+          .map(GroupMessageReaction.fromJson)
+          .toList();
+    } catch (error) {
+      debugPrint('[Eduvora] reaction fetch failed: $error');
+      return <GroupMessageReaction>[];
+    }
+  }
+
+  /// Sets this student's reaction to [emoji], replacing any earlier one —
+  /// a student has exactly one reaction per message, the way a raised hand
+  /// is one hand, not a stack of them.
+  Future<void> react({
+    required StudentProfile profile,
+    required GroupMessage message,
+    required String emoji,
+  }) async {
+    if (!SupabaseService.isReady) {
+      throw const GroupFailure(
+        'Reactions need a connection to reach the group.',
+      );
+    }
+    try {
+      await SupabaseService.client.from('chat_group_message_reactions').upsert(
+        GroupMessageReaction(
+          id: _uuid.v4(),
+          messageId: message.id,
+          userId: profile.id,
+          userName: profile.fullName,
+          emoji: emoji,
+        ).toJson(),
+        onConflict: 'message_id,user_id',
+      );
+    } catch (error) {
+      debugPrint('[Eduvora] reaction failed: $error');
+      throw const GroupFailure('That reaction did not go through. Try again.');
+    }
+  }
+
+  /// Removes this student's reaction — tapping the same emoji again clears
+  /// it, the way a second tap lowers the raised hand.
+  Future<void> unreact({
+    required StudentProfile profile,
+    required GroupMessage message,
+  }) async {
+    if (!SupabaseService.isReady) return;
+    try {
+      await SupabaseService.client
+          .from('chat_group_message_reactions')
+          .delete()
+          .eq('message_id', message.id)
+          .eq('user_id', profile.id);
+    } catch (error) {
+      debugPrint('[Eduvora] reaction removal failed: $error');
+    }
   }
 
   static String _shortQuote(String body) =>

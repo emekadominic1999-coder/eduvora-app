@@ -197,6 +197,21 @@ class GroupMember {
   );
 }
 
+/// What kind of file is attached to a message, so the bubble knows whether to
+/// draw a picture inline or a document card.
+enum GroupAttachmentType {
+  image,
+  file;
+
+  static GroupAttachmentType? fromName(String? name) {
+    if (name == null || name.isEmpty) return null;
+    return GroupAttachmentType.values.firstWhere(
+      (GroupAttachmentType t) => t.name == name,
+      orElse: () => GroupAttachmentType.file,
+    );
+  }
+}
+
 /// A message posted in a group.
 @immutable
 class GroupMessage {
@@ -212,6 +227,11 @@ class GroupMessage {
     this.replyToAuthor = '',
     this.replyToBody = '',
     this.deletedAt,
+    this.attachmentUrl = '',
+    this.attachmentName = '',
+    this.attachmentType,
+    this.attachmentSize = 0,
+    this.reactions = const <GroupMessageReaction>[],
   });
 
   final String id;
@@ -235,14 +255,55 @@ class GroupMessage {
   /// so a reply above them does not become nonsense.
   final DateTime? deletedAt;
 
+  /// A photo or document shared alongside — or instead of — text.
+  final String attachmentUrl;
+  final String attachmentName;
+  final GroupAttachmentType? attachmentType;
+  final int attachmentSize;
+
+  /// Populated separately from the reactions table and merged in, since a
+  /// reaction is its own row rather than a column on the message.
+  final List<GroupMessageReaction> reactions;
+
   bool get isDeleted => deletedAt != null;
   bool get isReply => replyToId != null && replyToId!.isNotEmpty;
+  bool get hasAttachment => attachmentUrl.isNotEmpty;
+  bool get isImageAttachment => attachmentType == GroupAttachmentType.image;
 
   /// What to actually draw in the bubble.
   String get displayBody =>
       isDeleted ? 'This message was deleted' : body;
 
-  GroupMessage copyWith({String? body, DateTime? deletedAt}) => GroupMessage(
+  /// Emoji grouped with how many members picked each one, most popular first.
+  List<MapEntry<String, List<GroupMessageReaction>>> get reactionGroups {
+    final Map<String, List<GroupMessageReaction>> byEmoji =
+        <String, List<GroupMessageReaction>>{};
+    for (final GroupMessageReaction r in reactions) {
+      byEmoji.putIfAbsent(r.emoji, () => <GroupMessageReaction>[]).add(r);
+    }
+    final List<MapEntry<String, List<GroupMessageReaction>>> groups = byEmoji
+        .entries
+        .toList()
+      ..sort((MapEntry<String, List<GroupMessageReaction>> a,
+              MapEntry<String, List<GroupMessageReaction>> b) =>
+          b.value.length.compareTo(a.value.length));
+    return groups;
+  }
+
+  /// The emoji this student has already picked, if any — a fresh tap on the
+  /// same one removes it rather than adding a second.
+  String? myReaction(String userId) {
+    for (final GroupMessageReaction r in reactions) {
+      if (r.userId == userId) return r.emoji;
+    }
+    return null;
+  }
+
+  GroupMessage copyWith({
+    String? body,
+    DateTime? deletedAt,
+    List<GroupMessageReaction>? reactions,
+  }) => GroupMessage(
     id: id,
     groupId: groupId,
     authorId: authorId,
@@ -254,6 +315,11 @@ class GroupMessage {
     replyToAuthor: replyToAuthor,
     replyToBody: replyToBody,
     deletedAt: deletedAt ?? this.deletedAt,
+    attachmentUrl: attachmentUrl,
+    attachmentName: attachmentName,
+    attachmentType: attachmentType,
+    attachmentSize: attachmentSize,
+    reactions: reactions ?? this.reactions,
   );
 
   Map<String, dynamic> toJson() => <String, dynamic>{
@@ -267,6 +333,10 @@ class GroupMessage {
     'reply_to_author': replyToAuthor,
     'reply_to_body': replyToBody,
     'deleted_at': deletedAt?.toIso8601String(),
+    'attachment_url': attachmentUrl,
+    'attachment_name': attachmentName,
+    'attachment_type': attachmentType?.name,
+    'attachment_size': attachmentSize,
     'sent_at': sentAt.toIso8601String(),
   };
 
@@ -281,7 +351,54 @@ class GroupMessage {
     replyToAuthor: (json['reply_to_author'] ?? '') as String,
     replyToBody: (json['reply_to_body'] ?? '') as String,
     deletedAt: DateTime.tryParse((json['deleted_at'] ?? '') as String),
+    attachmentUrl: (json['attachment_url'] ?? '') as String,
+    attachmentName: (json['attachment_name'] ?? '') as String,
+    attachmentType: GroupAttachmentType.fromName(
+      json['attachment_type'] as String?,
+    ),
+    attachmentSize: (json['attachment_size'] as num?)?.toInt() ?? 0,
     sentAt:
         DateTime.tryParse((json['sent_at'] ?? '') as String) ?? DateTime.now(),
   );
+}
+
+/// One member's emoji reaction to a message. Whoever sent the message is not
+/// asked to guess who felt what — this is deliberately visible, the way a
+/// classroom raising hands is visible, not an anonymous poll.
+@immutable
+class GroupMessageReaction {
+  const GroupMessageReaction({
+    required this.id,
+    required this.messageId,
+    required this.userId,
+    required this.userName,
+    required this.emoji,
+    this.createdAt,
+  });
+
+  final String id;
+  final String messageId;
+  final String userId;
+  final String userName;
+  final String emoji;
+  final DateTime? createdAt;
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'id': id,
+    'message_id': messageId,
+    'user_id': userId,
+    'user_name': userName,
+    'emoji': emoji,
+    'created_at': (createdAt ?? DateTime.now()).toIso8601String(),
+  };
+
+  factory GroupMessageReaction.fromJson(Map<String, dynamic> json) =>
+      GroupMessageReaction(
+        id: (json['id'] ?? '') as String,
+        messageId: (json['message_id'] ?? '') as String,
+        userId: (json['user_id'] ?? '') as String,
+        userName: (json['user_name'] ?? '') as String,
+        emoji: (json['emoji'] ?? '') as String,
+        createdAt: DateTime.tryParse((json['created_at'] ?? '') as String),
+      );
 }
