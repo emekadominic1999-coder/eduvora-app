@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/institution.dart';
 import '../theme/app_theme.dart';
+import 'institution_faculties.dart';
 
 /// A faculty (university), school (polytechnic) or school of study (college of
 /// education) together with the departments that sit inside it.
@@ -584,7 +585,30 @@ class AcademicStructure {
 
   // ---------------------------------------------------------------- helpers
 
-  static Faculty? facultyByName(InstitutionType type, String name) {
+  /// The faculties to offer a student at a named institution.
+  ///
+  /// A school whose real structure Eduvora knows gets its own list; every
+  /// other school falls back to the broad per-type taxonomy above. This is
+  /// what stops a UNN student being offered Marine Biology, which UNN does
+  /// not teach, while a student at an unmapped school still finds something
+  /// close enough to choose.
+  static List<Faculty> facultiesForInstitution(
+    String institutionName,
+    InstitutionType type,
+  ) =>
+      InstitutionFaculties.forInstitution(institutionName) ??
+      facultiesFor(type);
+
+  static Faculty? facultyByName(
+    InstitutionType type,
+    String name, {
+    String institutionName = '',
+  }) {
+    for (final Faculty f in facultiesForInstitution(institutionName, type)) {
+      if (f.name == name) return f;
+    }
+    // A student who chose a faculty before their school was mapped keeps it
+    // rather than losing their profile to a name that no longer appears.
     for (final Faculty f in facultiesFor(type)) {
       if (f.name == name) return f;
     }
@@ -593,14 +617,28 @@ class AcademicStructure {
 
   static List<String> departmentsFor(
     InstitutionType type,
-    String facultyName,
-  ) => facultyByName(type, facultyName)?.departments ?? const <String>[];
+    String facultyName, {
+    String institutionName = '',
+  }) =>
+      facultyByName(
+        type,
+        facultyName,
+        institutionName: institutionName,
+      )?.departments ??
+      const <String>[];
 
-  /// Every department across every institution type — used by search.
+  /// Every department Eduvora knows — the generic taxonomy plus anything a
+  /// mapped institution teaches that the generic list does not carry.
   static List<String> get allDepartments {
     final Set<String> set = <String>{};
     for (final InstitutionType t in InstitutionType.values) {
       for (final Faculty f in facultiesFor(t)) {
+        set.addAll(f.departments);
+      }
+    }
+    for (final List<Faculty> faculties
+        in InstitutionFaculties.allMappedFaculties) {
+      for (final Faculty f in faculties) {
         set.addAll(f.departments);
       }
     }

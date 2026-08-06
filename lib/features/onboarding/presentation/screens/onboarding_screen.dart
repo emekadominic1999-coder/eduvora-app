@@ -57,6 +57,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       _faculty = AcademicStructure.facultyByName(
         existing.institutionType,
         existing.faculty,
+        institutionName: existing.institutionName,
       );
       _department = existing.department.isEmpty ? null : existing.department;
       _level = existing.level.isEmpty ? null : existing.level;
@@ -643,7 +644,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   Widget _facultyStep() {
     final InstitutionType type = _type ?? InstitutionType.university;
-    final List<Faculty> faculties = AcademicStructure.facultiesFor(type);
+    final List<Faculty> faculties = AcademicStructure.facultiesForInstitution(
+      _institution?.name ?? '',
+      type,
+    );
 
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(
