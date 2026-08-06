@@ -165,6 +165,109 @@ void main() {
     });
   });
 
+  group('UNIZIK structure', () {
+    const String unizik = 'Nnamdi Azikiwe University, Awka';
+
+    test('is recognised as a mapped institution', () {
+      expect(InstitutionFaculties.hasStructureFor(unizik), isTrue);
+    });
+
+    test('has seventeen faculties', () {
+      expect(InstitutionFaculties.unizikFaculties, hasLength(17));
+    });
+
+    test('every faculty has at least one department', () {
+      for (final Faculty f in InstitutionFaculties.unizikFaculties) {
+        expect(f.departments, isNotEmpty, reason: f.name);
+      }
+    });
+
+    test('no faculty lists the same department twice', () {
+      for (final Faculty f in InstitutionFaculties.unizikFaculties) {
+        expect(
+          f.departments.toSet().length,
+          f.departments.length,
+          reason: '${f.name} repeats a department',
+        );
+      }
+    });
+
+    test('departments are listed alphabetically within a faculty', () {
+      for (final Faculty f in InstitutionFaculties.unizikFaculties) {
+        final List<String> sorted = List<String>.from(f.departments)..sort();
+        expect(f.departments, sorted, reason: f.name);
+      }
+    });
+
+    test('carries the departments UNIZIK publishes for Physical Sciences', () {
+      final Faculty physical = InstitutionFaculties.unizikFaculties.firstWhere(
+        (Faculty f) => f.name == 'Faculty of Physical Sciences',
+      );
+      expect(physical.departments, <String>[
+        'Computer Science',
+        'Industrial Physics',
+        'Information Technology',
+        'Mathematics',
+        'Physics',
+        'Statistics',
+      ]);
+    });
+
+    test('splits its sciences differently from UNN', () {
+      // UNIZIK has Bio-Sciences and Physical Sciences; UNN has Biological
+      // Sciences and Physical Sciences. Mapping each school separately is
+      // the entire point — the names are not interchangeable.
+      final Set<String> names = InstitutionFaculties.unizikFaculties
+          .map((Faculty f) => f.name)
+          .toSet();
+      expect(names, contains('Faculty of Bio-Sciences'));
+      expect(names, isNot(contains('Faculty of Biological Sciences')));
+    });
+
+    test('the misspelling on the source site is corrected', () {
+      final Faculty environmental = InstitutionFaculties.unizikFaculties
+          .firstWhere(
+            (Faculty f) => f.name == 'Faculty of Environmental Sciences',
+          );
+      // Published as "Meterology"; a student searching the ordinary
+      // spelling must still find it.
+      expect(environmental.departments, contains('Geography and Meteorology'));
+      expect(
+        environmental.departments,
+        isNot(contains('Geography and Meterology')),
+      );
+    });
+
+    test('no department keeps a stray "Department of" prefix', () {
+      for (final Faculty f in InstitutionFaculties.unizikFaculties) {
+        for (final String d in f.departments) {
+          expect(
+            d.toLowerCase().startsWith('department of'),
+            isFalse,
+            reason: '$d in ${f.name}',
+          );
+        }
+      }
+    });
+
+    test('a UNIZIK student gets UNIZIK faculties', () {
+      expect(
+        AcademicStructure.facultiesForInstitution(
+          unizik,
+          InstitutionType.university,
+        ),
+        InstitutionFaculties.unizikFaculties,
+      );
+    });
+
+    test('UNIZIK and UNN do not share a structure', () {
+      expect(
+        InstitutionFaculties.forInstitution(unizik),
+        isNot(InstitutionFaculties.forInstitution(unn)),
+      );
+    });
+  });
+
   group('lookup', () {
     test('a UNN student gets UNN faculties, not the generic list', () {
       final List<Faculty> faculties =

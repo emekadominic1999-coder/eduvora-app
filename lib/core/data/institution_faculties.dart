@@ -24,6 +24,7 @@ class InstitutionFaculties {
   static const Map<String, List<Faculty>> _byInstitution =
       <String, List<Faculty>>{
         'University of Nigeria, Nsukka': unnFaculties,
+        'Nnamdi Azikiwe University, Awka': unizikFaculties,
       };
 
   /// True when this institution has been mapped properly.
@@ -279,6 +280,290 @@ class InstitutionFaculties {
         'Computer and Robotics Education',
         'Home Economics Education',
         'Industrial Technical Education',
+      ],
+    ),
+  ];
+
+  // -------------------------------------------------------------- UNIZIK
+  //
+  // Source: Nnamdi Azikiwe University's own faculty sites — the seventeen
+  // subdomains linked from unizik.edu.ng/academics — read on 6 August 2026.
+  //
+  // Two names are corrected from the source: "Geography and Meterology" is
+  // spelled "Meteorology" here so a student searching the ordinary spelling
+  // finds it, and a stray "Department of Philosophy" is trimmed to match how
+  // every other entry is written.
+  //
+  // Some faculties list overlapping entries on their own pages — Medicine
+  // carries both "Medicine" and "Medicine and Surgery", Agriculture carries
+  // "Agricultural Economics", "Agricultural Extension" and the combined
+  // "Agricultural Economics and Extension". Those are kept as published
+  // rather than merged, because a student's own department name is whichever
+  // one their faculty actually used.
+
+  static const List<Faculty> unizikFaculties = <Faculty>[
+    Faculty(
+      name: 'Faculty of Agriculture',
+      icon: Icons.agriculture_rounded,
+      colour: AppColours.success,
+      departments: <String>[
+        'Agricultural Economics',
+        'Agricultural Economics and Extension',
+        'Agricultural Extension',
+        'Animal Science and Production',
+        'Crop Science and Horticulture',
+        'Fisheries and Aquaculture',
+        'Food Science and Technology',
+        'Forestry and Wildlife',
+        'Soil Science and Management',
+      ],
+    ),
+    Faculty(
+      name: 'Faculty of Arts',
+      icon: Icons.menu_book_rounded,
+      colour: Color(0xFFDB2777),
+      departments: <String>[
+        'English & Literary Studies',
+        'History & International Studies',
+        'Igbo Language & Linguistics',
+        'Mass Communication',
+        'Philosophy',
+        'Religion & Human Relations',
+      ],
+    ),
+    Faculty(
+      name: 'Faculty of Basic Clinical Sciences',
+      icon: Icons.biotech_rounded,
+      colour: Color(0xFF0891B2),
+      departments: <String>[
+        'Anatomic Pathology/Forensic Medicine',
+        'Chemical Pathology',
+        'Haematology',
+        'Immunology',
+        'Medical Microbiology and Parasitology',
+        'Pharmacology',
+        'Pharmacology and Therapeutics',
+      ],
+    ),
+    Faculty(
+      name: 'Faculty of Basic Medical Sciences',
+      icon: Icons.biotech_rounded,
+      colour: Color(0xFF0891B2),
+      departments: <String>[
+        'Anatomy',
+        'Human Biochemistry',
+        'Human Physiology',
+      ],
+    ),
+    Faculty(
+      name: 'Faculty of Bio-Sciences',
+      icon: Icons.eco_rounded,
+      colour: AppColours.success,
+      departments: <String>[
+        'Applied Biochemistry',
+        'Applied Microbiology and Brewing',
+        'Botany',
+        'Parasitology and Entomology',
+        'Zoology',
+      ],
+    ),
+    Faculty(
+      name: 'Faculty of Education',
+      icon: Icons.school_rounded,
+      colour: AppColours.info,
+      departments: <String>[
+        'Adult Education',
+        'Early Childhood and Primary Education',
+        'Education and Biology',
+        'Education and Chemistry',
+        'Education and Computer Science',
+        'Education and Economics',
+        'Education and English Language',
+        'Education and French',
+        'Education and History',
+        'Education and Igbo',
+        'Education and Integrated Science',
+        'Education and Mathematics',
+        'Education and Physics',
+        'Education and Political Science',
+        'Education and Religious Studies',
+        'Educational Foundations',
+        'Educational Management and Policy',
+        'Environmental Education',
+        'Geography Education',
+        'Guidance and Counselling',
+        'Health Education',
+        'Health Promotion and Public Health Education',
+        'Human Kinetics and Sports Science',
+        'Language Art and Communication Education',
+        'Library and Information Sciences',
+        'Physical Education',
+        'Physical and Health Education',
+        'Science Education',
+        'Social and Civic Education',
+        'Special Needs Education',
+      ],
+    ),
+    Faculty(
+      name: 'Faculty of Engineering',
+      icon: Icons.engineering_rounded,
+      colour: AppColours.accent,
+      departments: <String>[
+        'Chemical Engineering',
+        'Civil Engineering',
+        'Computer Engineering',
+        'Electrical & Electronic Engineering',
+        'Mechanical Engineering',
+        'Metallurgical & Materials Engineering',
+      ],
+    ),
+    Faculty(
+      name: 'Faculty of Environmental Sciences',
+      icon: Icons.apartment_rounded,
+      colour: Color(0xFFCA8A04),
+      departments: <String>[
+        'Architecture',
+        'Building',
+        'Environmental Management',
+        'Estate Management',
+        'Fine and Applied Arts',
+        'Geography and Meteorology',
+        'Interior Architecture and Design',
+        'Landscape Architecture',
+        'Quantity Surveying',
+        'Surveying and Geoinformatics',
+        'Urban and Regional Planning',
+      ],
+    ),
+    Faculty(
+      name: 'College of Health Sciences & Technology',
+      icon: Icons.health_and_safety_rounded,
+      colour: Color(0xFF0D9488),
+      departments: <String>[
+        'Dentistry',
+        'Medical Laboratory Science',
+        'Medicine & Surgery',
+        'Nursing Science',
+        'Pharmacy',
+        'Physiotherapy',
+      ],
+    ),
+    Faculty(
+      name: 'Faculty of Law',
+      icon: Icons.gavel_rounded,
+      colour: Color(0xFF7C3AED),
+      departments: <String>[
+        'Commercial & Industrial Law',
+        'Jurisprudence & Legal Theory',
+        'Private & Property Law',
+        'Public & International Law',
+      ],
+    ),
+    Faculty(
+      name: 'Faculty of Management Sciences',
+      icon: Icons.business_center_rounded,
+      colour: AppColours.primary,
+      departments: <String>[
+        'Accounting',
+        'Banking & Finance',
+        'Business Administration',
+        'Marketing',
+        'Public Administration',
+      ],
+    ),
+    Faculty(
+      name: 'Faculty of Medical Laboratory Science',
+      icon: Icons.science_rounded,
+      colour: Color(0xFF0891B2),
+      departments: <String>[
+        'Clinical Chemistry',
+        'Haematology and Blood Transfusion Science',
+        'Histopathology',
+        'Immuno Chemistry and Immunology',
+        'Medical Laboratory Science',
+        'Medical Microbiology',
+      ],
+    ),
+    Faculty(
+      name: 'Faculty of Medicine',
+      icon: Icons.local_hospital_rounded,
+      colour: AppColours.danger,
+      departments: <String>[
+        'Anaesthesiology',
+        'Community Medicine',
+        'Dental Surgery',
+        'Family Medicine',
+        'Internal Medicine',
+        'Medicine',
+        'Medicine and Surgery',
+        'Mental Health',
+        'Obstetrics and Gynaecology',
+        'Ophthalmology',
+        'Orthopedic',
+        'Otorhinolaryngology',
+        'Paediatrics',
+        'Primary Health Care',
+        'Radiology',
+        'Surgery',
+      ],
+    ),
+    Faculty(
+      name: 'Faculty of Pharmaceutical Sciences',
+      icon: Icons.medication_rounded,
+      colour: Color(0xFF0891B2),
+      departments: <String>[
+        'Clinical Pharmacy and Pharmacy Management',
+        'Forensic Science',
+        'Pharmaceutical Microbiology and Biotechnology',
+        'Pharmaceutical and Medicinal Chemistry',
+        'Pharmaceutics and Pharmaceutical Technology',
+        'Pharmacognosy and Traditional Medicine',
+        'Pharmacology and Toxicology',
+        'Pharmacy/Pharm D',
+      ],
+    ),
+    Faculty(
+      name: 'Faculty of Physical Sciences',
+      icon: Icons.science_rounded,
+      colour: AppColours.primary,
+      departments: <String>[
+        'Computer Science',
+        'Industrial Physics',
+        'Information Technology',
+        'Mathematics',
+        'Physics',
+        'Statistics',
+      ],
+    ),
+    Faculty(
+      name: 'Faculty of Social Sciences',
+      icon: Icons.groups_rounded,
+      colour: Color(0xFFDB2777),
+      departments: <String>[
+        'Advertising',
+        'Broadcasting',
+        'Development and Communication Studies',
+        'Economics',
+        'Journalism and Media Studies',
+        'Mass Communication',
+        'Political Science',
+        'Psychology',
+        'Sociology and Anthropology',
+      ],
+    ),
+    Faculty(
+      name: 'Faculty of Technology and Vocational Education',
+      icon: Icons.handyman_rounded,
+      colour: AppColours.accent,
+      departments: <String>[
+        'Agricultural Science and Education',
+        'Auto and Mechanical Technology Education',
+        'Building and Woodwork Technology Education',
+        'Business Education',
+        'Electrical/Electronics Education',
+        'Home Economics Education',
+        'Industrial Technology Education',
+        'Technical Education',
       ],
     ),
   ];
