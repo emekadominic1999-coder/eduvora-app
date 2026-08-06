@@ -117,6 +117,19 @@ class CbtExamConfig {
     minutes: subject.minutesPerAttempt,
   );
 
+  /// The most questions a custom paper may ask for. A student revising wants
+  /// a long paper available; beyond a hundred it stops being a sitting and
+  /// starts being a marathon. Capped again by what the subject actually holds.
+  static const int maxCustomQuestions = 100;
+
+  /// What a paper is worth.
+  ///
+  /// Nigerian universities mark the examination out of 70, with the remaining
+  /// 30 coming from continuous assessment. Scoring out of 70 is therefore the
+  /// number a student can compare against their real result — a percentage
+  /// alone tells them less than "49 out of 70" does.
+  static const int totalMarks = 70;
+
   final int questionCount;
   final int minutes;
   final bool shuffleQuestions;
@@ -165,6 +178,20 @@ class CbtAttempt {
 
   double get percentage =>
       totalQuestions == 0 ? 0 : (score / totalQuestions) * 100;
+
+  /// The paper scaled to the 70 marks a Nigerian university examination
+  /// carries, so 30 correct out of 40 reads as 53 — the figure that will
+  /// appear on a result sheet, rather than a bare percentage.
+  double get marks =>
+      totalQuestions == 0
+      ? 0
+      : (score / totalQuestions) * CbtExamConfig.totalMarks;
+
+  /// Rounded for display. Kept separate from [marks] so a half mark is not
+  /// lost before any arithmetic that needs it.
+  int get marksAwarded => marks.round();
+
+  static const int totalMarks = CbtExamConfig.totalMarks;
 
   String get grade {
     final double p = percentage;

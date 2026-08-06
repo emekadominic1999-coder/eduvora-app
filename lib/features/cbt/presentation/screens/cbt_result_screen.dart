@@ -219,19 +219,32 @@ class CbtResultScreen extends StatelessWidget {
                   Column(
                     mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
+                      // The mark out of 70 leads, because that is the figure
+                      // a Nigerian result sheet actually carries.
                       Text(
-                        '${attempt.percentage.round()}%',
+                        '${attempt.marksAwarded}',
                         style: TextStyle(
-                          fontSize: 31,
+                          fontSize: 34,
+                          height: 1,
                           fontWeight: FontWeight.w800,
                           letterSpacing: -1,
                           color: _colour,
                         ),
                       ),
                       Text(
+                        'out of ${CbtAttempt.totalMarks}',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: AppColours.textMuted,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${attempt.percentage.round()}%  ·  '
                         'Grade ${attempt.grade}',
                         style: const TextStyle(
-                          fontSize: 12,
+                          fontSize: 11,
                           fontWeight: FontWeight.w700,
                           color: AppColours.textMuted,
                         ),
@@ -251,6 +264,13 @@ class CbtResultScreen extends StatelessWidget {
             Text(
               '${attempt.score} correct out of ${attempt.totalQuestions}  ·  '
               '${attempt.verdict}',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Marked out of ${CbtAttempt.totalMarks}, the way a university '
+              'examination is — the other 30 come from continuous assessment.',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodySmall,
             ),

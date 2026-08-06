@@ -139,4 +139,110 @@ void main() {
       }
     });
   });
+
+  group('Custom question ceiling', () {
+    test('a custom paper may be asked for up to a hundred questions', () {
+      expect(CbtExamConfig.maxCustomQuestions, 100);
+    });
+
+    test('a large bank can fill a hundred-question paper', () {
+      final CbtSubject subject = _subject(count: 250);
+      const CbtExamConfig config = CbtExamConfig(
+        questionCount: 100,
+        minutes: 120,
+        isCustom: true,
+      );
+
+      expect(config.buildPaper(subject, seed: 1).length, 100);
+    });
+
+    test('asking for more than the bank holds hands back what exists', () {
+      // The sheet caps the stepper, but buildPaper is the last line of
+      // defence — it must never invent questions to reach a number.
+      final CbtSubject subject = _subject(count: 12);
+      const CbtExamConfig config = CbtExamConfig(
+        questionCount: 100,
+        minutes: 60,
+        isCustom: true,
+      );
+
+      expect(config.buildPaper(subject, seed: 1).length, 12);
+    });
+
+    test('a hundred-question paper draws no duplicates', () {
+      final CbtSubject subject = _subject(count: 140);
+      const CbtExamConfig config = CbtExamConfig(
+        questionCount: 100,
+        minutes: 120,
+        shuffleQuestions: true,
+        isCustom: true,
+      );
+
+      final List<CbtQuestion> paper = config.buildPaper(subject, seed: 7);
+      expect(paper.map((CbtQuestion q) => q.id).toSet().length, 100);
+    });
+  });
+
+  group('Marks out of 70', () {
+    CbtAttempt attempt({required int score, required int total}) => CbtAttempt(
+      subjectId: 'test',
+      subjectName: 'Test paper',
+      totalQuestions: total,
+      answers: const <String, int>{},
+      score: score,
+      durationSeconds: 600,
+      takenAt: DateTime(2026, 8, 6),
+    );
+
+    test('a university examination is marked out of 70, not 100', () {
+      expect(CbtExamConfig.totalMarks, 70);
+      expect(CbtAttempt.totalMarks, 70);
+    });
+
+    test('every question right is full marks', () {
+      expect(attempt(score: 40, total: 40).marksAwarded, 70);
+    });
+
+    test('nothing right is nought', () {
+      expect(attempt(score: 0, total: 40).marksAwarded, 0);
+    });
+
+    test('half the paper is half the marks', () {
+      expect(attempt(score: 20, total: 40).marksAwarded, 35);
+    });
+
+    test('30 out of 40 scales to 53', () {
+      // (30 / 40) * 70 = 52.5, which rounds to 53.
+      expect(attempt(score: 30, total: 40).marks, closeTo(52.5, 0.001));
+      expect(attempt(score: 30, total: 40).marksAwarded, 53);
+    });
+
+    test('the mark scales with the paper, not its length', () {
+      // Seven out of ten and seventy out of a hundred are the same result.
+      expect(
+        attempt(score: 7, total: 10).marksAwarded,
+        attempt(score: 70, total: 100).marksAwarded,
+      );
+    });
+
+    test('an empty paper does not divide by zero', () {
+      expect(attempt(score: 0, total: 0).marks, 0);
+      expect(attempt(score: 0, total: 0).marksAwarded, 0);
+    });
+
+    test('the percentage is unchanged by the new marking', () {
+      // Grades are still percentage-based, so this must not drift.
+      expect(attempt(score: 30, total: 40).percentage, 75);
+      expect(attempt(score: 30, total: 40).grade, 'A');
+    });
+
+    test('a mark never exceeds the total on offer', () {
+      for (int total = 1; total <= 100; total++) {
+        expect(
+          attempt(score: total, total: total).marksAwarded,
+          lessThanOrEqualTo(CbtAttempt.totalMarks),
+        );
+      }
+    });
+  });
 }

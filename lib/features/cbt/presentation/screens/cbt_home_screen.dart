@@ -355,7 +355,8 @@ class _PaperCard extends StatelessWidget {
               if (best != null) ...<Widget>[
                 const SizedBox(width: 6),
                 Pill(
-                  label: 'Best ${best!.percentage.round()}%',
+                  label:
+                      'Best ${best!.marksAwarded}/${CbtAttempt.totalMarks}',
                   icon: Icons.emoji_events_rounded,
                   colour: AppColours.success,
                   dense: true,
@@ -439,13 +440,26 @@ class _AttemptRow extends StatelessWidget {
               ],
             ),
           ),
-          Text(
-            '${attempt.percentage.round()}%',
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w800,
-              color: _colour,
-            ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Text(
+                '${attempt.marksAwarded}/${CbtAttempt.totalMarks}',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                  color: _colour,
+                ),
+              ),
+              Text(
+                '${attempt.percentage.round()}%',
+                style: const TextStyle(
+                  fontSize: 10.5,
+                  color: AppColours.textFaint,
+                ),
+              ),
+            ],
           ),
         ],
       ),

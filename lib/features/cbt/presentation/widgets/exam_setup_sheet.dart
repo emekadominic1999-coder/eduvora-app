@@ -30,12 +30,23 @@ class _ExamSetupSheet extends StatefulWidget {
 class _ExamSetupSheetState extends State<_ExamSetupSheet> {
   bool _custom = false;
 
-  late int _questions = widget.subject.questions.length;
+  /// Starts at the whole paper, but never above the custom ceiling — a
+  /// two-hundred-question bank must not open the stepper on a value its own
+  /// maximum forbids.
+  late int _questions = _maxCustom;
   late int _minutes = widget.subject.minutesPerAttempt;
   bool _shuffleQuestions = true;
   bool _shuffleOptions = false;
 
   int get _total => widget.subject.questions.length;
+
+  /// A custom paper may go up to a hundred questions, but never beyond what
+  /// the subject actually holds — offering a number the pool cannot fill
+  /// would silently hand back a shorter paper than was asked for.
+  int get _maxCustom =>
+      _total < CbtExamConfig.maxCustomQuestions
+      ? _total
+      : CbtExamConfig.maxCustomQuestions;
 
   void _start() {
     final CbtExamConfig config = _custom
@@ -78,8 +89,9 @@ class _ExamSetupSheetState extends State<_ExamSetupSheet> {
             title: 'Standard exam',
             body:
                 'The full paper exactly as written — all $_total questions in '
-                '${widget.subject.minutesPerAttempt} minutes, in order. This '
-                'is the one that mirrors the real hall.',
+                '${widget.subject.minutesPerAttempt} minutes, in order, marked '
+                'out of ${CbtExamConfig.totalMarks}. This is the one that '
+                'mirrors the real hall.',
             icon: Icons.assignment_rounded,
             selected: !_custom,
             onTap: () => setState(() => _custom = false),
@@ -88,9 +100,9 @@ class _ExamSetupSheetState extends State<_ExamSetupSheet> {
           _ModeCard(
             title: 'Custom exam',
             body:
-                'Set your own time and number of questions — useful for a '
-                'quick revision run, or for giving yourself extra time while '
-                'you are still learning the topic.',
+                'Set your own time and number of questions, up to '
+                '$_maxCustom — useful for a quick revision run, or for giving '
+                'yourself extra time while you are still learning the topic.',
             icon: Icons.tune_rounded,
             selected: _custom,
             onTap: () => setState(() => _custom = true),
@@ -105,10 +117,19 @@ class _ExamSetupSheetState extends State<_ExamSetupSheet> {
               value: _questions,
               suffix: _questions == 1 ? 'question' : 'questions',
               min: 1,
-              max: _total,
-              step: _total > 40 ? 5 : 1,
+              max: _maxCustom,
+              step: _maxCustom > 40 ? 5 : 1,
               onChanged: (int v) => setState(() => _questions = v),
             ),
+            if (_total < CbtExamConfig.maxCustomQuestions) ...<Widget>[
+              const SizedBox(height: 6),
+              Text(
+                'This paper holds $_total '
+                '${_total == 1 ? 'question' : 'questions'} at the moment. '
+                'It will stretch further as more past questions are added.',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
             const SizedBox(height: AppSpacing.lg),
             _Stepper(
               label: 'Time limit',
