@@ -890,6 +890,42 @@ void main() {
     );
   });
 
+  group('Covenant structure', () {
+    const String covenant = 'Covenant University, Ota';
+
+    test('is recognised as a mapped institution', () {
+      expect(InstitutionFaculties.hasStructureFor(covenant), isTrue);
+    });
+
+    test('has four colleges', () {
+      expect(InstitutionFaculties.covenantFaculties, hasLength(4));
+    });
+
+    test('calls them "College of X", matching how Covenant names them', () {
+      for (final Faculty f in InstitutionFaculties.covenantFaculties) {
+        expect(f.name, startsWith('College of'), reason: f.name);
+      }
+    });
+
+    test(
+      'keeps Electrical and Information Engineering as one department, '
+      'the way Covenant structures it, rather than splitting it into its '
+      'Computer/Electrical/Communication specialisations',
+      () {
+        final Faculty engineering = InstitutionFaculties.covenantFaculties
+            .firstWhere((Faculty f) => f.name == 'College of Engineering');
+        expect(
+          engineering.departments,
+          contains('Electrical and Information Engineering'),
+        );
+        expect(
+          engineering.departments,
+          isNot(contains('Computer Engineering')),
+        );
+      },
+    );
+  });
+
   group('lookup', () {
     test('a UNN student gets UNN faculties, not the generic list', () {
       final List<Faculty> faculties =

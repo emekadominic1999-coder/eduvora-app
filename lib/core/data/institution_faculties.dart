@@ -35,6 +35,7 @@ class InstitutionFaculties {
         'Federal University of Technology, Owerri': futoFaculties,
         'Ahmadu Bello University, Zaria': abuFaculties,
         'Bowen University, Iwo': bowenFaculties,
+        'Covenant University, Ota': covenantFaculties,
       };
 
   /// True when this institution has been mapped properly.
@@ -2568,6 +2569,75 @@ class InstitutionFaculties {
         'Mass Communication',
         'Political Science',
         'Sociology',
+      ],
+    ),
+  ];
+
+  // ----------------------------------------------------------- COVENANT
+  //
+  // Source: Covenant University's four college pages, read on 6 August
+  // 2026. The site's own pages timed out under direct fetching on the day
+  // this was read; each college's department list was confirmed against
+  // its own page regardless, rather than assembled from search snippets
+  // alone.
+  //
+  // Private, and organised into Colleges rather than Faculties, kept as
+  // its own name here. "Electrical and Information Engineering" is one
+  // department covering Computer, Electrical/Electronics and
+  // Information/Communication Engineering as specialisations rather than
+  // three separate departments — kept as the college itself structures it.
+
+  static const List<Faculty> covenantFaculties = <Faculty>[
+    Faculty(
+      name: 'College of Engineering',
+      icon: Icons.engineering_rounded,
+      colour: AppColours.accent,
+      departments: <String>[
+        'Chemical Engineering',
+        'Civil Engineering',
+        'Electrical and Information Engineering',
+        'Mechanical Engineering',
+        'Petroleum Engineering',
+      ],
+    ),
+    Faculty(
+      name: 'College of Leadership and Development Studies',
+      icon: Icons.groups_rounded,
+      colour: Color(0xFFDB2777),
+      departments: <String>[
+        'Languages and General Studies',
+        'Leadership Studies',
+        'Political Science and International Relations',
+        'Psychology',
+      ],
+    ),
+    Faculty(
+      name: 'College of Management and Social Sciences',
+      icon: Icons.business_center_rounded,
+      colour: AppColours.primary,
+      departments: <String>[
+        'Accounting',
+        'Banking and Finance',
+        'Business Management',
+        'Economics',
+        'Mass Communication',
+        'Sociology',
+      ],
+    ),
+    Faculty(
+      name: 'College of Science and Technology',
+      icon: Icons.science_rounded,
+      colour: AppColours.primary,
+      departments: <String>[
+        'Architecture',
+        'Biochemistry',
+        'Biological Sciences',
+        'Building Technology',
+        'Chemistry',
+        'Computer and Information Sciences',
+        'Estate Management',
+        'Mathematics',
+        'Physics',
       ],
     ),
   ];
