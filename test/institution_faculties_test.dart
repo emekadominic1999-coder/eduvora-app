@@ -461,6 +461,68 @@ void main() {
     });
   });
 
+  group('UNICAL structure', () {
+    const String unical = 'University of Calabar';
+
+    test('is recognised as a mapped institution', () {
+      expect(InstitutionFaculties.hasStructureFor(unical), isTrue);
+    });
+
+    test('has twenty-three faculties', () {
+      expect(InstitutionFaculties.unicalFaculties, hasLength(23));
+    });
+
+    test('leaves out what is not a faculty a student belongs to', () {
+      // The source lists 28 faculty_details pages; five are the library, a
+      // "non-academic" entry and three research institutes.
+      final Set<String> names = InstitutionFaculties.unicalFaculties
+          .map((Faculty f) => f.name.toLowerCase())
+          .toSet();
+      for (final String absent in <String>[
+        'faculty of library',
+        'faculty of non-academic',
+        'faculty of institute of education',
+      ]) {
+        expect(names, isNot(contains(absent)));
+      }
+    });
+
+    test('has a Faculty of Oceanography, unique among the mapped schools', () {
+      final Faculty ocean = InstitutionFaculties.unicalFaculties.firstWhere(
+        (Faculty f) => f.name == 'Faculty of Oceanography',
+      );
+      expect(ocean.departments, contains('Marine Oceanography'));
+    });
+
+    test('normalises the shouted names on the source site', () {
+      // UNICAL publishes some departments in capitals and others in title
+      // case on the same site; a picker mixing both looks broken.
+      for (final Faculty f in InstitutionFaculties.unicalFaculties) {
+        for (final String d in f.departments) {
+          final String letters = d.replaceAll(RegExp('[^A-Za-z]'), '');
+          expect(
+            letters == letters.toUpperCase() && letters.length > 3,
+            isFalse,
+            reason: '"$d" in ${f.name} is still shouted',
+          );
+        }
+      }
+    });
+
+    test('splits education across five faculties, as UNICAL does', () {
+      // Arts and Social Science Education, Educational Foundation Studies,
+      // Science Education, Vocational and Entrepreneurial Education, and
+      // Vocational and Science Education — the generic taxonomy has one
+      // Faculty of Education, which is exactly what mapping fixes.
+      final List<String> educationFaculties = InstitutionFaculties
+          .unicalFaculties
+          .where((Faculty f) => f.name.contains('Education'))
+          .map((Faculty f) => f.name)
+          .toList();
+      expect(educationFaculties, hasLength(5), reason: '$educationFaculties');
+    });
+  });
+
   group('lookup', () {
     test('a UNN student gets UNN faculties, not the generic list', () {
       final List<Faculty> faculties =
