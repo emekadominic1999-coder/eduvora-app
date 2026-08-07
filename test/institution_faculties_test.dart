@@ -523,6 +523,71 @@ void main() {
     });
   });
 
+  group('BUK structure', () {
+    const String buk = 'Bayero University, Kano';
+
+    test('is recognised as a mapped institution', () {
+      expect(InstitutionFaculties.hasStructureFor(buk), isTrue);
+    });
+
+    test('has eighteen faculties', () {
+      expect(InstitutionFaculties.bukFaculties, hasLength(18));
+    });
+
+    test(
+      'found the two faculties whose menu pointed at a staff list, not a submenu',
+      () {
+        // Economics & Management Sciences and Social Sciences both link
+        // "Departments" straight to a staff-by-department page rather than a
+        // dropdown; reading only the dropdown would have left both empty.
+        final Faculty ems = InstitutionFaculties.bukFaculties.firstWhere(
+          (Faculty f) => f.name == 'Faculty of Economics & Management Sciences',
+        );
+        final Faculty ss = InstitutionFaculties.bukFaculties.firstWhere(
+          (Faculty f) => f.name == 'Faculty of Social Sciences',
+        );
+        expect(ems.departments, isNotEmpty);
+        expect(ss.departments, isNotEmpty);
+        expect(ems.departments, contains('Public Administration'));
+        expect(ss.departments, contains('Sociology'));
+      },
+    );
+
+    test('gives engineering departments their full name', () {
+      // BUK's own menu prints these as bare adjectives ("Civil",
+      // "Mechanical") with "Engineering" implied by the page — wrong once
+      // shown on its own.
+      final Faculty engineering = InstitutionFaculties.bukFaculties
+          .firstWhere((Faculty f) => f.name == 'Faculty of Engineering');
+      expect(engineering.departments, contains('Civil Engineering'));
+      expect(engineering.departments, isNot(contains('Civil')));
+    });
+
+    test('corrects the misspellings on the source site', () {
+      final Faculty allied = InstitutionFaculties.bukFaculties.firstWhere(
+        (Faculty f) => f.name == 'Faculty of Allied Health Sciences',
+      );
+      // Published as "Enviromental Health Science".
+      expect(allied.departments, contains('Environmental Health Science'));
+
+      final Faculty dentistry = InstitutionFaculties.bukFaculties.firstWhere(
+        (Faculty f) => f.name == 'Faculty of Dentistry',
+      );
+      // Published as "Oral and Maxilofacial".
+      expect(
+        dentistry.departments,
+        contains('Oral and Maxillofacial Surgery'),
+      );
+    });
+
+    test('keeps Islamic Law, alongside UNILORIN and no one else mapped', () {
+      final Faculty law = InstitutionFaculties.bukFaculties.firstWhere(
+        (Faculty f) => f.name == 'Faculty of Law',
+      );
+      expect(law.departments, contains('Islamic Law'));
+    });
+  });
+
   group('lookup', () {
     test('a UNN student gets UNN faculties, not the generic list', () {
       final List<Faculty> faculties =
