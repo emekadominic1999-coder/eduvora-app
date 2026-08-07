@@ -34,6 +34,7 @@ class InstitutionFaculties {
         'Federal University of Technology, Minna': futminnaFaculties,
         'Federal University of Technology, Owerri': futoFaculties,
         'Ahmadu Bello University, Zaria': abuFaculties,
+        'Bowen University, Iwo': bowenFaculties,
       };
 
   /// True when this institution has been mapped properly.
@@ -2457,6 +2458,116 @@ class InstitutionFaculties {
         'Public Health and Preventive Medicine',
         'Surgery and Radiology',
         'Theriogenology',
+      ],
+    ),
+  ];
+
+  // -------------------------------------------------------------- BOWEN
+  //
+  // Source: Bowen University's own programme directory at
+  // bowen.edu.ng/degree-programme/, read on 6 August 2026 — a single page
+  // tagging every programme with the college that teaches it, the most
+  // exhaustive single source found across every school mapped so far.
+  //
+  // Bowen is private and organises itself into Colleges rather than
+  // Faculties, kept as its own name here, the way LASU's Colleges were.
+  // Environmental Management is filed under the College of Agriculture,
+  // Engineering and Science on Bowen's own page rather than under
+  // Environmental Sciences — kept where the source put it rather than
+  // moved to where it might be expected.
+
+  static const List<Faculty> bowenFaculties = <Faculty>[
+    Faculty(
+      name: 'College of Agriculture, Engineering and Science',
+      icon: Icons.agriculture_rounded,
+      colour: AppColours.success,
+      departments: <String>[
+        'Agricultural Economics',
+        'Agricultural Extension and Rural Development',
+        'Animal Science',
+        'Biochemistry',
+        'Biotechnology',
+        'Chemistry',
+        'Crop Protection',
+        'Electrical/Electronics Engineering',
+        'Environmental Management',
+        'Food Science and Technology',
+        'Industrial Chemistry',
+        'Mathematics',
+        'Mechatronics Engineering',
+        'Microbiology',
+        'Physics',
+        'Plant Biology',
+        'Pure and Applied Biology',
+        'Statistics',
+        'Zoology',
+      ],
+    ),
+    Faculty(
+      name: 'College of Computing Studies',
+      icon: Icons.computer_rounded,
+      colour: AppColours.primary,
+      departments: <String>[
+        'Computer Science',
+        'Cyber Security',
+        'Information Technology',
+        'Software Engineering',
+      ],
+    ),
+    Faculty(
+      name: 'College of Environmental Sciences',
+      icon: Icons.apartment_rounded,
+      colour: Color(0xFFCA8A04),
+      departments: <String>['Architecture', 'Surveying and Geoinformatics'],
+    ),
+    Faculty(
+      name: 'College of Health Sciences',
+      icon: Icons.health_and_safety_rounded,
+      colour: Color(0xFF0D9488),
+      departments: <String>[
+        'Anatomy',
+        'Medical Laboratory Science',
+        'Medicine and Surgery',
+        'Nursing Science',
+        'Nutrition and Dietetics',
+        'Physiology',
+        'Physiotherapy',
+        'Public Health',
+      ],
+    ),
+    Faculty(
+      name: 'College of Law',
+      icon: Icons.gavel_rounded,
+      colour: Color(0xFF7C3AED),
+      departments: <String>['Law'],
+    ),
+    Faculty(
+      name: 'College of Liberal Studies',
+      icon: Icons.menu_book_rounded,
+      colour: Color(0xFFDB2777),
+      departments: <String>[
+        'Communication Arts',
+        'English',
+        'History and Diplomatic Studies',
+        'Music',
+        'Religious Studies',
+        'Theatre Arts',
+      ],
+    ),
+    Faculty(
+      name: 'College of Management and Social Sciences',
+      icon: Icons.business_center_rounded,
+      colour: AppColours.primary,
+      departments: <String>[
+        'Accounting',
+        'Banking and Finance',
+        'Business Administration',
+        'Economics',
+        'Industrial Relations and Personnel Management',
+        'International Relations',
+        'Mass Communication',
+        'Political Science',
+        'Sociology',
       ],
     ),
   ];

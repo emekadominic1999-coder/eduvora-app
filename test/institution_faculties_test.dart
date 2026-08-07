@@ -855,6 +855,41 @@ void main() {
     });
   });
 
+  group('Bowen structure', () {
+    const String bowen = 'Bowen University, Iwo';
+
+    test('is recognised as a mapped institution', () {
+      expect(InstitutionFaculties.hasStructureFor(bowen), isTrue);
+    });
+
+    test('has seven colleges', () {
+      expect(InstitutionFaculties.bowenFaculties, hasLength(7));
+    });
+
+    test('calls them "College of X", matching how Bowen names them', () {
+      for (final Faculty f in InstitutionFaculties.bowenFaculties) {
+        expect(f.name, startsWith('College of'), reason: f.name);
+      }
+    });
+
+    test(
+      'keeps Environmental Management where Bowen filed it — Agriculture, '
+      'Engineering and Science — rather than moving it to Environmental '
+      'Sciences where it might be expected',
+      () {
+        final Faculty aes = InstitutionFaculties.bowenFaculties.firstWhere(
+          (Faculty f) =>
+              f.name == 'College of Agriculture, Engineering and Science',
+        );
+        final Faculty env = InstitutionFaculties.bowenFaculties.firstWhere(
+          (Faculty f) => f.name == 'College of Environmental Sciences',
+        );
+        expect(aes.departments, contains('Environmental Management'));
+        expect(env.departments, isNot(contains('Environmental Management')));
+      },
+    );
+  });
+
   group('lookup', () {
     test('a UNN student gets UNN faculties, not the generic list', () {
       final List<Faculty> faculties =
