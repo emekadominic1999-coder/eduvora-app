@@ -407,6 +407,60 @@ void main() {
     });
   });
 
+  group('UNILORIN structure', () {
+    const String unilorin = 'University of Ilorin';
+
+    test('is recognised as a mapped institution', () {
+      expect(InstitutionFaculties.hasStructureFor(unilorin), isTrue);
+    });
+
+    test('has sixteen faculties', () {
+      expect(InstitutionFaculties.unilorinFaculties, hasLength(16));
+    });
+
+    test('includes the health faculties missing from its own index', () {
+      // unilorin.edu.ng/faculties lists only thirteen; the three College of
+      // Health Sciences faculties sit on separate subdomains. Reading just
+      // the index would leave a medical student with no faculty to pick.
+      final Set<String> names = InstitutionFaculties.unilorinFaculties
+          .map((Faculty f) => f.name)
+          .toSet();
+      expect(names, contains('Faculty of Basic Medical Sciences'));
+      expect(names, contains('Faculty of Basic Clinical Sciences'));
+      expect(names, contains('Faculty of Clinical Sciences'));
+    });
+
+    test('a medical student can find Medicine', () {
+      final List<String> clinical = AcademicStructure.departmentsFor(
+        InstitutionType.university,
+        'Faculty of Clinical Sciences',
+        institutionName: unilorin,
+      );
+      expect(clinical, contains('Medicine'));
+      expect(clinical, contains('Surgery'));
+      expect(clinical, contains('Nursing Science'));
+    });
+
+    test('corrects the misspelling on the source site', () {
+      final Faculty basicClinical = InstitutionFaculties.unilorinFaculties
+          .firstWhere(
+            (Faculty f) => f.name == 'Faculty of Basic Clinical Sciences',
+          );
+      // Published as "Heamatology".
+      expect(
+        basicClinical.departments,
+        contains('Haematology & Blood Transfusion'),
+      );
+    });
+
+    test('keeps Islamic Law, which the other mapped schools do not teach', () {
+      final Faculty law = InstitutionFaculties.unilorinFaculties.firstWhere(
+        (Faculty f) => f.name == 'Faculty of Law',
+      );
+      expect(law.departments, contains('Islamic Law'));
+    });
+  });
+
   group('lookup', () {
     test('a UNN student gets UNN faculties, not the generic list', () {
       final List<Faculty> faculties =
