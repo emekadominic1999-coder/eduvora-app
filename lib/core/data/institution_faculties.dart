@@ -25,6 +25,7 @@ class InstitutionFaculties {
       <String, List<Faculty>>{
         'University of Nigeria, Nsukka': unnFaculties,
         'Nnamdi Azikiwe University, Awka': unizikFaculties,
+        'University of Uyo': uniuyoFaculties,
       };
 
   /// True when this institution has been mapped properly.
@@ -564,6 +565,192 @@ class InstitutionFaculties {
         'Home Economics Education',
         'Industrial Technology Education',
         'Technical Education',
+      ],
+    ),
+  ];
+
+  // -------------------------------------------------------------- UNIUYO
+  //
+  // Source: the University of Uyo's own site navigation, where every
+  // department sits at /faculty-of-x/department — read on 6 August 2026.
+  //
+  // The menu abbreviates, and abbreviations are expanded here so a student
+  // searching the ordinary word finds their department: "Agric" becomes
+  // "Agricultural", "Edu." becomes "Educational", "Mgt." becomes
+  // "Management". Two plain misspellings on the source are also corrected —
+  // "Padiatrics" and a lower-cased "traumatology".
+
+  static const List<Faculty> uniuyoFaculties = <Faculty>[
+    Faculty(
+      name: 'Faculty of Agriculture',
+      icon: Icons.agriculture_rounded,
+      colour: AppColours.success,
+      departments: <String>[
+        'Agricultural Economics and Extension',
+        'Animal Science',
+        'Crop Science',
+        'Fisheries and Aquaculture',
+        'Food Science and Technology',
+        'Forestry and Environmental Management',
+        'Soil Science and Land Management',
+      ],
+    ),
+    Faculty(
+      name: 'Faculty of Arts',
+      icon: Icons.menu_book_rounded,
+      colour: Color(0xFFDB2777),
+      departments: <String>[
+        'Communication Arts',
+        'English',
+        'Foreign Languages – French',
+        'History and International Studies',
+        'Linguistics & Nigerian Languages',
+        'Music',
+        'Philosophy',
+        'Religious & Cultural Studies',
+        'Theatre Arts',
+      ],
+    ),
+    Faculty(
+      name: 'Faculty of Basic Medical Sciences',
+      icon: Icons.biotech_rounded,
+      colour: Color(0xFF0891B2),
+      departments: <String>['Anatomy', 'Biochemistry', 'Physiology'],
+    ),
+    Faculty(
+      name: 'Faculty of Biological Sciences',
+      icon: Icons.eco_rounded,
+      colour: AppColours.success,
+      departments: <String>[
+        'Animal and Environmental Biology',
+        'Biochemistry',
+        'Botany and Ecological Studies',
+        'Microbiology',
+      ],
+    ),
+    Faculty(
+      name: 'Faculty of Clinical Sciences',
+      icon: Icons.local_hospital_rounded,
+      colour: AppColours.danger,
+      departments: <String>[
+        'Community Health',
+        'Haematology',
+        'Medical Microbiology and Parasitology',
+        'Obstetrics & Gynaecology',
+        'Orthopaedics/Traumatology',
+        'Paediatrics',
+      ],
+    ),
+    Faculty(
+      name: 'Faculty of Computing',
+      icon: Icons.computer_rounded,
+      colour: AppColours.primary,
+      departments: <String>[
+        'Computer Science',
+        'Cyber Security',
+        'Data Science',
+      ],
+    ),
+    Faculty(
+      name: 'Faculty of Education',
+      icon: Icons.school_rounded,
+      colour: AppColours.info,
+      departments: <String>[
+        'Curriculum Studies, Educational Management and Planning',
+        'Early Childhood and Special Education',
+        'Educational Foundations, Guidance and Counselling',
+        'Educational Technology and Library Science',
+        'Physical & Health Education',
+        'Science Education',
+        'Vocational Education',
+      ],
+    ),
+    Faculty(
+      name: 'Faculty of Engineering',
+      icon: Icons.engineering_rounded,
+      colour: AppColours.accent,
+      departments: <String>[
+        'Agricultural Engineering',
+        'Chemical Engineering',
+        'Civil Engineering',
+        'Computer Engineering',
+        'Electrical & Electronics Engineering',
+        'Food Engineering',
+        'Mechanical Engineering',
+        'Petroleum Engineering',
+      ],
+    ),
+    Faculty(
+      name: 'Faculty of Environmental Studies',
+      icon: Icons.apartment_rounded,
+      colour: Color(0xFFCA8A04),
+      departments: <String>[
+        'Architecture',
+        'Building',
+        'Estate Management',
+        'Fine & Industrial Arts',
+        'Geoinformatics & Land Surveying',
+        'Quantity Surveying',
+        'Urban and Regional Planning',
+      ],
+    ),
+    Faculty(
+      name: 'Faculty of Law',
+      icon: Icons.gavel_rounded,
+      colour: Color(0xFF7C3AED),
+      departments: <String>[
+        'International Law and Jurisprudence',
+        'Private Law',
+        'Public Law',
+      ],
+    ),
+    Faculty(
+      name: 'Faculty of Management Sciences',
+      icon: Icons.business_center_rounded,
+      colour: AppColours.primary,
+      departments: <String>[
+        'Accounting',
+        'Banking and Finance',
+        'Business Management',
+        'Insurance',
+        'Marketing',
+      ],
+    ),
+    Faculty(
+      name: 'Faculty of Pharmacy',
+      icon: Icons.medication_rounded,
+      colour: Color(0xFF0891B2),
+      departments: <String>[
+        'Clinical and Biopharmacy',
+        'Pharmaceutical and Medical Chemistry',
+        'Pharmaceutics and Pharmaceutical Technology',
+        'Pharmacognosy and Natural Medicine',
+        'Pharmacology and Toxicology',
+      ],
+    ),
+    Faculty(
+      name: 'Faculty of Physical Sciences',
+      icon: Icons.science_rounded,
+      colour: AppColours.primary,
+      departments: <String>[
+        'Chemistry',
+        'Geology',
+        'Geophysics',
+        'Mathematics',
+        'Physics',
+        'Statistics',
+      ],
+    ),
+    Faculty(
+      name: 'Faculty of Social Sciences',
+      icon: Icons.groups_rounded,
+      colour: Color(0xFFDB2777),
+      departments: <String>[
+        'Economics',
+        'Geography',
+        'Political Science and Public Administration',
+        'Psychology',
+        'Sociology and Anthropology',
       ],
     ),
   ];

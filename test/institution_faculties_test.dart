@@ -268,6 +268,145 @@ void main() {
     });
   });
 
+  group('every mapped institution', () {
+    // These run against whatever is in the map, so a school added later is
+    // held to the same standard without anyone remembering to add a test.
+    test('names a real institution from the directory', () {
+      for (final String name in InstitutionFaculties.mappedInstitutions) {
+        expect(
+          NigerianInstitutions.byName(name),
+          isNotNull,
+          reason: '$name is mapped but not in the directory',
+        );
+      }
+    });
+
+    test('has no empty faculty', () {
+      for (final String name in InstitutionFaculties.mappedInstitutions) {
+        for (final Faculty f in InstitutionFaculties.forInstitution(name)!) {
+          expect(f.departments, isNotEmpty, reason: '$name — ${f.name}');
+        }
+      }
+    });
+
+    test('never repeats a faculty name', () {
+      for (final String name in InstitutionFaculties.mappedInstitutions) {
+        final List<Faculty> faculties =
+            InstitutionFaculties.forInstitution(name)!;
+        final Set<String> names = faculties
+            .map((Faculty f) => f.name)
+            .toSet();
+        expect(names.length, faculties.length, reason: name);
+      }
+    });
+
+    test('never repeats a department inside one faculty', () {
+      for (final String name in InstitutionFaculties.mappedInstitutions) {
+        for (final Faculty f in InstitutionFaculties.forInstitution(name)!) {
+          expect(
+            f.departments.toSet().length,
+            f.departments.length,
+            reason: '$name — ${f.name}',
+          );
+        }
+      }
+    });
+
+    test('lists departments alphabetically', () {
+      for (final String name in InstitutionFaculties.mappedInstitutions) {
+        for (final Faculty f in InstitutionFaculties.forInstitution(name)!) {
+          final List<String> sorted = List<String>.from(f.departments)..sort();
+          expect(f.departments, sorted, reason: '$name — ${f.name}');
+        }
+      }
+    });
+
+    test('carries no leftover markup or encoding', () {
+      // "&#038;" and "&amp;" both reached a department name during scraping.
+      for (final String name in InstitutionFaculties.mappedInstitutions) {
+        for (final Faculty f in InstitutionFaculties.forInstitution(name)!) {
+          for (final String d in <String>[f.name, ...f.departments]) {
+            expect(d, isNot(contains('&#')), reason: '$name — $d');
+            expect(d, isNot(contains('&amp;')), reason: '$name — $d');
+            expect(d, isNot(contains('<')), reason: '$name — $d');
+            expect(d.trim(), d, reason: '$name — "$d" has stray whitespace');
+          }
+        }
+      }
+    });
+
+    test('drops menu shorthand a student would not search for', () {
+      for (final String name in InstitutionFaculties.mappedInstitutions) {
+        for (final Faculty f in InstitutionFaculties.forInstitution(name)!) {
+          for (final String d in f.departments) {
+            expect(
+              RegExp(r'\b(Edu|Mgt|Agric)\.?\s').hasMatch(d),
+              isFalse,
+              reason: '$name — "$d" still uses menu shorthand',
+            );
+            expect(
+              d.toLowerCase().startsWith('department of'),
+              isFalse,
+              reason: '$name — $d',
+            );
+          }
+        }
+      }
+    });
+
+    test('is served ahead of the generic taxonomy', () {
+      for (final String name in InstitutionFaculties.mappedInstitutions) {
+        final Institution institution = NigerianInstitutions.byName(name)!;
+        expect(
+          AcademicStructure.facultiesForInstitution(name, institution.type),
+          InstitutionFaculties.forInstitution(name),
+          reason: name,
+        );
+      }
+    });
+  });
+
+  group('UNIUYO structure', () {
+    const String uniuyo = 'University of Uyo';
+
+    test('is recognised as a mapped institution', () {
+      expect(InstitutionFaculties.hasStructureFor(uniuyo), isTrue);
+    });
+
+    test('has fourteen faculties', () {
+      expect(InstitutionFaculties.uniuyoFaculties, hasLength(14));
+    });
+
+    test('has a Faculty of Computing, which UNN and UNIZIK do not', () {
+      final Set<String> names = InstitutionFaculties.uniuyoFaculties
+          .map((Faculty f) => f.name)
+          .toSet();
+      expect(names, contains('Faculty of Computing'));
+    });
+
+    test('expands the abbreviations its own menu uses', () {
+      final Faculty education = InstitutionFaculties.uniuyoFaculties
+          .firstWhere((Faculty f) => f.name == 'Faculty of Education');
+      expect(
+        education.departments,
+        contains('Educational Technology and Library Science'),
+      );
+      expect(
+        education.departments,
+        isNot(contains('Edu. Tech and Library Science')),
+      );
+    });
+
+    test('corrects the misspellings on the source site', () {
+      final Faculty clinical = InstitutionFaculties.uniuyoFaculties.firstWhere(
+        (Faculty f) => f.name == 'Faculty of Clinical Sciences',
+      );
+      // Published as "Padiatrics".
+      expect(clinical.departments, contains('Paediatrics'));
+      expect(clinical.departments, isNot(contains('Padiatrics')));
+    });
+  });
+
   group('lookup', () {
     test('a UNN student gets UNN faculties, not the generic list', () {
       final List<Faculty> faculties =
