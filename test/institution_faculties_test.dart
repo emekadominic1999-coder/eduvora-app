@@ -689,6 +689,74 @@ void main() {
     });
   });
 
+  group('FUTMINNA structure', () {
+    const String futminna = 'Federal University of Technology, Minna';
+
+    test('is recognised as a mapped institution', () {
+      expect(InstitutionFaculties.hasStructureFor(futminna), isTrue);
+    });
+
+    test('has twelve schools', () {
+      expect(InstitutionFaculties.futminnaFaculties, hasLength(12));
+    });
+
+    test('calls them "School of X", matching how FUTMinna names them', () {
+      for (final Faculty f in InstitutionFaculties.futminnaFaculties) {
+        expect(f.name, startsWith('School of'), reason: f.name);
+      }
+    });
+
+    test(
+      'skips Agronomy and Forestry Technology and Agricultural Management '
+      'and Extension Technology, whose pages returned identical department '
+      'lists — a site fault, not two schools sharing a curriculum',
+      () {
+        final Set<String> names = InstitutionFaculties.futminnaFaculties
+            .map((Faculty f) => f.name)
+            .toSet();
+        expect(
+          names,
+          isNot(contains('School of Agronomy and Forestry Technology')),
+        );
+        expect(
+          names,
+          isNot(
+            contains(
+              'School of Agricultural Management and Extension Technology',
+            ),
+          ),
+        );
+        // The eight departments they would have split between are kept
+        // under the original school instead, where the list is verified.
+        final Faculty saat = InstitutionFaculties.futminnaFaculties
+            .firstWhere(
+              (Faculty f) =>
+                  f.name == 'School of Agriculture and Agricultural '
+                      'Technology',
+            );
+        expect(saat.departments, hasLength(8));
+      },
+    );
+
+    test(
+      'leaves out the College of Medical Sciences and Health Technology, '
+      'an umbrella over schools already listed separately',
+      () {
+        final Set<String> names = InstitutionFaculties.futminnaFaculties
+            .map((Faculty f) => f.name)
+            .toSet();
+        expect(
+          names,
+          isNot(
+            contains(
+              'College of Medical Sciences and Health Technology',
+            ),
+          ),
+        );
+      },
+    );
+  });
+
   group('lookup', () {
     test('a UNN student gets UNN faculties, not the generic list', () {
       final List<Faculty> faculties =

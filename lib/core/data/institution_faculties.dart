@@ -31,6 +31,7 @@ class InstitutionFaculties {
         'Bayero University, Kano': bukFaculties,
         'University of Abuja': uniabujaFaculties,
         'Lagos State University': lasuFaculties,
+        'Federal University of Technology, Minna': futminnaFaculties,
       };
 
   /// True when this institution has been mapped properly.
@@ -1972,6 +1973,164 @@ class InstitutionFaculties {
         'Transport Management and Operations',
         'Transport Planning and Policy',
         'Transport Technology and Infrastructure',
+      ],
+    ),
+  ];
+
+  // ------------------------------------------------------------ FUTMINNA
+  //
+  // Source: futminna.edu.ng's individual school pages, read on 6 August
+  // 2026. As a university of technology, FUTMinna calls its faculties
+  // "Schools" rather than "Faculty of X" — kept as their own name here
+  // rather than translated, the way LASU's "School of Agriculture" and
+  // "College of Basic Medical Sciences" were kept rather than renamed.
+  //
+  // Four schools in the site's own navigation are left out. Architectural
+  // Technology (SAT) is a dead link, its subject now folded into
+  // Environmental Technology below. The College of Medical Sciences and
+  // Health Technology (CMSHT) is an umbrella over three of the schools
+  // already listed separately, not a faculty with departments of its own.
+  // Agronomy and Forestry Technology (SAFT) and Agricultural Management and
+  // Extension Technology (SAMET) both showed the identical four departments
+  // when read — a caching fault on the site, not two schools that happen to
+  // teach the same thing — so School of Agriculture and Agricultural
+  // Technology is kept instead, its eight departments read from the
+  // school's own prose history rather than a sidebar that cannot be
+  // trusted for these two.
+
+  static const List<Faculty> futminnaFaculties = <Faculty>[
+    Faculty(
+      name: 'School of Agriculture and Agricultural Technology',
+      icon: Icons.agriculture_rounded,
+      colour: AppColours.success,
+      departments: <String>[
+        'Agricultural Economics and Farm Management',
+        'Agricultural Extension and Rural Development',
+        'Animal Production',
+        'Crop Production',
+        'Food Science and Technology',
+        'Horticulture',
+        'Soil Science and Land Management',
+        'Water Resources, Aquaculture and Fisheries Technology',
+      ],
+    ),
+    Faculty(
+      name: 'School of Allied Health Sciences',
+      icon: Icons.health_and_safety_rounded,
+      colour: Color(0xFF0D9488),
+      departments: <String>['Medical Laboratory Science', 'Nursing Science'],
+    ),
+    Faculty(
+      name: 'School of Basic Medical Sciences',
+      icon: Icons.biotech_rounded,
+      colour: Color(0xFF0891B2),
+      departments: <String>[
+        'Human Anatomy',
+        'Human Physiology',
+        'Medicine and Surgery',
+      ],
+    ),
+    Faculty(
+      name: 'School of Electrical Engineering and Technology',
+      icon: Icons.engineering_rounded,
+      colour: AppColours.accent,
+      departments: <String>[
+        'Computer Engineering',
+        'Electrical and Electronics Engineering',
+        'Mechatronics Engineering',
+        'Telecommunication Engineering',
+      ],
+    ),
+    Faculty(
+      name: 'School of Environmental Technology',
+      icon: Icons.apartment_rounded,
+      colour: Color(0xFFCA8A04),
+      departments: <String>[
+        'Architecture',
+        'Building',
+        'Estate Management and Valuation',
+        'Quantity Surveying',
+        'Surveying and Geoinformatics',
+        'Urban and Regional Planning',
+      ],
+    ),
+    Faculty(
+      name: 'School of Information and Communications Technology',
+      icon: Icons.computer_rounded,
+      colour: AppColours.primary,
+      departments: <String>[
+        'Computer Science',
+        'Cyber Security',
+        'Data Science',
+        'Information & Media Technology',
+        'Information Technology',
+        'Library & Information Technology',
+        'Software Engineering',
+      ],
+    ),
+    Faculty(
+      name: 'School of Infrastructure, Process Engineering and Technology',
+      icon: Icons.engineering_rounded,
+      colour: AppColours.accent,
+      departments: <String>[
+        'Agricultural and Bio Resources Engineering',
+        'Chemical Engineering',
+        'Civil Engineering',
+        'Food Engineering',
+        'Materials and Metallurgical Engineering',
+        'Mechanical Engineering',
+        'Petroleum and Gas Engineering',
+      ],
+    ),
+    Faculty(
+      name: 'School of Innovative Technology',
+      icon: Icons.lightbulb_rounded,
+      colour: Color(0xFF7C3AED),
+      departments: <String>[
+        'Entrepreneurship and Business Studies',
+        'Project Management Technology',
+        'Transport Management Technology',
+      ],
+    ),
+    Faculty(
+      name: 'School of Life Sciences',
+      icon: Icons.eco_rounded,
+      colour: AppColours.success,
+      departments: <String>[
+        'Animal Biology',
+        'Biochemistry',
+        'Microbiology',
+        'Plant Biology',
+      ],
+    ),
+    Faculty(
+      name: 'School of Pharmaceutical Sciences',
+      icon: Icons.medication_rounded,
+      colour: Color(0xFF0891B2),
+      departments: <String>['Doctor of Pharmacy (Pharm D)'],
+    ),
+    Faculty(
+      name: 'School of Physical Sciences',
+      icon: Icons.science_rounded,
+      colour: AppColours.primary,
+      departments: <String>[
+        'Chemistry',
+        'Geography',
+        'Geology',
+        'Mathematics',
+        'Physics',
+        'Statistics',
+      ],
+    ),
+    Faculty(
+      name: 'School of Science and Technology Education',
+      icon: Icons.school_rounded,
+      colour: AppColours.info,
+      departments: <String>[
+        'Educational Technology',
+        'Industrial and Technology Education',
+        'Library and Information Science',
+        'Science Education',
       ],
     ),
   ];
