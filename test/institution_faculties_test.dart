@@ -625,6 +625,70 @@ void main() {
     });
   });
 
+  group('LASU structure', () {
+    const String lasu = 'Lagos State University';
+
+    test('is recognised as a mapped institution', () {
+      expect(InstitutionFaculties.hasStructureFor(lasu), isTrue);
+    });
+
+    test('has eighteen faculties', () {
+      expect(InstitutionFaculties.lasuFaculties, hasLength(18));
+    });
+
+    test('leaves out CESSED, a research centre, not a faculty', () {
+      // Filed alongside the faculties on LASU's own site, but it is the
+      // Centre for Environmental Studies and Sustainable Development —
+      // nobody studies "at" it the way they study in Faculty of Science.
+      final Set<String> names = InstitutionFaculties.lasuFaculties
+          .map((Faculty f) => f.name.toLowerCase())
+          .toSet();
+      expect(names, isNot(contains(contains('cessed'))));
+    });
+
+    test('leaves out the School of Postgraduate Studies', () {
+      final Set<String> names = InstitutionFaculties.lasuFaculties
+          .map((Faculty f) => f.name)
+          .toSet();
+      expect(names, isNot(contains('School of Post Graduate Studies')));
+    });
+
+    test('merges the duplicated Creativity, Culture and Tourism page', () {
+      final int count = InstitutionFaculties.lasuFaculties
+          .where(
+            (Faculty f) =>
+                f.name == 'School of Creativity, Culture and Tourism Studies',
+          )
+          .length;
+      expect(count, 1);
+    });
+
+    test('corrects the spelling to match the rest of the app', () {
+      // Published on the source as "Anasthesia" and "Hematology".
+      final Faculty clinical = InstitutionFaculties.lasuFaculties.firstWhere(
+        (Faculty f) => f.name == 'Faculty of Clinical Sciences',
+      );
+      expect(clinical.departments, contains('Anaesthesia'));
+
+      final Faculty basicMedical = InstitutionFaculties.lasuFaculties
+          .firstWhere(
+            (Faculty f) => f.name == 'College of Basic Medical Sciences',
+          );
+      expect(
+        basicMedical.departments,
+        contains('Haematology and Blood Transfusion'),
+      );
+    });
+
+    test('gives Environmental Sciences a department to pick', () {
+      // LASU's own site publishes none for this faculty at all.
+      final Faculty env = InstitutionFaculties.lasuFaculties.firstWhere(
+        (Faculty f) => f.name == 'Faculty of Environmental Sciences',
+      );
+      expect(env.departments, isNotEmpty);
+    });
+  });
+
   group('lookup', () {
     test('a UNN student gets UNN faculties, not the generic list', () {
       final List<Faculty> faculties =
