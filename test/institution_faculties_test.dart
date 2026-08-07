@@ -588,6 +588,43 @@ void main() {
     });
   });
 
+  group('UNIABUJA structure', () {
+    const String uniabuja = 'University of Abuja';
+
+    test('is recognised as a mapped institution', () {
+      expect(InstitutionFaculties.hasStructureFor(uniabuja), isTrue);
+    });
+
+    test('has fourteen faculties', () {
+      expect(InstitutionFaculties.uniabujaFaculties, hasLength(14));
+    });
+
+    test(
+      'gives Clinical Science and Veterinary Medicine a department to pick, '
+      'even though the site itself publishes none',
+      () {
+        final Faculty clinical = InstitutionFaculties.uniabujaFaculties
+            .firstWhere((Faculty f) => f.name == 'Faculty of Clinical Science');
+        final Faculty vet = InstitutionFaculties.uniabujaFaculties.firstWhere(
+          (Faculty f) => f.name == 'Faculty of Veterinary Medicine',
+        );
+        expect(clinical.departments, isNotEmpty);
+        expect(vet.departments, isNotEmpty);
+        expect(clinical.departments, contains('Medicine'));
+      },
+    );
+
+    test('narrows Education to departments, not individual degree options', () {
+      // The source page mixes "Arts Education" with specific programmes like
+      // "B. Sc. (Ed) Chemistry" in one list; only the seven the faculty's own
+      // summary counts as departments belong here.
+      final Faculty education = InstitutionFaculties.uniabujaFaculties
+          .firstWhere((Faculty f) => f.name == 'Faculty of Education');
+      expect(education.departments, hasLength(7));
+      expect(education.departments, isNot(contains('B. Sc. (Ed) Chemistry')));
+    });
+  });
+
   group('lookup', () {
     test('a UNN student gets UNN faculties, not the generic list', () {
       final List<Faculty> faculties =

@@ -29,6 +29,7 @@ class InstitutionFaculties {
         'University of Ilorin': unilorinFaculties,
         'University of Calabar': unicalFaculties,
         'Bayero University, Kano': bukFaculties,
+        'University of Abuja': uniabujaFaculties,
       };
 
   /// True when this institution has been mapped properly.
@@ -1538,6 +1539,212 @@ class InstitutionFaculties {
         'Veterinary Microbiology',
         'Veterinary Parasitology and Entomology',
         'Veterinary Physiology and Biochemistry',
+      ],
+    ),
+  ];
+
+  // ------------------------------------------------------------- UNIABUJA
+  //
+  // Source: uniabuja.edu.ng's fourteen faculty pages, read on 6 August 2026.
+  // The department list on each page is rendered by client-side JavaScript,
+  // invisible to a plain HTTP fetch — read through a real browser instead so
+  // nothing here was guessed from a static page that never showed its data.
+  //
+  // Two faculties, Clinical Science and Veterinary Medicine, are two of very
+  // few genuinely blank pages on UNIABUJA's own site — no departments
+  // published at all, not even a count. Rather than leave a UNIABUJA medical
+  // or veterinary student with an empty faculty, their departments below
+  // follow the standard Nigerian structure for those disciplines, the same
+  // approach taken for UNN's Medicine and Basic Medical Sciences. Unverified,
+  // flagged, worth a check by somebody on the ground.
+  //
+  // Education's page mixes department names with specific degree options
+  // ("B. Sc. (Ed) Chemistry", "History Education") under the same list; only
+  // the seven the faculty's own summary counts as departments are kept.
+
+  static const List<Faculty> uniabujaFaculties = <Faculty>[
+    Faculty(
+      name: 'Faculty of Agriculture',
+      icon: Icons.agriculture_rounded,
+      colour: AppColours.success,
+      departments: <String>[
+        'Agricultural Economics',
+        'Agricultural Economics and Extension',
+        'Agricultural Extension and Rural Sociology',
+        'Agronomy',
+        'Animal Science',
+        'Crop Protection',
+        'Crop Science',
+        'Dairy Science',
+        'Fisheries, Aquaculture and Wildlife',
+        'Food Science and Technology',
+        'Forestry and Bioresources',
+        'Horticulture and Landscaping',
+        'Soil Science',
+      ],
+    ),
+    Faculty(
+      name: 'Faculty of Art',
+      icon: Icons.menu_book_rounded,
+      colour: Color(0xFFDB2777),
+      departments: <String>[
+        'Arabic',
+        'Christian Religious Studies',
+        'English',
+        'History and Diplomatic Studies',
+        'Islamic Studies',
+        'Linguistics and African Language',
+        'Philosophy',
+        'Theatre Arts',
+      ],
+    ),
+    Faculty(
+      name: 'Faculty of Basic Medical Science',
+      icon: Icons.biotech_rounded,
+      colour: Color(0xFF0891B2),
+      departments: <String>[
+        'Anatomical Science',
+        'Human Physiology',
+        'Medical Biochemistry',
+        'Medicine and Surgery',
+      ],
+    ),
+    // Unverified — see the note above.
+    Faculty(
+      name: 'Faculty of Clinical Science',
+      icon: Icons.local_hospital_rounded,
+      colour: AppColours.danger,
+      departments: <String>[
+        'Anaesthesia',
+        'Community Medicine',
+        'Medicine',
+        'Obstetrics and Gynaecology',
+        'Paediatrics',
+        'Psychiatry',
+        'Radiology',
+        'Surgery',
+      ],
+    ),
+    Faculty(
+      name: 'Faculty of Communication and Media Studies',
+      icon: Icons.campaign_rounded,
+      colour: Color(0xFFDB2777),
+      departments: <String>[
+        'Advertising and Public Relations',
+        'Broadcasting, Film and Multimedia Studies',
+        'Development and Strategic Communication',
+        'Information, Journalism and Media Studies',
+      ],
+    ),
+    Faculty(
+      name: 'Faculty of Education',
+      icon: Icons.school_rounded,
+      colour: AppColours.info,
+      departments: <String>[
+        'Arts Education',
+        'Educational Administration and Planning',
+        'Educational Foundations',
+        'Guidance and Counselling',
+        'Library and Information Science',
+        'Science and Environmental Education',
+        'Social Science Education',
+      ],
+    ),
+    Faculty(
+      name: 'Faculty of Engineering',
+      icon: Icons.engineering_rounded,
+      colour: AppColours.accent,
+      departments: <String>[
+        'Aeronautic and Astronautical Engineering',
+        'Agricultural Engineering',
+        'Chemical Engineering',
+        'Civil Engineering',
+        'Electrical/Electronics Engineering',
+        'Mechanical Engineering',
+        'Nuclear Engineering',
+        'Railway Engineering',
+      ],
+    ),
+    Faculty(
+      name: 'Faculty of Environmental Science',
+      icon: Icons.apartment_rounded,
+      colour: Color(0xFFCA8A04),
+      departments: <String>[
+        'Architecture and Industrial Design',
+        'Building and Quantity Surveying',
+        'Estate Management and Urban and Regional Planning',
+        'Surveying and Geoinformatics',
+      ],
+    ),
+    // Unverified — the site publishes no department list for Law either;
+    // a single-department Law faculty is the common shape in Nigeria and
+    // matches how UNICAL's own site presents its Law faculty.
+    Faculty(
+      name: 'Faculty of Law',
+      icon: Icons.gavel_rounded,
+      colour: Color(0xFF7C3AED),
+      departments: <String>['Law'],
+    ),
+    Faculty(
+      name: 'Faculty of Management Science',
+      icon: Icons.business_center_rounded,
+      colour: AppColours.primary,
+      departments: <String>[
+        'Accounting',
+        'Banking and Finance',
+        'Business Administration',
+        'Entrepreneurship Studies',
+        'Public Administration',
+        'Tourism and Hospitality Management',
+      ],
+    ),
+    Faculty(
+      name: 'Faculty of Nursing and Allied Health Sciences',
+      icon: Icons.health_and_safety_rounded,
+      colour: Color(0xFF0D9488),
+      departments: <String>['Medical Laboratory Science', 'Nursing Science'],
+    ),
+    Faculty(
+      name: 'Faculty of Science',
+      icon: Icons.science_rounded,
+      colour: AppColours.primary,
+      departments: <String>[
+        'Biochemistry',
+        'Biology',
+        'Botany',
+        'Chemistry',
+        'Computer Science',
+        'Geology and Mining',
+        'Mathematics',
+        'Microbiology',
+        'Physics',
+        'Statistics',
+        'Zoology',
+      ],
+    ),
+    Faculty(
+      name: 'Faculty of Social Science',
+      icon: Icons.groups_rounded,
+      colour: Color(0xFFDB2777),
+      departments: <String>[
+        'Economics',
+        'Geography and Environmental Management',
+        'Political Science',
+        'Sociology',
+      ],
+    ),
+    // Unverified — see the note above.
+    Faculty(
+      name: 'Faculty of Veterinary Medicine',
+      icon: Icons.pets_rounded,
+      colour: AppColours.success,
+      departments: <String>[
+        'Veterinary Anatomy',
+        'Veterinary Medicine',
+        'Veterinary Pathology and Microbiology',
+        'Veterinary Physiology and Pharmacology',
+        'Veterinary Public Health and Preventive Medicine',
+        'Veterinary Surgery and Radiology',
       ],
     ),
   ];
