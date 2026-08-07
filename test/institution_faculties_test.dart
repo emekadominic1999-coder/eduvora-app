@@ -757,6 +757,56 @@ void main() {
     );
   });
 
+  group('FUTO structure', () {
+    const String futo = 'Federal University of Technology, Owerri';
+
+    test('is recognised as a mapped institution', () {
+      expect(InstitutionFaculties.hasStructureFor(futo), isTrue);
+    });
+
+    test('has ten schools', () {
+      expect(InstitutionFaculties.futoFaculties, hasLength(10));
+    });
+
+    test('calls them "School of X", matching how FUTO names them', () {
+      for (final Faculty f in InstitutionFaculties.futoFaculties) {
+        expect(f.name, startsWith('School of'), reason: f.name);
+      }
+    });
+
+    test(
+      'leaves out General Studies and Postgraduate Studies, neither a '
+      'faculty an undergraduate belongs to',
+      () {
+        final Set<String> names = InstitutionFaculties.futoFaculties
+            .map((Faculty f) => f.name.toLowerCase())
+            .toSet();
+        expect(names, isNot(contains(contains('general studies'))));
+        expect(names, isNot(contains(contains('postgraduate'))));
+      },
+    );
+
+    test(
+      'keeps Estate Management under both schools that teach it, as FUTO '
+      'lists it, rather than merging two entries the source kept apart',
+      () {
+        final Faculty environmental = InstitutionFaculties.futoFaculties
+            .firstWhere((Faculty f) => f.name == 'School of Environmental Sciences');
+        final Faculty logistics = InstitutionFaculties.futoFaculties.firstWhere(
+          (Faculty f) => f.name == 'School of Logistics and Innovation Technology',
+        );
+        expect(
+          environmental.departments,
+          contains('Estate Management and Evaluation'),
+        );
+        expect(
+          logistics.departments,
+          contains('Estate Management and Valuation'),
+        );
+      },
+    );
+  });
+
   group('lookup', () {
     test('a UNN student gets UNN faculties, not the generic list', () {
       final List<Faculty> faculties =

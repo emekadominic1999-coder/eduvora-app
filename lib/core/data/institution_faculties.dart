@@ -32,6 +32,7 @@ class InstitutionFaculties {
         'University of Abuja': uniabujaFaculties,
         'Lagos State University': lasuFaculties,
         'Federal University of Technology, Minna': futminnaFaculties,
+        'Federal University of Technology, Owerri': futoFaculties,
       };
 
   /// True when this institution has been mapped properly.
@@ -2131,6 +2132,151 @@ class InstitutionFaculties {
         'Industrial and Technology Education',
         'Library and Information Science',
         'Science Education',
+      ],
+    ),
+  ];
+
+  // ------------------------------------------------------------- FUTO
+  //
+  // Source: futo.edu.ng's "Schools and Departments" page, read on 6 August
+  // 2026 — the fullest single page found for any school so far, giving
+  // every department for every faculty in one place with no gaps to guess
+  // at. Like FUTMinna, FUTO calls its faculties "Schools", kept as its own
+  // name here.
+  //
+  // Left out: the Directorate of General Studies and the School of
+  // Postgraduate Studies, neither of which is a faculty an undergraduate
+  // belongs to.
+  //
+  // Estate Management appears twice on FUTO's own page — once in
+  // Environmental Sciences as "Estate Management and Evaluation" and again
+  // in Logistics and Innovation Technology as "Estate Management and
+  // Valuation" — kept as published rather than merged, since the source did
+  // not treat them as the same entry.
+
+  static const List<Faculty> futoFaculties = <Faculty>[
+    Faculty(
+      name: 'School of Agriculture and Agricultural Technology',
+      icon: Icons.agriculture_rounded,
+      colour: AppColours.success,
+      departments: <String>[
+        'Agribusiness',
+        'Agricultural Economics',
+        'Agricultural Extension',
+        'Animal Science Technology',
+        'Crop Science and Technology',
+        'Fisheries and Aquaculture Technology',
+        'Forestry and Wildlife Technology',
+        'Soil Science and Technology',
+      ],
+    ),
+    Faculty(
+      name: 'School of Basic Medical Sciences',
+      icon: Icons.biotech_rounded,
+      colour: Color(0xFF0891B2),
+      departments: <String>['Human Anatomy', 'Human Physiology'],
+    ),
+    Faculty(
+      name: 'School of Biological Science',
+      icon: Icons.eco_rounded,
+      colour: AppColours.success,
+      departments: <String>[
+        'Biochemistry',
+        'Biology',
+        'Biotechnology',
+        'Forensic Science',
+        'Microbiology',
+      ],
+    ),
+    Faculty(
+      name: 'School of Electrical Systems and Engineering Technology',
+      icon: Icons.engineering_rounded,
+      colour: AppColours.accent,
+      departments: <String>[
+        'Computer Engineering',
+        'Electrical (Power Systems) Engineering',
+        'Electronics Engineering',
+        'Mechatronics Engineering',
+        'Telecommunications Engineering',
+      ],
+    ),
+    Faculty(
+      name: 'School of Engineering and Engineering Technology',
+      icon: Icons.engineering_rounded,
+      colour: AppColours.accent,
+      departments: <String>[
+        'Agricultural and Bioresources Engineering',
+        'Biomedical Engineering',
+        'Chemical Engineering',
+        'Civil Engineering',
+        'Food Science and Technology',
+        'Material and Metallurgical Engineering',
+        'Mechanical Engineering',
+        'Petroleum Engineering',
+        'Polymer and Textile Engineering',
+      ],
+    ),
+    Faculty(
+      name: 'School of Environmental Sciences',
+      icon: Icons.apartment_rounded,
+      colour: Color(0xFFCA8A04),
+      departments: <String>[
+        'Architecture',
+        'Building Technology',
+        'Environmental Management',
+        'Estate Management and Evaluation',
+        'Quantity Surveying',
+        'Surveying and Geoinformatics',
+        'Urban and Regional Planning',
+      ],
+    ),
+    Faculty(
+      name: 'School of Health Technology',
+      icon: Icons.health_and_safety_rounded,
+      colour: Color(0xFF0D9488),
+      departments: <String>[
+        'Dental Technology',
+        'Environmental Health Science',
+        'Optometry',
+        'Prosthetics and Orthotics',
+        'Public Health Technology',
+        'Radiography',
+      ],
+    ),
+    Faculty(
+      name: 'School of Information and Communication Technology',
+      icon: Icons.computer_rounded,
+      colour: AppColours.primary,
+      departments: <String>[
+        'Computer Science',
+        'Cyber Security',
+        'Information Technology',
+        'Software Engineering',
+      ],
+    ),
+    Faculty(
+      name: 'School of Logistics and Innovation Technology',
+      icon: Icons.local_shipping_rounded,
+      colour: AppColours.accent,
+      departments: <String>[
+        'Entrepreneurship and Innovation',
+        'Estate Management and Valuation',
+        'Logistics and Supply Chain Management',
+        'Logistics and Transport Technology',
+        'Maritime Technology and Logistics',
+        'Project Management Technology',
+      ],
+    ),
+    Faculty(
+      name: 'School of Physical Science',
+      icon: Icons.science_rounded,
+      colour: AppColours.primary,
+      departments: <String>[
+        'Chemistry',
+        'Mathematics',
+        'Physics',
+        'Science Laboratory Technology',
+        'Statistics',
       ],
     ),
   ];
