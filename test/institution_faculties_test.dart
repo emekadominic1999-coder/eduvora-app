@@ -807,6 +807,54 @@ void main() {
     );
   });
 
+  group('ABU structure', () {
+    const String abu = 'Ahmadu Bello University, Zaria';
+
+    test('is recognised as a mapped institution', () {
+      expect(InstitutionFaculties.hasStructureFor(abu), isTrue);
+    });
+
+    test('has twelve faculties', () {
+      expect(InstitutionFaculties.abuFaculties, hasLength(12));
+    });
+
+    test(
+      'leaves out the three College of Medicine faculties whose site '
+      'never served real content, rather than guessing at them',
+      () {
+        final Set<String> names = InstitutionFaculties.abuFaculties
+            .map((Faculty f) => f.name)
+            .toSet();
+        expect(names, isNot(contains('Faculty of Allied Health Sciences')));
+        expect(names, isNot(contains('Faculty of Clinical Sciences')));
+        expect(names, isNot(contains('Faculty of Dental Surgery')));
+      },
+    );
+
+    test(
+      'leaves out Pharmaceutical Sciences and Management Sciences, both '
+      'unreachable on ABU\'s own site with no working alternative source',
+      () {
+        final Set<String> names = InstitutionFaculties.abuFaculties
+            .map((Faculty f) => f.name)
+            .toSet();
+        expect(
+          names,
+          isNot(contains('Faculty of Pharmaceutical Sciences')),
+        );
+        expect(names, isNot(contains('Faculty of Management Sciences')));
+      },
+    );
+
+    test('keeps the two College of Medicine faculties that were verified', () {
+      final Set<String> names = InstitutionFaculties.abuFaculties
+          .map((Faculty f) => f.name)
+          .toSet();
+      expect(names, contains('Faculty of Basic Medical Sciences'));
+      expect(names, contains('Faculty of Basic Clinical Sciences'));
+    });
+  });
+
   group('lookup', () {
     test('a UNN student gets UNN faculties, not the generic list', () {
       final List<Faculty> faculties =

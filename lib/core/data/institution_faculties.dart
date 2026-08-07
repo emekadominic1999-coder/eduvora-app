@@ -33,6 +33,7 @@ class InstitutionFaculties {
         'Lagos State University': lasuFaculties,
         'Federal University of Technology, Minna': futminnaFaculties,
         'Federal University of Technology, Owerri': futoFaculties,
+        'Ahmadu Bello University, Zaria': abuFaculties,
       };
 
   /// True when this institution has been mapped properly.
@@ -2277,6 +2278,185 @@ class InstitutionFaculties {
         'Physics',
         'Science Laboratory Technology',
         'Statistics',
+      ],
+    ),
+  ];
+
+  // ---------------------------------------------------------------- ABU
+  //
+  // Source: Ahmadu Bello University's faculty subdomains, read on 6 August
+  // 2026. Each faculty's real department names sit as link text on cards
+  // that link to /department/ or /departments/ pages — a URL slug alone
+  // ("agriceng", "dcs") would not have made a readable department name, so
+  // the visible text is what was read, department by department.
+  //
+  // ABU's College of Medical Sciences splits medicine across five
+  // faculties. Two of those — Basic Medical Sciences and Basic Clinical
+  // Sciences — were read directly; the university's own site returned a
+  // broken error page for the other three (Allied Health Sciences,
+  // Clinical Sciences, Dental Surgery) on every attempt, so those are left
+  // out rather than guessed at. Faculty of Pharmaceutical Sciences and
+  // Faculty of Management Sciences were unreachable outright and are
+  // likewise left out — a UNILORIN-style situation without a working
+  // alternative source to fall back on this time.
+
+  static const List<Faculty> abuFaculties = <Faculty>[
+    Faculty(
+      name: 'Faculty of Agriculture',
+      icon: Icons.agriculture_rounded,
+      colour: AppColours.success,
+      departments: <String>[
+        'Agricultural Economics',
+        'Agricultural Extension & Rural Development',
+        'Agronomy',
+        'Animal Science',
+        'Crop Protection',
+        'Plant Science',
+        'Soil Science',
+      ],
+    ),
+    Faculty(
+      name: 'Faculty of Arts',
+      icon: Icons.menu_book_rounded,
+      colour: Color(0xFFDB2777),
+      departments: <String>[
+        'African Languages and Cultures',
+        'Arabic',
+        'Archaeology and Heritage Studies',
+        'English and Literary Studies',
+        'French',
+        'History',
+        'Philosophy',
+        'Theatre and Performing Arts',
+      ],
+    ),
+    // Verified via the college's own site plus its published faculty
+    // history; the site itself did not serve a full department listing.
+    Faculty(
+      name: 'Faculty of Basic Clinical Sciences',
+      icon: Icons.biotech_rounded,
+      colour: Color(0xFF0891B2),
+      departments: <String>[
+        'Chemical Pathology',
+        'Clinical Pharmacology & Therapeutics',
+        'Haematology & Blood Transfusion',
+        'Medical Microbiology',
+        'Pathology (Morbid Anatomy)',
+      ],
+    ),
+    Faculty(
+      name: 'Faculty of Basic Medical Sciences',
+      icon: Icons.biotech_rounded,
+      colour: Color(0xFF0891B2),
+      departments: <String>['Anatomy', 'Medical Biochemistry', 'Physiology'],
+    ),
+    Faculty(
+      name: 'Faculty of Education',
+      icon: Icons.school_rounded,
+      colour: AppColours.info,
+      departments: <String>[
+        'Art & Social Science Education',
+        'Educational Foundations & Curriculum',
+        'Educational Psychology & Counselling',
+        'Library & Information Science',
+        'Physical & Health Education',
+        'Science Education',
+        'Vocational & Technical Education',
+      ],
+    ),
+    Faculty(
+      name: 'Faculty of Engineering',
+      icon: Icons.engineering_rounded,
+      colour: AppColours.accent,
+      departments: <String>[
+        'Agricultural and Bio-Resources Engineering',
+        'Chemical Engineering',
+        'Civil Engineering',
+        'Computer Engineering',
+        'Electrical Engineering',
+        'Electronics and Telecommunication Engineering',
+        'Mechanical Engineering',
+        'Metallurgical and Materials Engineering',
+        'Polymer and Textile Engineering',
+        'Water Resources and Environmental Engineering',
+      ],
+    ),
+    Faculty(
+      name: 'Faculty of Environmental Design',
+      icon: Icons.apartment_rounded,
+      colour: Color(0xFFCA8A04),
+      departments: <String>[
+        'Architecture',
+        'Building',
+        'Fine Arts',
+        'Geomatics',
+        'Glass and Silicate Technology',
+        'Industrial Design',
+      ],
+    ),
+    Faculty(
+      name: 'Faculty of Law',
+      icon: Icons.gavel_rounded,
+      colour: Color(0xFF7C3AED),
+      departments: <String>[
+        'Commercial Law',
+        'Islamic Law',
+        'Private Law',
+        'Public Law',
+      ],
+    ),
+    Faculty(
+      name: 'Faculty of Life Sciences',
+      icon: Icons.eco_rounded,
+      colour: AppColours.success,
+      departments: <String>[
+        'Biochemistry',
+        'Biology',
+        'Botany',
+        'Microbiology',
+        'Zoology',
+      ],
+    ),
+    Faculty(
+      name: 'Faculty of Physical Sciences',
+      icon: Icons.science_rounded,
+      colour: AppColours.primary,
+      departments: <String>[
+        'Chemistry',
+        'Computer Science',
+        'Geography',
+        'Geology',
+        'Mathematics',
+        'Physics',
+        'Statistics',
+      ],
+    ),
+    Faculty(
+      name: 'Faculty of Social Sciences',
+      icon: Icons.groups_rounded,
+      colour: Color(0xFFDB2777),
+      departments: <String>[
+        'Economics',
+        'Mass Communication',
+        'Political Science and International Studies',
+        'Sociology',
+      ],
+    ),
+    Faculty(
+      name: 'Faculty of Veterinary Medicine',
+      icon: Icons.pets_rounded,
+      colour: AppColours.success,
+      departments: <String>[
+        'Anatomy',
+        'Medicine',
+        'Microbiology',
+        'Parasitology',
+        'Pathology',
+        'Pharmacology',
+        'Physiology',
+        'Public Health and Preventive Medicine',
+        'Surgery and Radiology',
+        'Theriogenology',
       ],
     ),
   ];
