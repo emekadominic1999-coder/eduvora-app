@@ -90,6 +90,15 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
   Duration _recordElapsed = Duration.zero;
   Timer? _recordTicker;
 
+  /// The rate the microphone is *actually* delivering, which is not
+  /// necessarily the rate asked for — browsers hand back their AudioContext's
+  /// rate (48 kHz, typically) whatever is requested. Seeded with the
+  /// requested value and corrected by the recorder's own
+  /// onConfigChanged callback, which only fires when the platform overrode
+  /// something.
+  int _captureSampleRate = WavEncoder.preferredSampleRate;
+  int _captureChannels = WavEncoder.numChannels;
+
   // ------------------------------------------------------------- emoji panel
   final FocusNode _inputFocus = FocusNode();
   bool _showEmojiPicker = false;
@@ -568,11 +577,26 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
     // of truth: if it already has permission, recording just begins; if it
     // does not, the browser raises its own prompt or its own error, and
     // that error is what gets read below.
+    // Reset to what is about to be requested: the callback below only fires
+    // when the platform overrides something, so a rate left over from a
+    // previous recording would otherwise be reused and mislabel this one.
+    _captureSampleRate = WavEncoder.preferredSampleRate;
+    _captureChannels = WavEncoder.numChannels;
+
     try {
+      await _recorder.setOnConfigChanged((RecordConfig effective) {
+        _captureSampleRate = effective.sampleRate;
+        _captureChannels = effective.numChannels;
+        debugPrint(
+          '[Eduvora] recorder adjusted config: '
+          '${effective.sampleRate}Hz, ${effective.numChannels}ch',
+        );
+      });
+
       final Stream<Uint8List> stream = await _recorder.startStream(
         const RecordConfig(
           encoder: AudioEncoder.pcm16bits,
-          sampleRate: WavEncoder.sampleRate,
+          sampleRate: WavEncoder.preferredSampleRate,
           numChannels: WavEncoder.numChannels,
         ),
       );
@@ -657,17 +681,19 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
     // Under a second is almost always an accidental tap, not a message.
     if (!send || elapsed.inMilliseconds < 800 || pcm.isEmpty) return;
 
-    final Uint8List wav = WavEncoder.wrapPcm16(pcm);
+    final EncodedVoiceNote note = WavEncoder.encode(
+      pcm,
+      sourceSampleRate: _captureSampleRate,
+      channels: _captureChannels,
+    );
     setState(() {
       _pendingAttachment = PlatformFile(
         name: 'voice-note-${DateTime.now().millisecondsSinceEpoch}.wav',
-        size: wav.length,
-        bytes: wav,
+        size: note.bytes.length,
+        bytes: note.bytes,
       );
       _pendingAttachmentType = GroupAttachmentType.voice;
-      _pendingAttachmentDurationMs = WavEncoder.durationOf(
-        pcm.length,
-      ).inMilliseconds;
+      _pendingAttachmentDurationMs = note.duration.inMilliseconds;
     });
   }
 
