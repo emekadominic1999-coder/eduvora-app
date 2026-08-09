@@ -1,4 +1,3 @@
-import '../models/academic_video.dart';
 import '../models/community.dart';
 import '../models/news_item.dart';
 import '../models/study_material.dart';
@@ -9,50 +8,15 @@ import '../models/study_material.dart';
 ///
 /// 1. **Curated entries** — noticeboard items and community threads that read
 ///    like a live campus feed.
-/// 2. **Generated entries** — lecture videos and materials are composed from
-///    faculty-specific topic pools so that *every* department in the academic
-///    taxonomy has a populated library on first launch, rather than only the
-///    handful someone remembered to hand-write.
+/// 2. **Generated entries** — materials are composed from faculty-specific
+///    topic pools so that *every* department in the academic taxonomy has a
+///    populated library on first launch, rather than only the handful
+///    someone remembered to hand-write.
 ///
 /// Once a Supabase project is attached, `ContentRepository` reads the live
 /// tables first and only falls back here when they are empty.
 class SeedContent {
   const SeedContent._();
-
-  /// Openly hosted sample streams, used so the in-app player is demonstrable
-  /// before real lecture recordings are uploaded to the storage bucket.
-  static const List<String> _sampleStreams = <String>[
-    'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-    'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
-    'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-    'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
-    'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
-    'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4',
-  ];
-
-  static const List<String> _lecturers = <String>[
-    'Prof. A. Okonkwo',
-    'Dr. F. Bello',
-    'Dr. (Mrs.) N. Adeyemi',
-    'Prof. S. Ibrahim',
-    'Dr. C. Eze',
-    'Engr. Dr. T. Olawale',
-    'Dr. M. Danjuma',
-    'Prof. G. Uduak',
-    'Dr. K. Aliyu',
-    'Dr. B. Nwachukwu',
-  ];
-
-  static const List<String> _durations = <String>[
-    '42:18',
-    '1:05:32',
-    '28:47',
-    '51:09',
-    '36:24',
-    '1:12:55',
-    '24:03',
-    '47:41',
-  ];
 
   // ------------------------------------------------------------ topic pools
 
@@ -319,39 +283,6 @@ class SeedContent {
         : letters.padRight(3, 'X'));
     final int number = 101 + (index * 12) % 400;
     return '$prefix $number';
-  }
-
-  // -------------------------------------------------------------- videos
-
-  static List<AcademicVideo> videosFor({
-    required String faculty,
-    required String department,
-    required String level,
-  }) {
-    final List<String> topics = _topicsFor(faculty);
-    final int seed = _seedOf('$faculty|$department');
-    final DateTime now = DateTime.now();
-
-    return List<AcademicVideo>.generate(topics.length, (int i) {
-      final int roll = (seed + i * 37) & 0x7FFFFFFF;
-      return AcademicVideo(
-        id: 'seed-vid-${_seedOf(department)}-$i',
-        title: topics[i],
-        department: department,
-        faculty: faculty,
-        courseCode: _courseCode(department, i),
-        level: level,
-        videoUrl: _sampleStreams[roll % _sampleStreams.length],
-        lecturer: _lecturers[roll % _lecturers.length],
-        durationLabel: _durations[roll % _durations.length],
-        description:
-            'A recorded session for $department students covering '
-            '"${topics[i]}". Watch it through once, then attempt the tutorial '
-            'questions in the materials library.',
-        views: 180 + (roll % 4200),
-        createdAt: now.subtract(Duration(days: 2 + (roll % 90))),
-      );
-    });
   }
 
   // ------------------------------------------------------------ materials

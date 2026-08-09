@@ -29,16 +29,9 @@ class ContentRepository {
         .where((AcademicVideo v) => v.department == profile.department)
         .toList();
 
-    final List<AcademicVideo> seeded = SeedContent.videosFor(
-      faculty: profile.faculty,
-      department: profile.department,
-      level: profile.level,
-    );
-
     return _merge<AcademicVideo>(<List<AcademicVideo>>[
       local,
       remote,
-      seeded,
     ], (AcademicVideo v) => v.id)..sort(
       (AcademicVideo a, AcademicVideo b) => (b.createdAt ?? DateTime(2000))
           .compareTo(a.createdAt ?? DateTime(2000)),
