@@ -560,30 +560,14 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
   Future<void> _startRecording() async {
     if (_recording || _pendingAttachment != null || _sending) return;
 
-    bool granted;
-    try {
-      granted = await _recorder.hasPermission();
-    } catch (error) {
-      // On the web, checking permission *is* asking for it — there is no
-      // separate "just check, don't prompt" API browsers expose — so a
-      // denial or a blocked prompt can surface here as a thrown error rather
-      // than a clean false. Either way it is a permission problem, not a
-      // recorder problem, so it gets the permission message, not the
-      // generic one below.
-      debugPrint('[Eduvora] microphone permission check failed: $error');
-      granted = false;
-    }
-    if (!granted) {
-      if (!mounted) return;
-      showEduvoraSnack(
-        context,
-        'Eduvora needs microphone access to record a voice note. Check your '
-        "browser's site permissions and allow the microphone, then try again.",
-        isError: true,
-      );
-      return;
-    }
-
+    // No separate permission pre-check: on the web, record's hasPermission()
+    // has been seen to report false even when the browser's own site
+    // settings already show the microphone allowed — presumably a mismatch
+    // between the plugin's check and the browser's actual permission state.
+    // Going straight to startStream() lets the browser be the single source
+    // of truth: if it already has permission, recording just begins; if it
+    // does not, the browser raises its own prompt or its own error, and
+    // that error is what gets read below.
     try {
       final Stream<Uint8List> stream = await _recorder.startStream(
         const RecordConfig(
@@ -623,14 +607,19 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
     } catch (error) {
       debugPrint('[Eduvora] voice recording failed to start: $error');
       if (!mounted) return;
-      // A permission prompt that the student dismissed without choosing
-      // either way, rather than actively denying, tends to land here rather
-      // than in the branch above — worth naming as a real possibility, since
-      // "device" made it sound like a hardware fault the first time round.
+      final String detail = error.toString().toLowerCase();
+      final bool isPermission =
+          detail.contains('permission') ||
+          detail.contains('notallowed') ||
+          detail.contains('denied');
       showEduvoraSnack(
         context,
-        'We could not start recording. If a microphone permission prompt '
-        'appeared, please allow it and try again.',
+        isPermission
+            ? 'Eduvora needs microphone access to record a voice note. '
+                  "Check your browser's site permissions and allow the "
+                  'microphone, then reload the page and try again.'
+            : 'We could not start recording on this device '
+                  '(${error.runtimeType}). Please try again.',
         isError: true,
       );
     }
