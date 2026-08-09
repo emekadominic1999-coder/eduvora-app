@@ -319,6 +319,7 @@ class GroupRepository {
     String attachmentName = '',
     GroupAttachmentType? attachmentType,
     int attachmentSize = 0,
+    int attachmentDurationMs = 0,
   }) async {
     final GroupMessage message = GroupMessage(
       id: _uuid.v4(),
@@ -336,6 +337,7 @@ class GroupRepository {
       attachmentName: attachmentName,
       attachmentType: attachmentType,
       attachmentSize: attachmentSize,
+      attachmentDurationMs: attachmentDurationMs,
       sentAt: DateTime.now(),
     );
 

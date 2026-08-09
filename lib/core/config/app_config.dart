@@ -50,4 +50,9 @@ class AppConfig {
   /// student on a weak campus connection gets a clear message instead of a
   /// long silent hang.
   static const int maxAttachmentBytes = 20 * 1024 * 1024;
+
+  /// A voice note stops recording on its own once it reaches this length —
+  /// long enough for a real explanation, short enough that nobody uploads an
+  /// entire lecture by accident.
+  static const int maxVoiceNoteSeconds = 120;
 }

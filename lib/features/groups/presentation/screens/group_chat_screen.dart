@@ -1,8 +1,12 @@
 import 'dart:async';
+import 'dart:typed_data';
 
+import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:just_audio/just_audio.dart';
+import 'package:record/record.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/config/app_config.dart';
@@ -12,6 +16,7 @@ import '../../../../core/models/study_group.dart';
 import '../../../../core/services/group_repository.dart';
 import '../../../../core/state/session_controller.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/utils/wav_encoder.dart';
 import '../../../../core/widgets/common.dart';
 import '../../../chats/presentation/widgets/message_bubble.dart';
 import 'group_info_screen.dart';
@@ -19,6 +24,20 @@ import 'group_info_screen.dart';
 /// Emoji offered on every message — small and deliberate, the way a
 /// classroom's reactions are a handful of gestures, not an open keyboard.
 const List<String> _quickReactions = <String>['👍', '❤️', '😂', '😮', '😢', '🙏'];
+
+/// "0:07" for anything under an hour, "1:02:30" past it — a voice note is
+/// never that long, but a stray double-length recording should still read
+/// sensibly rather than overflow its own label.
+String _formatDuration(Duration d) {
+  final int hours = d.inHours;
+  final int minutes = d.inMinutes.remainder(60);
+  final int seconds = d.inSeconds.remainder(60);
+  final String ss = seconds.toString().padLeft(2, '0');
+  if (hours > 0) {
+    return '$hours:${minutes.toString().padLeft(2, '0')}:$ss';
+  }
+  return '$minutes:$ss';
+}
 
 /// A real group conversation: members, messages, and a question filter.
 class GroupChatScreen extends StatefulWidget {
@@ -45,10 +64,15 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
   /// The message being replied to, shown above the composer until sent.
   GroupMessage? _replyTo;
 
-  /// A photo or document chosen but not yet sent, shown above the composer
-  /// the same way a pending reply is.
+  /// A photo, document or voice note chosen but not yet sent, shown above
+  /// the composer the same way a pending reply is.
   PlatformFile? _pendingAttachment;
   GroupAttachmentType? _pendingAttachmentType;
+
+  /// Only meaningful when [_pendingAttachmentType] is
+  /// [GroupAttachmentType.voice] — a photo or document has no playback
+  /// length.
+  int _pendingAttachmentDurationMs = 0;
   bool _uploading = false;
 
   /// True when the signed-in student is an admin here — admins may delete
@@ -57,6 +81,18 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
 
   StreamSubscription<GroupMessage>? _live;
   StreamSubscription<GroupMessageReaction>? _liveReactions;
+
+  // --------------------------------------------------------- voice recording
+  final AudioRecorder _recorder = AudioRecorder();
+  StreamSubscription<Uint8List>? _recordSub;
+  BytesBuilder? _pcmBuffer;
+  bool _recording = false;
+  Duration _recordElapsed = Duration.zero;
+  Timer? _recordTicker;
+
+  // ------------------------------------------------------------- emoji panel
+  final FocusNode _inputFocus = FocusNode();
+  bool _showEmojiPicker = false;
 
   @override
   void initState() {
@@ -70,7 +106,14 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
   void dispose() {
     _live?.cancel();
     _liveReactions?.cancel();
+    _recordTicker?.cancel();
+    _recordSub?.cancel();
+    // Stopping is best-effort here — the screen is on its way out either
+    // way, and a recorder left running would otherwise leak the microphone.
+    if (_recording) unawaited(_recorder.stop());
+    _recorder.dispose();
     _input.dispose();
+    _inputFocus.dispose();
     _scroll.dispose();
     super.dispose();
   }
@@ -352,6 +395,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
     final String body = _input.text.trim();
     final PlatformFile? attachment = _pendingAttachment;
     final GroupAttachmentType? attachmentType = _pendingAttachmentType;
+    final int attachmentDurationMs = _pendingAttachmentDurationMs;
     if (body.isEmpty && attachment == null) return;
     if (_sending) return;
 
@@ -384,6 +428,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
         attachmentName: attachment?.name ?? '',
         attachmentType: attachment == null ? null : attachmentType,
         attachmentSize: attachment?.size ?? 0,
+        attachmentDurationMs: attachment == null ? 0 : attachmentDurationMs,
       );
       if (!mounted) return;
       setState(() {
@@ -392,6 +437,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
         _replyTo = null;
         _pendingAttachment = null;
         _pendingAttachmentType = null;
+        _pendingAttachmentDurationMs = 0;
       });
       WidgetsBinding.instance
           .addPostFrameCallback((_) => _toBottom(animate: true));
@@ -502,6 +548,113 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
         isError: true,
       );
     }
+  }
+
+  // ------------------------------------------------------- voice recording
+  //
+  // Captured as a raw PCM stream rather than to a file path: a file path
+  // means a real filesystem, which Flutter Web does not have. Streaming
+  // works identically everywhere — the bytes are accumulated here and wrapped
+  // into a WAV file only once recording stops, by [WavEncoder].
+
+  Future<void> _startRecording() async {
+    if (_recording || _pendingAttachment != null || _sending) return;
+
+    try {
+      if (!await _recorder.hasPermission()) {
+        if (!mounted) return;
+        showEduvoraSnack(
+          context,
+          'Eduvora needs microphone access to record a voice note.',
+          isError: true,
+        );
+        return;
+      }
+
+      final Stream<Uint8List> stream = await _recorder.startStream(
+        const RecordConfig(
+          encoder: AudioEncoder.pcm16bits,
+          sampleRate: WavEncoder.sampleRate,
+          numChannels: WavEncoder.numChannels,
+        ),
+      );
+
+      _pcmBuffer = BytesBuilder(copy: false);
+      _recordSub = stream.listen((Uint8List chunk) {
+        _pcmBuffer?.add(chunk);
+      });
+
+      setState(() {
+        _recording = true;
+        _recordElapsed = Duration.zero;
+      });
+
+      // A ticking display is what tells a student the mic is actually live —
+      // without it, a silently-failed recording looks identical to a working
+      // one until they hit send.
+      _recordTicker = Timer.periodic(const Duration(milliseconds: 100), (
+        Timer timer,
+      ) {
+        if (!mounted) {
+          timer.cancel();
+          return;
+        }
+        setState(
+          () => _recordElapsed += const Duration(milliseconds: 100),
+        );
+        if (_recordElapsed.inSeconds >= AppConfig.maxVoiceNoteSeconds) {
+          _stopRecording(send: true);
+        }
+      });
+    } catch (error) {
+      if (!mounted) return;
+      showEduvoraSnack(
+        context,
+        'We could not start recording on this device.',
+        isError: true,
+      );
+    }
+  }
+
+  /// Stops the microphone. [send] true queues the clip above the composer
+  /// exactly like a picked photo or document; false — cancelling mid-record —
+  /// throws the audio away.
+  Future<void> _stopRecording({required bool send}) async {
+    if (!_recording) return;
+    _recordTicker?.cancel();
+    _recordTicker = null;
+    final Duration elapsed = _recordElapsed;
+
+    try {
+      await _recorder.stop();
+    } catch (_) {
+      // The stream has already delivered every byte it is going to by the
+      // time this is called, so a failure here does not lose the recording.
+    }
+    await _recordSub?.cancel();
+    _recordSub = null;
+
+    final Uint8List pcm = _pcmBuffer?.toBytes() ?? Uint8List(0);
+    _pcmBuffer = null;
+
+    if (!mounted) return;
+    setState(() => _recording = false);
+
+    // Under a second is almost always an accidental tap, not a message.
+    if (!send || elapsed.inMilliseconds < 800 || pcm.isEmpty) return;
+
+    final Uint8List wav = WavEncoder.wrapPcm16(pcm);
+    setState(() {
+      _pendingAttachment = PlatformFile(
+        name: 'voice-note-${DateTime.now().millisecondsSinceEpoch}.wav',
+        size: wav.length,
+        bytes: wav,
+      );
+      _pendingAttachmentType = GroupAttachmentType.voice;
+      _pendingAttachmentDurationMs = WavEncoder.durationOf(
+        pcm.length,
+      ).inMilliseconds;
+    });
   }
 
   /// Opens the full group info screen: members, admins and the invite code.
@@ -893,8 +1046,10 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                           color: AppColours.accent.withValues(alpha: 0.14),
                           borderRadius: AppRadii.sm,
                         ),
-                        child: const Icon(
-                          Icons.insert_drive_file_rounded,
+                        child: Icon(
+                          _pendingAttachmentType == GroupAttachmentType.voice
+                              ? Icons.mic_rounded
+                              : Icons.insert_drive_file_rounded,
                           color: AppColours.accent,
                           size: 20,
                         ),
@@ -905,7 +1060,9 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: <Widget>[
                           Text(
-                            _pendingAttachment!.name,
+                            _pendingAttachmentType == GroupAttachmentType.voice
+                                ? 'Voice note · ${_formatDuration(Duration(milliseconds: _pendingAttachmentDurationMs))}'
+                                : _pendingAttachment!.name,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
@@ -929,9 +1086,13 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                         onPressed: () => setState(() {
                           _pendingAttachment = null;
                           _pendingAttachmentType = null;
+                          _pendingAttachmentDurationMs = 0;
                         }),
                         icon: const Icon(Icons.close_rounded, size: 18),
-                        tooltip: 'Remove attachment',
+                        tooltip: _pendingAttachmentType ==
+                                GroupAttachmentType.voice
+                            ? 'Discard voice note'
+                            : 'Remove attachment',
                       ),
                   ],
                 ),
@@ -986,96 +1147,267 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
               ],
             ),
             const SizedBox(height: AppSpacing.sm),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: <Widget>[
-                Material(
-                  color: AppColours.surfaceMuted,
-                  shape: const CircleBorder(),
-                  child: InkWell(
-                    onTap: _pendingAttachment != null || _sending
-                        ? null
-                        : _pickAttachment,
-                    customBorder: const CircleBorder(),
-                    child: const Padding(
-                      padding: EdgeInsets.all(11),
-                      child: Icon(
-                        Icons.attach_file_rounded,
-                        size: 20,
-                        color: AppColours.textMuted,
-                      ),
-                    ),
+            if (_recording) _recordingBar() else _inputRow(),
+            if (_showEmojiPicker && !_recording)
+              SizedBox(
+                height: 256,
+                child: EmojiPicker(
+                  textEditingController: _input,
+                  config: Config(
+                    height: 256,
+                    emojiViewConfig: const EmojiViewConfig(emojiSizeMax: 26),
                   ),
                 ),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  child: TextField(
-                    controller: _input,
-                    minLines: 1,
-                    maxLines: 5,
-                    textCapitalization: TextCapitalization.sentences,
-                    decoration: InputDecoration(
-                      hintText: _pendingAttachment != null
-                          ? 'Add a caption (optional)…'
-                          : _askingQuestion
-                          ? 'Ask your question…'
-                          : 'Message the group…',
-                      fillColor: AppColours.surfaceMuted,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.lg,
-                        vertical: 12,
-                      ),
-                      border: const OutlineInputBorder(
-                        borderRadius: AppRadii.xl,
-                        borderSide: BorderSide.none,
-                      ),
-                      enabledBorder: const OutlineInputBorder(
-                        borderRadius: AppRadii.xl,
-                        borderSide: BorderSide.none,
-                      ),
-                      focusedBorder: const OutlineInputBorder(
-                        borderRadius: AppRadii.xl,
-                        borderSide: BorderSide(
-                          color: AppColours.primary,
-                          width: 1.4,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// The ordinary composer: attach, mic, message field, send.
+  Widget _inputRow() {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: <Widget>[
+        Material(
+          color: AppColours.surfaceMuted,
+          shape: const CircleBorder(),
+          child: InkWell(
+            onTap: _pendingAttachment != null || _sending
+                ? null
+                : _pickAttachment,
+            customBorder: const CircleBorder(),
+            child: const Padding(
+              padding: EdgeInsets.all(11),
+              child: Icon(
+                Icons.attach_file_rounded,
+                size: 20,
+                color: AppColours.textMuted,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: AppSpacing.xs),
+        Material(
+          color: AppColours.surfaceMuted,
+          shape: const CircleBorder(),
+          child: InkWell(
+            onTap: _pendingAttachment != null || _sending
+                ? null
+                : _startRecording,
+            customBorder: const CircleBorder(),
+            child: const Padding(
+              padding: EdgeInsets.all(11),
+              child: Icon(
+                Icons.mic_none_rounded,
+                size: 20,
+                color: AppColours.textMuted,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: AppSpacing.sm),
+        Expanded(
+          child: TextField(
+            controller: _input,
+            focusNode: _inputFocus,
+            minLines: 1,
+            maxLines: 5,
+            textCapitalization: TextCapitalization.sentences,
+            onTap: () {
+              if (_showEmojiPicker) setState(() => _showEmojiPicker = false);
+            },
+            decoration: InputDecoration(
+              hintText: _pendingAttachment != null
+                  ? 'Add a caption (optional)…'
+                  : _askingQuestion
+                  ? 'Ask your question…'
+                  : 'Message the group…',
+              fillColor: AppColours.surfaceMuted,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: 12,
+              ),
+              // Toggling the emoji panel drops the keyboard first — the two
+              // fighting for the bottom of the screen at once is what makes
+              // a picker feel broken rather than just a second keyboard.
+              prefixIcon: IconButton(
+                onPressed: () {
+                  final bool opening = !_showEmojiPicker;
+                  setState(() => _showEmojiPicker = opening);
+                  if (opening) {
+                    _inputFocus.unfocus();
+                  } else {
+                    _inputFocus.requestFocus();
+                  }
+                },
+                icon: Icon(
+                  _showEmojiPicker
+                      ? Icons.keyboard_rounded
+                      : Icons.emoji_emotions_outlined,
+                  size: 21,
+                  color: AppColours.textMuted,
+                ),
+                tooltip: _showEmojiPicker ? 'Show keyboard' : 'Emoji',
+              ),
+              border: const OutlineInputBorder(
+                borderRadius: AppRadii.xl,
+                borderSide: BorderSide.none,
+              ),
+              enabledBorder: const OutlineInputBorder(
+                borderRadius: AppRadii.xl,
+                borderSide: BorderSide.none,
+              ),
+              focusedBorder: const OutlineInputBorder(
+                borderRadius: AppRadii.xl,
+                borderSide: BorderSide(
+                  color: AppColours.primary,
+                  width: 1.4,
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: AppSpacing.sm),
+        Material(
+          color: _askingQuestion ? AppColours.accent : AppColours.primary,
+          shape: const CircleBorder(),
+          child: InkWell(
+            onTap: _sending ? null : _send,
+            customBorder: const CircleBorder(),
+            child: Padding(
+              padding: const EdgeInsets.all(11),
+              child: _sending
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          Colors.white,
                         ),
                       ),
+                    )
+                  : const Icon(
+                      Icons.send_rounded,
+                      size: 20,
+                      color: Colors.white,
                     ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Replaces the whole composer while the microphone is live: a pulsing
+  /// dot and running timer make it unmistakable that recording is actually
+  /// happening, and cancel sits well clear of send so a slip of the thumb
+  /// does not post a voice note nobody meant to keep.
+  Widget _recordingBar() {
+    return Row(
+      children: <Widget>[
+        Material(
+          color: AppColours.danger.withValues(alpha: 0.12),
+          shape: const CircleBorder(),
+          child: InkWell(
+            onTap: () => _stopRecording(send: false),
+            customBorder: const CircleBorder(),
+            child: const Padding(
+              padding: EdgeInsets.all(11),
+              child: Icon(
+                Icons.delete_outline_rounded,
+                size: 20,
+                color: AppColours.danger,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: AppSpacing.sm),
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg,
+              vertical: 12,
+            ),
+            decoration: BoxDecoration(
+              color: AppColours.surfaceMuted,
+              borderRadius: AppRadii.xl,
+            ),
+            child: Row(
+              children: <Widget>[
+                _PulsingDot(),
+                const SizedBox(width: 10),
+                Text(
+                  'Recording ${_formatDuration(_recordElapsed)}',
+                  style: const TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w600,
+                    color: AppColours.text,
                   ),
                 ),
-                const SizedBox(width: AppSpacing.sm),
-                Material(
-                  color: _askingQuestion
-                      ? AppColours.accent
-                      : AppColours.primary,
-                  shape: const CircleBorder(),
-                  child: InkWell(
-                    onTap: _sending ? null : _send,
-                    customBorder: const CircleBorder(),
-                    child: Padding(
-                      padding: const EdgeInsets.all(11),
-                      child: _sending
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  Colors.white,
-                                ),
-                              ),
-                            )
-                          : const Icon(
-                              Icons.send_rounded,
-                              size: 20,
-                              color: Colors.white,
-                            ),
-                    ),
+                const Spacer(),
+                Text(
+                  '${AppConfig.maxVoiceNoteSeconds ~/ 60}:${(AppConfig.maxVoiceNoteSeconds % 60).toString().padLeft(2, '0')} max',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: AppColours.textFaint,
                   ),
                 ),
               ],
             ),
-          ],
+          ),
+        ),
+        const SizedBox(width: AppSpacing.sm),
+        Material(
+          color: AppColours.primary,
+          shape: const CircleBorder(),
+          child: InkWell(
+            onTap: () => _stopRecording(send: true),
+            customBorder: const CircleBorder(),
+            child: const Padding(
+              padding: EdgeInsets.all(11),
+              child: Icon(Icons.check_rounded, size: 20, color: Colors.white),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// A small dot that fades in and out on a loop, the cheapest possible signal
+/// that something live is happening — the same shorthand every recording app
+/// uses, so nobody has to learn a new one here.
+class _PulsingDot extends StatefulWidget {
+  @override
+  State<_PulsingDot> createState() => _PulsingDotState();
+}
+
+class _PulsingDotState extends State<_PulsingDot>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 700),
+  )..repeat(reverse: true);
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: Tween<double>(begin: 0.35, end: 1).animate(_controller),
+      child: Container(
+        width: 9,
+        height: 9,
+        decoration: const BoxDecoration(
+          color: AppColours.danger,
+          shape: BoxShape.circle,
         ),
       ),
     );
@@ -1279,6 +1611,7 @@ class _AttachmentBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool image = message.isImageAttachment;
+    final bool voice = message.isVoiceAttachment;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
@@ -1306,7 +1639,7 @@ class _AttachmentBubble extends StatelessWidget {
                 maxWidth: MediaQuery.of(context).size.width * 0.72,
               ),
               child: GestureDetector(
-                onTap: _open,
+                onTap: voice ? null : _open,
                 child: Container(
                   clipBehavior: Clip.antiAlias,
                   decoration: BoxDecoration(
@@ -1359,6 +1692,17 @@ class _AttachmentBubble extends StatelessWidget {
                                       ),
                                     ),
                                   ),
+                          ),
+                        )
+                      else if (voice)
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(10, 8, 14, 8),
+                          child: _VoicePlayer(
+                            url: message.attachmentUrl,
+                            totalDuration: Duration(
+                              milliseconds: message.attachmentDurationMs,
+                            ),
+                            mine: mine,
                           ),
                         )
                       else
@@ -1547,6 +1891,175 @@ class _ReactionsRow extends StatelessWidget {
             );
           }).toList(),
         ),
+      ),
+    );
+  }
+}
+
+/// Play/pause and a scrub bar for a voice note. The player itself is not
+/// created until the first tap: a busy thread can hold dozens of voice
+/// messages, and standing up an [AudioPlayer] — and the platform decoder
+/// behind it — for every one of them the moment the screen opens would be a
+/// lot of dead weight for notes nobody ever plays.
+class _VoicePlayer extends StatefulWidget {
+  const _VoicePlayer({
+    required this.url,
+    required this.totalDuration,
+    required this.mine,
+  });
+
+  final String url;
+  final Duration totalDuration;
+  final bool mine;
+
+  @override
+  State<_VoicePlayer> createState() => _VoicePlayerState();
+}
+
+class _VoicePlayerState extends State<_VoicePlayer> {
+  AudioPlayer? _player;
+  bool _loading = false;
+  Duration _position = Duration.zero;
+  bool _playing = false;
+  StreamSubscription<Duration>? _positionSub;
+  StreamSubscription<PlayerState>? _stateSub;
+
+  @override
+  void dispose() {
+    _positionSub?.cancel();
+    _stateSub?.cancel();
+    _player?.dispose();
+    super.dispose();
+  }
+
+  Future<void> _toggle() async {
+    AudioPlayer? player = _player;
+
+    if (player == null) {
+      setState(() => _loading = true);
+      player = AudioPlayer();
+      try {
+        await player.setUrl(widget.url);
+      } catch (_) {
+        if (mounted) {
+          setState(() => _loading = false);
+          showEduvoraSnack(
+            context,
+            'That voice note could not be played just now.',
+            isError: true,
+          );
+        }
+        await player.dispose();
+        return;
+      }
+      if (!mounted) {
+        await player.dispose();
+        return;
+      }
+      _player = player;
+      _positionSub = player.positionStream.listen((Duration p) {
+        if (mounted) setState(() => _position = p);
+      });
+      // A note that finishes stays finished rather than sitting on "playing"
+      // with a frozen scrubber — tapping again starts it over from the top.
+      _stateSub = player.playerStateStream.listen((PlayerState state) {
+        if (!mounted) return;
+        setState(() => _playing = state.playing);
+        if (state.processingState == ProcessingState.completed) {
+          player!.seek(Duration.zero);
+          setState(() {
+            _playing = false;
+            _position = Duration.zero;
+          });
+        }
+      });
+      setState(() => _loading = false);
+      await player.play();
+      return;
+    }
+
+    if (_playing) {
+      await player.pause();
+    } else {
+      await player.play();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final Color fg = widget.mine ? Colors.white : AppColours.primary;
+    final Color track = widget.mine
+        ? Colors.white.withValues(alpha: 0.35)
+        : AppColours.primarySoft;
+    final Duration total = widget.totalDuration > Duration.zero
+        ? widget.totalDuration
+        : _position;
+    final double progress = total.inMilliseconds == 0
+        ? 0
+        : (_position.inMilliseconds / total.inMilliseconds).clamp(0, 1);
+
+    return SizedBox(
+      width: 200,
+      child: Row(
+        children: <Widget>[
+          Material(
+            color: fg.withValues(alpha: widget.mine ? 0.22 : 0.12),
+            shape: const CircleBorder(),
+            child: InkWell(
+              onTap: _loading ? null : _toggle,
+              customBorder: const CircleBorder(),
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: _loading
+                    ? SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(fg),
+                        ),
+                      )
+                    : Icon(
+                        _playing
+                            ? Icons.pause_rounded
+                            : Icons.play_arrow_rounded,
+                        color: fg,
+                        size: 20,
+                      ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(3),
+                  child: LinearProgressIndicator(
+                    value: progress.toDouble(),
+                    minHeight: 4,
+                    backgroundColor: track,
+                    valueColor: AlwaysStoppedAnimation<Color>(fg),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  _formatDuration(_playing || _position > Duration.zero
+                      ? _position
+                      : total),
+                  style: TextStyle(
+                    fontSize: 10.5,
+                    color: widget.mine
+                        ? Colors.white.withValues(alpha: 0.75)
+                        : AppColours.textMuted,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -40,6 +40,15 @@ dependencies:
   # LaTeX rendering for maths, physics and engineering CBT questions.
   flutter_math_fork: ^0.7.4
 
+  # Microphone recording for study-group voice notes.
+  record: ^7.1.1
+
+  # Voice-note and lecture-audio playback.
+  just_audio: ^0.10.6
+
+  # Emoji picker for the study-group composer.
+  emoji_picker_flutter: ^4.5.3
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

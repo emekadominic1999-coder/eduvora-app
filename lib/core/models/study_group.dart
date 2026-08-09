@@ -198,10 +198,11 @@ class GroupMember {
 }
 
 /// What kind of file is attached to a message, so the bubble knows whether to
-/// draw a picture inline or a document card.
+/// draw a picture inline, a document card, or a voice-note player.
 enum GroupAttachmentType {
   image,
-  file;
+  file,
+  voice;
 
   static GroupAttachmentType? fromName(String? name) {
     if (name == null || name.isEmpty) return null;
@@ -231,6 +232,7 @@ class GroupMessage {
     this.attachmentName = '',
     this.attachmentType,
     this.attachmentSize = 0,
+    this.attachmentDurationMs = 0,
     this.reactions = const <GroupMessageReaction>[],
   });
 
@@ -261,6 +263,12 @@ class GroupMessage {
   final GroupAttachmentType? attachmentType;
   final int attachmentSize;
 
+  /// Playback length of a voice-note attachment, in milliseconds. Computed
+  /// client-side from the recorded PCM sample count when the note is made,
+  /// rather than left to a player to work out after downloading the file —
+  /// so the bubble can show "0:12" the instant the message arrives.
+  final int attachmentDurationMs;
+
   /// Populated separately from the reactions table and merged in, since a
   /// reaction is its own row rather than a column on the message.
   final List<GroupMessageReaction> reactions;
@@ -269,6 +277,7 @@ class GroupMessage {
   bool get isReply => replyToId != null && replyToId!.isNotEmpty;
   bool get hasAttachment => attachmentUrl.isNotEmpty;
   bool get isImageAttachment => attachmentType == GroupAttachmentType.image;
+  bool get isVoiceAttachment => attachmentType == GroupAttachmentType.voice;
 
   /// What to actually draw in the bubble.
   String get displayBody =>
@@ -319,6 +328,7 @@ class GroupMessage {
     attachmentName: attachmentName,
     attachmentType: attachmentType,
     attachmentSize: attachmentSize,
+    attachmentDurationMs: attachmentDurationMs,
     reactions: reactions ?? this.reactions,
   );
 
@@ -337,6 +347,7 @@ class GroupMessage {
     'attachment_name': attachmentName,
     'attachment_type': attachmentType?.name,
     'attachment_size': attachmentSize,
+    'attachment_duration_ms': attachmentDurationMs,
     'sent_at': sentAt.toIso8601String(),
   };
 
@@ -357,6 +368,8 @@ class GroupMessage {
       json['attachment_type'] as String?,
     ),
     attachmentSize: (json['attachment_size'] as num?)?.toInt() ?? 0,
+    attachmentDurationMs:
+        (json['attachment_duration_ms'] as num?)?.toInt() ?? 0,
     sentAt:
         DateTime.tryParse((json['sent_at'] ?? '') as String) ?? DateTime.now(),
   );
