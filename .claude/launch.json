@@ -11,7 +11,9 @@
         "--web-hostname",
         "127.0.0.1",
         "--web-port",
-        "8123"
+        "8123",
+        "--dart-define=SUPABASE_URL=https://wdsvzhxhqzblpekdmsqs.supabase.co",
+        "--dart-define=SUPABASE_ANON_KEY=sb_publishable_OXt5d1ErVRZkC8vN-bGSJw_WpX07_IK"
       ],
       "port": 8123
     }

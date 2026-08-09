@@ -6,6 +6,7 @@ import '../../../../core/services/content_repository.dart';
 import '../../../../core/state/session_controller.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/common.dart';
+import 'video_plan_screen.dart';
 import 'video_player_screen.dart';
 
 /// The lecture feed for the student's department and level.
@@ -78,6 +79,17 @@ class _AcademicVideosScreenState extends State<AcademicVideosScreen> {
       backgroundColor: AppColours.background,
       appBar: AppBar(
         title: const Text('Academic videos'),
+        actions: <Widget>[
+          IconButton(
+            tooltip: 'Video plan',
+            icon: const Icon(Icons.movie_filter_rounded),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const VideoPlanScreen(),
+              ),
+            ),
+          ),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
           child: Container(height: 1, color: AppColours.border),

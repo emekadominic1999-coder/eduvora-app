@@ -119,4 +119,5 @@ class StoreKeys {
   static const String groupMessages = 'eduvora.group_messages';
   static const String classLists = 'eduvora.class_lists';
   static const String classEntries = 'eduvora.class_entries';
+  static const String videoPlanChecked = 'eduvora.video_plan_checked';
 }
