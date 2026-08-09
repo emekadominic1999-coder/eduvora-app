@@ -607,19 +607,24 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
     } catch (error) {
       debugPrint('[Eduvora] voice recording failed to start: $error');
       if (!mounted) return;
-      final String detail = error.toString().toLowerCase();
+      final String raw = error.toString();
+      final String detail = raw.toLowerCase();
       final bool isPermission =
           detail.contains('permission') ||
           detail.contains('notallowed') ||
           detail.contains('denied');
+      // The error's own message, not its (minified, unreadable) runtime type
+      // — release builds mangle Dart class names but never the text of a
+      // thrown message, so this is the only part of the failure that stays
+      // legible enough to act on.
+      final String shown = raw.length > 140 ? '${raw.substring(0, 140)}…' : raw;
       showEduvoraSnack(
         context,
         isPermission
             ? 'Eduvora needs microphone access to record a voice note. '
                   "Check your browser's site permissions and allow the "
                   'microphone, then reload the page and try again.'
-            : 'We could not start recording on this device '
-                  '(${error.runtimeType}). Please try again.',
+            : 'We could not start recording: $shown',
         isError: true,
       );
     }
