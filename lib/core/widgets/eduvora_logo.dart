@@ -2,13 +2,12 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
 
-/// The Eduvora mark: a graduation cap with a tassel, set in a rounded
-/// royal-blue tile, with a four-point spark accent in orange.
+/// The Eduvora mark: an open book on a rounded royal-blue tile, with a
+/// four-point spark accent in orange.
 ///
-/// Flattened by hand from the `eduvora_spark` 3D asset (graduation cap:
-/// board, band, tassel string and button; AI spark: two crossed elongated
-/// diamonds) into a lightweight vector so it needs no 3D renderer and no
-/// bundled image asset — just brand-exact colours at any size.
+/// The book glyph is a bundled asset (`assets/branding/`), traced from the
+/// approved logo artwork rather than hand-painted, so it stays pixel-exact
+/// to the brand file at any size.
 class EduvoraLogo extends StatelessWidget {
   const EduvoraLogo({super.key, this.size = 48, this.onDark = false});
 
@@ -17,7 +16,9 @@ class EduvoraLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color markColour = onDark ? AppColours.primary : Colors.white;
+    final String markAsset = onDark
+        ? 'assets/branding/eduvora_mark_blue.png'
+        : 'assets/branding/eduvora_mark_white.png';
 
     return SizedBox(
       width: size,
@@ -39,9 +40,9 @@ class EduvoraLogo extends StatelessWidget {
               borderRadius: BorderRadius.circular(size * 0.30),
               boxShadow: onDark ? null : AppShadows.card,
             ),
-            child: CustomPaint(
-              size: Size(size, size),
-              painter: _MortarboardPainter(colour: markColour),
+            child: Padding(
+              padding: EdgeInsets.all(size * 0.17),
+              child: Image.asset(markAsset, fit: BoxFit.contain),
             ),
           ),
           Positioned(
@@ -68,64 +69,6 @@ class EduvoraLogo extends StatelessWidget {
       ),
     );
   }
-}
-
-/// The graduation-cap glyph: a flat mortarboard board, its band, and a
-/// hanging tassel — the same silhouette as the `graduation_cap` node in the
-/// source 3D asset (board / band / tassel_string / tassel_button).
-class _MortarboardPainter extends CustomPainter {
-  const _MortarboardPainter({required this.colour});
-
-  final Color colour;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final double w = size.width;
-    final double h = size.height;
-    final Paint fill = Paint()
-      ..color = colour
-      ..style = PaintingStyle.fill;
-
-    // The board: a flat diamond, as a mortarboard top viewed from above.
-    final Path board = Path()
-      ..moveTo(w * 0.50, h * 0.27)
-      ..lineTo(w * 0.77, h * 0.435)
-      ..lineTo(w * 0.50, h * 0.60)
-      ..lineTo(w * 0.23, h * 0.435)
-      ..close();
-    canvas.drawPath(board, fill);
-
-    // The band: the cuff sitting beneath the board, against the head.
-    final RRect band = RRect.fromRectAndRadius(
-      Rect.fromCenter(
-        center: Offset(w * 0.50, h * 0.555),
-        width: w * 0.30,
-        height: h * 0.16,
-      ),
-      Radius.circular(w * 0.035),
-    );
-    canvas.drawRRect(band, Paint()..color = colour.withValues(alpha: 0.92));
-
-    // The tassel: a cord from the board's right point, ending in a button.
-    final Offset cordStart = Offset(w * 0.77, h * 0.435);
-    final Offset cordEnd = Offset(w * 0.80, h * 0.685);
-    final Path cord = Path()
-      ..moveTo(cordStart.dx, cordStart.dy)
-      ..quadraticBezierTo(w * 0.86, h * 0.55, cordEnd.dx, cordEnd.dy);
-    canvas.drawPath(
-      cord,
-      Paint()
-        ..color = colour
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = w * 0.032
-        ..strokeCap = StrokeCap.round,
-    );
-    canvas.drawCircle(cordEnd, w * 0.052, fill);
-  }
-
-  @override
-  bool shouldRepaint(covariant _MortarboardPainter oldDelegate) =>
-      oldDelegate.colour != colour;
 }
 
 /// A four-point spark: two elongated diamonds crossed at right angles,
