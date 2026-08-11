@@ -70,8 +70,13 @@ class MathText extends StatelessWidget {
       }
 
       final String expression = match.group(1)!;
+      // Formulae stay regular weight even inside bold prose (e.g. a
+      // semi-bold question stem) — bold math sets in a different face
+      // with thicker strokes throughout, which reads as visual noise
+      // rather than emphasis.
       final TextStyle mathsStyle = style.copyWith(
         fontSize: (style.fontSize ?? 14) * mathScale,
+        fontWeight: FontWeight.normal,
       );
 
       spans.add(

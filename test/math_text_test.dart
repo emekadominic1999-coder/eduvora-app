@@ -1,5 +1,6 @@
 import 'package:eduvora/core/widgets/math_text.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_math_fork/flutter_math.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 Widget _wrap(Widget child) => MaterialApp(
@@ -93,6 +94,29 @@ void main() {
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull, reason: sample);
       }
+    });
+
+    testWidgets('a formula stays regular weight inside bold prose', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          const MathText(
+            r'Find the derivative of $f(x) = x^5$.',
+            style: TextStyle(fontWeight: FontWeight.w600),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final Math formula = tester.widget<Math>(find.byType(Math));
+      expect(
+        formula.textStyle?.fontWeight,
+        FontWeight.normal,
+        reason:
+            'the question stem is semi-bold by design, but the rendered '
+            'formula itself must not inherit that weight',
+      );
     });
   });
 }
