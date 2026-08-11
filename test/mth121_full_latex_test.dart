@@ -92,6 +92,8 @@ void main() {
     "(x \\cos(x) - \\sin(x))/x^2",
     "(x)(- \\sin{\\left(x \\right)})",
     "(x^{2})(\\cos{\\left(x \\right)})",
+    "+",
+    "-",
     "- 3 \\cos{\\left(x \\right)} + C",
     "- 4 x",
     "- \\cos{\\left(x \\right)} + C",
@@ -114,8 +116,8 @@ void main() {
     "-1/3",
     "-1/4",
     "-1/\\cos(x)^2",
+    "-1/\\sqrt{1 - x^2}",
     "-1/\\sqrt{3} < x < 1/\\sqrt{3}",
-    "-1/sqrt{1 - x^2}",
     "-1/x^2 + C",
     "-11/3",
     "-12",
@@ -191,7 +193,6 @@ void main() {
     "0",
     "0 - -1",
     "0 - 0",
-    "0 to x",
     "0)",
     "0, 2",
     "0, 3",
@@ -211,7 +212,7 @@ void main() {
     "1/4",
     "1/5",
     "1/\\cos(x)",
-    "1/sqrt{1 - x^2}",
+    "1/\\sqrt{1 - x^2}",
     "1/x",
     "1/x^2 + C",
     "10",
@@ -431,6 +432,7 @@ void main() {
     "9",
     "9 - x^{2} \\geq 0",
     "9x^4 - 12x^2 + 4",
+    "=",
     "=10",
     "=7",
     "C",
@@ -805,6 +807,8 @@ void main() {
     "\\sin(x) - \\cos(x)",
     "\\sin{\\left(x \\right)}",
     "\\sin{\\left(x \\right)} + C",
+    "\\sqrt{1 - x^2}",
+    "\\sqrt{3}",
     "\\sqrt{x + 5} \\neq 0",
     "\\tan(x)",
     "\\tan(x) + C",
@@ -820,7 +824,6 @@ void main() {
     "\\text{(the}",
     "\\text{(valid}",
     "\\text{(}",
-    "\\text{(∞)}",
     "\\text{).}",
     "\\text{):}",
     "\\text{)}",
@@ -902,6 +905,7 @@ void main() {
     "\\text{Writing}",
     "\\text{Yes}",
     "\\text{a:}",
+    "\\text{about}",
     "\\text{above,}",
     "\\text{above}",
     "\\text{adding}",
@@ -1099,22 +1103,20 @@ void main() {
     "\\text{which}",
     "\\text{with}",
     "\\text{x-axis,}",
+    "\\text{x-axis}",
     "\\text{x-coordinate}",
+    "\\text{x=0}",
+    "\\text{x=1.}",
     "\\text{x=2.}",
+    "\\text{x=3.}",
     "\\text{x=4.}",
     "\\text{x=5?}",
     "\\text{x=5}",
     "\\text{xe\\textasciicircum{}(x)}",
     "\\text{x}",
-    "\\text{x²}",
-    "\\text{x³}",
-    "\\text{y²}",
-    "\\text{y³}",
     "\\text{zero:}",
     "\\text{zero}",
     "\\text{—}",
-    "\\text{√3}",
-    "\\text{∞}",
     "du = -3 \\, dx",
     "du = 1 \\, dx",
     "du = 2 \\, dx",
@@ -1372,8 +1374,6 @@ void main() {
     "ln|\\sec(x)| + C",
     "ln|\\sin(x)| + C",
     "ln|x| + C",
-    "sqrt{1 - x^2}",
-    "sqrt{x} about the x-axis from x",
     "u = 2 x + 1",
     "u = 2 x + 3",
     "u = 2 x - 1",
@@ -1493,6 +1493,7 @@ void main() {
     "x^2/(x^2 - 4x + 4) - 4x/(x^2 - 4x + 4)",
     "x^2/2 - 3x",
     "x^2e^{x}/2 + C",
+    "x^3",
     "x^3 + C",
     "x^4 + 5x^2 + C",
     "x^4 - x^2 + C",
@@ -1525,7 +1526,7 @@ void main() {
     "y = 1x + 1",
     "y = 1x + 3",
     "y = 1x - 2",
-    "y = 2 about the x-axis from x=0 to x=3",
+    "y = 2",
     "y = 2x - 1",
     "y = 2x^2 + 1 at x = -1",
     "y = 3x",
@@ -1535,11 +1536,11 @@ void main() {
     "y = 6x + 9",
     "y = 6x - 9",
     "y = 9x + 6",
-    "y = x about the x-axis from x=0 to x=4",
+    "y = \\sqrt{x}",
+    "y = x",
     "y = x^2",
     "y = x^2 - 3x + 2 at x = 1",
     "y = x^2 - 4x + 3 at x = 1",
-    "y = x^2 about the x-axis from x=0 to x=1",
     "y = x^2 at x = -1",
     "y = x^2 at x = 3",
     "y = x^3",
@@ -1553,6 +1554,8 @@ void main() {
     "y=x^{2}",
     "y=x^{2} - 1",
     "y=x^{3}",
+    "y^2",
+    "y^3",
     "|x|",
   ];
 
@@ -1568,22 +1571,13 @@ void main() {
         final Object? err = tester.takeException();
         final bool mathWidgetExists = find.byType(Math).evaluate().isNotEmpty;
         if (err != null) {
-          // The Math widget existing in the tree despite an exception
-          // means KaTeX successfully parsed and built the formula -- the
-          // exception is a downstream LAYOUT assertion (this test's bare
-          // Scaffold has no width constraint, unlike the real app's
-          // cards/lists), not a parsing failure. A release build never
-          // throws on layout overflow (it's a debug-only assertion), so
-          // that case is a soft pass here. Only a missing Math widget --
-          // meaning MathText's onErrorFallback kicked in, or the widget
-          // never built at all -- is a genuine hard failure.
           if (!mathWidgetExists) {
-            broken.add('EXCEPTION ($err): $expr');
+            broken.add('EXCEPTION (\$err): \$expr');
           }
           continue;
         }
         if (!mathWidgetExists) {
-          broken.add('FALLBACK (no Math widget rendered): $expr');
+          broken.add('FALLBACK (no Math widget rendered): \$expr');
         }
       }
       expect(broken, isEmpty, reason: broken.join('X'));
