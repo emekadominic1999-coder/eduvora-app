@@ -1,5 +1,4 @@
 import 'package:eduvora/core/data/academic_structure.dart';
-import 'package:eduvora/core/data/cbt_question_bank.dart';
 import 'package:eduvora/core/data/nigerian_institutions.dart';
 import 'package:eduvora/core/models/cbt.dart';
 import 'package:eduvora/core/models/gpa.dart';
@@ -117,49 +116,28 @@ void main() {
   });
 
   group('CBT bank', () {
-    test('every question has a valid correct answer index', () {
-      for (final CbtSubject subject in CbtQuestionBank.subjects) {
-        expect(
-          subject.questions,
-          isNotEmpty,
-          reason: '${subject.name} has no questions',
-        );
-        for (final CbtQuestion q in subject.questions) {
-          expect(
-            q.options.length,
-            greaterThanOrEqualTo(2),
-            reason: '${q.id} needs at least two options',
-          );
-          expect(q.correctIndex, greaterThanOrEqualTo(0), reason: q.id);
-          expect(q.correctIndex, lessThan(q.options.length), reason: q.id);
-          expect(q.explanation, isNotEmpty, reason: '${q.id} lacks a reason');
-        }
-      }
+    test('a general-studies subject is relevant to every faculty', () {
+      const CbtSubject general = CbtSubject(
+        id: 'gst-use-of-english',
+        name: 'Use of English',
+        description: 'General studies',
+        questions: <CbtQuestion>[],
+        isGeneralStudies: true,
+      );
+      expect(general.isRelevantTo('Faculty of Law'), isTrue);
+      expect(general.isRelevantTo('Faculty of Physical Sciences'), isTrue);
     });
 
-    test('question ids are unique across the bank', () {
-      final Set<String> seen = <String>{};
-      for (final CbtSubject subject in CbtQuestionBank.subjects) {
-        for (final CbtQuestion q in subject.questions) {
-          expect(seen.add(q.id), isTrue, reason: 'duplicate id ${q.id}');
-        }
-      }
-    });
-
-    test('general studies papers are offered to every faculty', () {
-      final List<CbtSubject> forLaw =
-          CbtQuestionBank.forFaculty('Faculty of Law');
-
-      expect(
-        forLaw.any((CbtSubject s) => s.id == 'gst-use-of-english'),
-        isTrue,
+    test('a faculty-scoped subject is not relevant to other faculties', () {
+      const CbtSubject scoped = CbtSubject(
+        id: 'mth-121-calculus',
+        name: 'MTH 121',
+        description: 'Past questions for Mathematics',
+        questions: <CbtQuestion>[],
+        faculties: <String>['Faculty of Physical Sciences'],
       );
-      expect(
-        forLaw.any((CbtSubject s) => s.id == 'law-nigerian-legal-system'),
-        isTrue,
-      );
-      // A law student should not be handed the engineering maths paper.
-      expect(forLaw.any((CbtSubject s) => s.id == 'eng-mathematics'), isFalse);
+      expect(scoped.isRelevantTo('Faculty of Physical Sciences'), isTrue);
+      expect(scoped.isRelevantTo('Faculty of Social Sciences'), isFalse);
     });
 
     test('attempt scoring produces the expected grade band', () {

@@ -111,11 +111,18 @@ class CbtExamConfig {
     this.isCustom = false,
   });
 
-  /// The paper exactly as it was written.
+  /// A realistic single-sitting mock exam: [standardQuestionCount] questions
+  /// drawn at random from the paper (or every question, if the paper holds
+  /// fewer than that), in [standardMinutes] minutes.
   factory CbtExamConfig.standard(CbtSubject subject) => CbtExamConfig(
-    questionCount: subject.questions.length,
-    minutes: subject.minutesPerAttempt,
+    questionCount: min(standardQuestionCount, subject.questions.length),
+    minutes: standardMinutes,
+    shuffleQuestions: true,
   );
+
+  /// How many questions, and how much time, a standard sitting gives.
+  static const int standardQuestionCount = 35;
+  static const int standardMinutes = 60;
 
   /// The most questions a custom paper may ask for. A student revising wants
   /// a long paper available; beyond a hundred it stops being a sitting and

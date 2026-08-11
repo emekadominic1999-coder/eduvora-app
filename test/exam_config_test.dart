@@ -21,20 +21,38 @@ CbtSubject _subject({int count = 10}) => CbtSubject(
 
 void main() {
   group('Standard exam', () {
-    test('uses the whole paper, in order, at the paper’s own duration', () {
-      final CbtSubject subject = _subject();
+    test('a paper smaller than the standard count uses every question', () {
+      final CbtSubject subject = _subject(); // 10 questions
       final CbtExamConfig config = CbtExamConfig.standard(subject);
 
       expect(config.questionCount, 10);
-      expect(config.minutes, 15);
+      expect(config.minutes, CbtExamConfig.standardMinutes);
       expect(config.isCustom, isFalse);
 
       final List<CbtQuestion> paper = config.buildPaper(subject, seed: 1);
       expect(paper.length, 10);
       expect(
-        paper.map((CbtQuestion q) => q.id).toList(),
-        subject.questions.map((CbtQuestion q) => q.id).toList(),
-        reason: 'standard must not reorder anything',
+        paper.map((CbtQuestion q) => q.id).toSet(),
+        subject.questions.map((CbtQuestion q) => q.id).toSet(),
+        reason: 'every question must still be included, just possibly '
+            'reordered',
+      );
+    });
+
+    test('a paper larger than the standard count is capped at 35 questions '
+        'in 60 minutes', () {
+      final CbtSubject subject = _subject(count: 159); // e.g. MTH 121
+      final CbtExamConfig config = CbtExamConfig.standard(subject);
+
+      expect(config.questionCount, 35);
+      expect(config.minutes, 60);
+
+      final List<CbtQuestion> paper = config.buildPaper(subject, seed: 1);
+      expect(paper.length, 35);
+      expect(
+        paper.map((CbtQuestion q) => q.id).toSet().length,
+        35,
+        reason: 'a standard sitting must not repeat a question',
       );
     });
   });

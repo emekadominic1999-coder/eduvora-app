@@ -1,56 +1,41 @@
 import 'package:flutter/foundation.dart';
 
-import '../data/cbt_question_bank.dart';
 import '../models/cbt.dart';
 import 'supabase_service.dart';
 
 /// Serves CBT papers from Supabase's `cbt_questions` table — real questions
-/// the student (or their coursemates) have added — falling back to the
-/// bundled starter bank whenever no real questions exist yet for a faculty,
-/// or when running in Campus Mode.
-///
-/// This mirrors the merge pattern used by [ContentRepository] for materials
-/// and videos: real, teacher- or student-supplied content always takes
-/// priority over the sample bank, and nothing is ever left empty.
+/// the student (or their coursemates) have added. There is no fallback
+/// sample bank: a paper only ever appears here once someone has actually
+/// contributed real questions for it.
 class CbtRepository {
   const CbtRepository();
 
+  /// Real papers relevant to this faculty — general-studies papers plus
+  /// whatever is specifically tagged for it.
   Future<List<CbtSubject>> forFaculty(String faculty) async {
     final List<CbtSubject> remote = await _fetchRemoteSubjects();
-    final List<CbtSubject> seeded = CbtQuestionBank.forFaculty(faculty);
-
-    // Real, contributed papers relevant to this faculty.
-    final List<CbtSubject> relevantRemote = remote
+    final List<CbtSubject> relevant = remote
         .where((CbtSubject s) => s.isRelevantTo(faculty))
         .toList();
-
-    final List<CbtSubject> combined = <CbtSubject>[
-      ...relevantRemote,
-      ...seeded,
-    ];
-    combined.sort((CbtSubject a, CbtSubject b) {
+    relevant.sort((CbtSubject a, CbtSubject b) {
       if (a.isGeneralStudies != b.isGeneralStudies) {
         return a.isGeneralStudies ? -1 : 1;
       }
       return a.name.compareTo(b.name);
     });
-    return combined;
+    return relevant;
   }
 
-  /// Every paper, contributed or bundled, regardless of faculty relevance.
+  /// Every real paper, regardless of faculty relevance.
   Future<List<CbtSubject>> all() async {
     final List<CbtSubject> remote = await _fetchRemoteSubjects();
-    final List<CbtSubject> combined = <CbtSubject>[
-      ...remote,
-      ...CbtQuestionBank.subjects,
-    ];
-    combined.sort((CbtSubject a, CbtSubject b) {
+    remote.sort((CbtSubject a, CbtSubject b) {
       if (a.isGeneralStudies != b.isGeneralStudies) {
         return a.isGeneralStudies ? -1 : 1;
       }
       return a.name.compareTo(b.name);
     });
-    return combined;
+    return remote;
   }
 
   Future<List<CbtSubject>> _fetchRemoteSubjects() async {

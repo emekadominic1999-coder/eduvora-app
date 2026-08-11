@@ -121,6 +121,19 @@ class _CbtHomeScreenState extends State<CbtHomeScreen> {
                         padding: EdgeInsets.symmetric(vertical: AppSpacing.xxl),
                         child: Center(child: CircularProgressIndicator()),
                       )
+                    else if (papers.isEmpty)
+                      EmptyState(
+                        icon: Icons.quiz_outlined,
+                        title: 'No papers yet',
+                        message: _showAllPapers
+                            ? 'Real past questions will appear here once '
+                                  'they are added.'
+                            : 'Nothing has been added for '
+                                  '${profile?.faculty.isNotEmpty == true ? profile!.faculty : 'your faculty'} '
+                                  'yet — tap "Show all" to see every paper in '
+                                  'the bank.',
+                        compact: true,
+                      )
                     else
                       Padding(
                         padding: const EdgeInsets.symmetric(

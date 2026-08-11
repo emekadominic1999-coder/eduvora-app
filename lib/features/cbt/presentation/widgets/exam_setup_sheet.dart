@@ -40,6 +40,13 @@ class _ExamSetupSheetState extends State<_ExamSetupSheet> {
 
   int get _total => widget.subject.questions.length;
 
+  /// How many questions a standard sitting actually draws — the fixed
+  /// count, unless the paper itself holds fewer than that.
+  int get _standardCount =>
+      _total < CbtExamConfig.standardQuestionCount
+      ? _total
+      : CbtExamConfig.standardQuestionCount;
+
   /// A custom paper may go up to a hundred questions, but never beyond what
   /// the subject actually holds — offering a number the pool cannot fill
   /// would silently hand back a shorter paper than was asked for.
@@ -87,11 +94,15 @@ class _ExamSetupSheetState extends State<_ExamSetupSheet> {
 
           _ModeCard(
             title: 'Standard exam',
-            body:
-                'The full paper exactly as written — all $_total questions in '
-                '${widget.subject.minutesPerAttempt} minutes, in order, marked '
-                'out of ${CbtExamConfig.totalMarks}. This is the one that '
-                'mirrors the real hall.',
+            body: _total <= CbtExamConfig.standardQuestionCount
+                ? 'All $_total questions, ${CbtExamConfig.standardMinutes} '
+                      'minutes on the clock, marked out of '
+                      '${CbtExamConfig.totalMarks}. This is the one that '
+                      'mirrors the real hall.'
+                : '$_standardCount questions drawn at random from the paper, '
+                      '${CbtExamConfig.standardMinutes} minutes on the clock, '
+                      'marked out of ${CbtExamConfig.totalMarks}. This is the '
+                      'one that mirrors the real hall.',
             icon: Icons.assignment_rounded,
             selected: !_custom,
             onTap: () => setState(() => _custom = false),
@@ -164,7 +175,8 @@ class _ExamSetupSheetState extends State<_ExamSetupSheet> {
             label: Text(
               _custom
                   ? 'Start — $_questions questions, $_minutes min'
-                  : 'Start standard exam',
+                  : 'Start — $_standardCount questions, '
+                        '${CbtExamConfig.standardMinutes} min',
             ),
           ),
         ],

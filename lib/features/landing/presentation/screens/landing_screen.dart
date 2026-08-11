@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/data/academic_structure.dart';
-import '../../../../core/data/cbt_question_bank.dart';
 import '../../../../core/data/nigerian_institutions.dart';
 import '../../../../core/models/institution.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -172,7 +171,7 @@ class _Numbers extends StatelessWidget {
   Widget build(BuildContext context) {
     final int institutions = NigerianInstitutions.all.length;
     final int departments = AcademicStructure.allDepartments.length;
-    final int questions = CbtQuestionBank.totalQuestions;
+    final int faculties = AcademicStructure.universityFaculties.length;
 
     return Transform.translate(
       offset: const Offset(0, -26),
@@ -200,10 +199,7 @@ class _Numbers extends StatelessWidget {
               ),
               const _CellDivider(),
               Expanded(
-                child: _NumberCell(
-                  value: '$questions+',
-                  label: 'CBT questions',
-                ),
+                child: _NumberCell(value: '$faculties+', label: 'Faculties'),
               ),
             ],
           ),
