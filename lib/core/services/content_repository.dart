@@ -191,23 +191,18 @@ class ContentRepository {
   // ---------------------------------------------------------------- news
 
   Future<List<NewsItem>> news() async {
-    if (SupabaseService.isReady) {
-      try {
-        final List<dynamic> rows = await SupabaseService.client
-            .from('news')
-            .select()
-            .order('published_at', ascending: false)
-            .limit(60);
-        final List<NewsItem> remote = rows
-            .whereType<Map<String, dynamic>>()
-            .map(NewsItem.fromJson)
-            .toList();
-        if (remote.isNotEmpty) return remote;
-      } catch (error) {
-        debugPrint('[Eduvora] news fetch failed: $error');
-      }
+    if (!SupabaseService.isReady) return <NewsItem>[];
+    try {
+      final List<dynamic> rows = await SupabaseService.client
+          .from('news')
+          .select()
+          .order('published_at', ascending: false)
+          .limit(60);
+      return rows.whereType<Map<String, dynamic>>().map(NewsItem.fromJson).toList();
+    } catch (error) {
+      debugPrint('[Eduvora] news fetch failed: $error');
+      return <NewsItem>[];
     }
-    return SeedContent.news();
   }
 
   Set<String> bookmarkedNewsIds() => LocalStore.instance

@@ -101,6 +101,8 @@ class _NewsScreenState extends State<NewsScreen> {
                       );
 
                       if (items.isEmpty) {
+                        final bool noticeboardEmpty =
+                            !_savedOnly && (snapshot.data ?? <NewsItem>[]).isEmpty;
                         return ListView(
                           children: <Widget>[
                             EmptyState(
@@ -109,10 +111,15 @@ class _NewsScreenState extends State<NewsScreen> {
                                   : Icons.campaign_outlined,
                               title: _savedOnly
                                   ? 'Nothing saved yet'
+                                  : noticeboardEmpty
+                                  ? 'No notices yet'
                                   : 'No notices in this category',
                               message: _savedOnly
                                   ? 'Tap the bookmark on any notice to keep it '
                                         'here for later.'
+                                  : noticeboardEmpty
+                                  ? 'Scholarships, admissions and campus '
+                                        'notices will appear here once added.'
                                   : 'Try another category, or pull down to '
                                         'refresh.',
                             ),
