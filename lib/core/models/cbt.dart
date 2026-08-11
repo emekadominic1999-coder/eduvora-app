@@ -147,17 +147,59 @@ class CbtExamConfig {
 
   /// Builds the working question list for an attempt, applying the count and
   /// any shuffling. [seed] keeps a given attempt reproducible for tests.
+  ///
+  /// A shortened paper (fewer questions than the subject holds) draws across
+  /// every topic in the pool rather than a blind random sample of the whole
+  /// bank — an exam is meant to touch every part of the course, not risk
+  /// clustering by chance around whichever topics happen to be biggest.
   List<CbtQuestion> buildPaper(CbtSubject subject, {int? seed}) {
     final Random rng = Random(seed ?? DateTime.now().microsecondsSinceEpoch);
-    final List<CbtQuestion> pool = List<CbtQuestion>.from(subject.questions);
+    final int take = questionCount.clamp(1, subject.questions.length);
 
-    if (shuffleQuestions) pool.shuffle(rng);
-
-    final int take = questionCount.clamp(1, pool.length);
-    final List<CbtQuestion> paper = pool.take(take).toList();
+    final List<CbtQuestion> paper = shuffleQuestions
+        ? _stratifiedSample(subject.questions, take, rng)
+        : subject.questions.take(take).toList();
 
     if (!shuffleOptions) return paper;
     return paper.map((CbtQuestion q) => q.withShuffledOptions(rng)).toList();
+  }
+
+  /// Groups [pool] by topic, shuffles each topic's own order, then draws in
+  /// round-robin across topics (one from each, then a second from each that
+  /// still has more, and so on) until [take] questions are selected — so a
+  /// paper shorter than the full bank still spans every topic it can before
+  /// any topic gets a second question. The final order is shuffled too, so
+  /// the result doesn't read as one block per topic.
+  static List<CbtQuestion> _stratifiedSample(
+    List<CbtQuestion> pool,
+    int take,
+    Random rng,
+  ) {
+    if (take >= pool.length) {
+      return (List<CbtQuestion>.from(pool)..shuffle(rng));
+    }
+
+    final Map<String, List<CbtQuestion>> byTopic = <String, List<CbtQuestion>>{};
+    for (final CbtQuestion q in pool) {
+      byTopic.putIfAbsent(q.topic, () => <CbtQuestion>[]).add(q);
+    }
+    final List<List<CbtQuestion>> groups = byTopic.values
+        .map((List<CbtQuestion> g) => List<CbtQuestion>.from(g)..shuffle(rng))
+        .toList()
+      ..shuffle(rng);
+
+    final List<CbtQuestion> selected = <CbtQuestion>[];
+    int round = 0;
+    while (selected.length < take) {
+      final int before = selected.length;
+      for (final List<CbtQuestion> group in groups) {
+        if (selected.length >= take) break;
+        if (round < group.length) selected.add(group[round]);
+      }
+      if (selected.length == before) break; // every group exhausted
+      round++;
+    }
+    return selected..shuffle(rng);
   }
 }
 

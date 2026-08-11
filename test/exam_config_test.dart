@@ -3,12 +3,13 @@ import 'dart:math';
 import 'package:eduvora/core/models/cbt.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-CbtQuestion _q(int n) => CbtQuestion(
+CbtQuestion _q(int n, {String topic = ''}) => CbtQuestion(
   id: 'q$n',
   question: 'Question $n',
   options: <String>['A$n', 'B$n', 'C$n', 'D$n'],
   correctIndex: n % 4,
   explanation: 'Because $n',
+  topic: topic,
 );
 
 CbtSubject _subject({int count = 10}) => CbtSubject(
@@ -18,6 +19,25 @@ CbtSubject _subject({int count = 10}) => CbtSubject(
   questions: List<CbtQuestion>.generate(count, _q),
   minutesPerAttempt: 15,
 );
+
+/// A subject with [topicCount] topics of [perTopic] questions each, so
+/// coverage across topics can actually be asserted on.
+CbtSubject _multiTopicSubject({required int topicCount, required int perTopic}) {
+  final List<CbtQuestion> questions = <CbtQuestion>[];
+  int n = 0;
+  for (int t = 0; t < topicCount; t++) {
+    for (int i = 0; i < perTopic; i++) {
+      questions.add(_q(n++, topic: 'Topic $t'));
+    }
+  }
+  return CbtSubject(
+    id: 'test',
+    name: 'Test paper',
+    description: '',
+    questions: questions,
+    minutesPerAttempt: 15,
+  );
+}
 
 void main() {
   group('Standard exam', () {
@@ -53,6 +73,63 @@ void main() {
         paper.map((CbtQuestion q) => q.id).toSet().length,
         35,
         reason: 'a standard sitting must not repeat a question',
+      );
+    });
+  });
+
+  group('Topic coverage', () {
+    test('a shortened paper touches every topic before repeating one', () {
+      // 31 topics of 5 questions each, like MTH 121 — a 35-question draw
+      // should hit all 31 topics (one each) before any topic gets a second.
+      final CbtSubject subject = _multiTopicSubject(topicCount: 31, perTopic: 5);
+      final CbtExamConfig config = CbtExamConfig.standard(subject);
+
+      final List<CbtQuestion> paper = config.buildPaper(subject, seed: 1);
+      final Set<String> topicsCovered = paper.map((CbtQuestion q) => q.topic).toSet();
+
+      expect(paper.length, 35);
+      expect(
+        topicsCovered.length,
+        31,
+        reason: 'every topic should appear at least once in a 35-question '
+            'draw from 31 topics',
+      );
+    });
+
+    test('drawing fewer questions than there are topics still spreads out', () {
+      final CbtSubject subject = _multiTopicSubject(topicCount: 20, perTopic: 3);
+      const CbtExamConfig config = CbtExamConfig(
+        questionCount: 10,
+        minutes: 20,
+        shuffleQuestions: true,
+        isCustom: true,
+      );
+
+      final List<CbtQuestion> paper = config.buildPaper(subject, seed: 5);
+      final Set<String> topicsCovered = paper.map((CbtQuestion q) => q.topic).toSet();
+
+      expect(paper.length, 10);
+      expect(
+        topicsCovered.length,
+        10,
+        reason: 'drawing fewer questions than topics should still give 10 '
+            'distinct topics rather than clustering on a few',
+      );
+    });
+
+    test('a full-length paper still includes every question exactly once', () {
+      final CbtSubject subject = _multiTopicSubject(topicCount: 5, perTopic: 4);
+      const CbtExamConfig config = CbtExamConfig(
+        questionCount: 20,
+        minutes: 30,
+        shuffleQuestions: true,
+        isCustom: true,
+      );
+
+      final List<CbtQuestion> paper = config.buildPaper(subject, seed: 2);
+      expect(
+        paper.map((CbtQuestion q) => q.id).toSet(),
+        subject.questions.map((CbtQuestion q) => q.id).toSet(),
       );
     });
   });
