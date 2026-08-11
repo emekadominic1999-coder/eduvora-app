@@ -43,6 +43,21 @@ class MathText extends StatelessWidget {
   /// needs the (more expensive) mixed renderer.
   static bool hasMath(String value) => _maths.hasMatch(value);
 
+  /// True when an expression is nothing but a single `\text{...}` wrapper —
+  /// the shape every plain prose word takes once the content pipeline wraps
+  /// it for LaTeX rendering. Such a span carries no real maths (no
+  /// fraction, no exponent, no symbol) — it's an ordinary word that only
+  /// happens to be routed through the maths renderer, so it should read at
+  /// the same size as the surrounding sentence rather than getting the
+  /// size bump real formulae get.
+  static bool _isPureText(String expression) {
+    final String trimmed = expression.trim();
+    if (!trimmed.startsWith(r'\text{') || !trimmed.endsWith('}')) {
+      return false;
+    }
+    return trimmed.split('{').length == trimmed.split('}').length;
+  }
+
   @override
   Widget build(BuildContext context) {
     final TextStyle effective = style ?? DefaultTextStyle.of(context).style;
@@ -73,15 +88,23 @@ class MathText extends StatelessWidget {
       // Formulae stay regular weight even inside bold prose (e.g. a
       // semi-bold question stem) — bold math sets in a different face
       // with thicker strokes throughout, which reads as visual noise
-      // rather than emphasis.
+      // rather than emphasis. Plain wrapped words (_isPureText) skip the
+      // size bump entirely — it exists to compensate real maths (which
+      // sets optically smaller than prose), not to enlarge ordinary text.
+      final double scale = _isPureText(expression) ? 1.0 : mathScale;
       final TextStyle mathsStyle = style.copyWith(
-        fontSize: (style.fontSize ?? 14) * mathScale,
+        fontSize: (style.fontSize ?? 14) * scale,
         fontWeight: FontWeight.normal,
       );
 
       spans.add(
         WidgetSpan(
-          alignment: PlaceholderAlignment.middle,
+          // Baseline (not middle) alignment: real maths and plain wrapped
+          // words both need to sit on the same baseline as the
+          // surrounding text, or ascender/descender-heavy words (like
+          // "processor" or "protocol") visibly float up or down relative
+          // to their neighbours on the same line.
+          alignment: PlaceholderAlignment.baseline,
           baseline: TextBaseline.alphabetic,
           child: Math.tex(
             expression,
