@@ -425,9 +425,9 @@ class _CbtExamScreenState extends State<CbtExamScreen> {
         MathText(
           _stripMarkdown(question.question),
           style: const TextStyle(
-            fontSize: 20,
+            fontSize: 17,
             height: 1.5,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w400,
             color: AppColours.text,
           ),
         ),
@@ -474,10 +474,10 @@ class _CbtExamScreenState extends State<CbtExamScreen> {
                       child: MathText(
                         question.options[i],
                         style: TextStyle(
-                          fontSize: 17,
+                          fontSize: 15.5,
                           height: 1.45,
                           fontWeight: active
-                              ? FontWeight.w600
+                              ? FontWeight.w500
                               : FontWeight.w400,
                           color: active
                               ? AppColours.primaryDeep

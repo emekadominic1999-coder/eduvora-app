@@ -424,9 +424,9 @@ class _ReviewCard extends StatelessWidget {
           MathText(
             question.question.replaceAll('**', ''),
             style: const TextStyle(
-              fontSize: 16.5,
+              fontSize: 15,
               height: 1.5,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w400,
               color: AppColours.text,
             ),
           ),
