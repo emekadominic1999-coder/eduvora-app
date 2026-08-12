@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' show FunctionException;
 
+import '../models/cbt.dart';
 import '../models/cbt_entitlement.dart';
 import 'local_store.dart';
 import 'supabase_service.dart';
@@ -54,8 +56,8 @@ class PaywallRepository {
     }
   }
 
-  bool hasAccess(String subjectId, List<CbtEntitlement> entitlements) =>
-      entitlements.any((CbtEntitlement e) => e.coversSubject(subjectId));
+  bool hasAccess(CbtSubject subject, List<CbtEntitlement> entitlements) =>
+      entitlements.any((CbtEntitlement e) => e.coversSubjectId(subject.id));
 
   bool hasUsedFreeTrial(String subjectId) =>
       LocalStore.instance.readBool(_trialKey(subjectId));
@@ -65,36 +67,61 @@ class PaywallRepository {
 
   String _trialKey(String subjectId) => '${StoreKeys.cbtFreeTrialUsed}.$subjectId';
 
-  /// Starts a checkout for [plan]. [subjectId]/[subjectName] are required for
-  /// [CbtPlan.singlePaper] and ignored for [CbtPlan.semesterAll].
-  Future<PaystackCheckout> startCheckout({
-    required CbtPlan plan,
-    String subjectId = '',
-    String subjectName = '',
-  }) async {
+  /// Starts a checkout for one specific paper.
+  Future<PaystackCheckout> startSinglePaperCheckout({
+    required String subjectId,
+    required String subjectName,
+  }) => _startCheckout(<String, dynamic>{
+    'plan': CbtPlan.singlePaper.wireName,
+    'subjectId': subjectId,
+    'subjectName': subjectName,
+  });
+
+  /// Starts a checkout for a student-picked set of papers. Pricing and the
+  /// 23-unit cap are both re-checked server-side against [subjectIds] —
+  /// [department]/[level]/[semester] are recorded for the receipt only.
+  Future<PaystackCheckout> startCoursePackCheckout({
+    required List<String> subjectIds,
+    required String department,
+    required String level,
+    required String semester,
+  }) => _startCheckout(<String, dynamic>{
+    'plan': CbtPlan.coursePack.wireName,
+    'subjectIds': subjectIds,
+    'department': department,
+    'level': level,
+    'semester': semester,
+  });
+
+  Future<PaystackCheckout> _startCheckout(Map<String, dynamic> body) async {
     if (!SupabaseService.isReady) {
       throw StateError(
         'Paying for CBT access needs the Eduvora backend to be connected.',
       );
     }
 
-    final Map<String, dynamic> response = await SupabaseService.client.functions
-        .invoke(
-          'paystack-initialize',
-          body: <String, dynamic>{
-            'plan': plan.wireName,
-            if (plan == CbtPlan.singlePaper) 'subjectId': subjectId,
-            if (plan == CbtPlan.singlePaper) 'subjectName': subjectName,
-          },
-        )
-        .then((response) => response.data as Map<String, dynamic>);
-
-    return PaystackCheckout(
-      authorizationUrl: response['authorizationUrl'] as String,
-      reference: response['reference'] as String,
-      amountKobo: (response['amountKobo'] as num).toInt(),
-      accessDays: (response['accessDays'] as num).toInt(),
-    );
+    try {
+      final response = await SupabaseService.client.functions.invoke(
+        'paystack-initialize',
+        body: body,
+      );
+      final Map<String, dynamic> data = response.data as Map<String, dynamic>;
+      return PaystackCheckout(
+        authorizationUrl: data['authorizationUrl'] as String,
+        reference: data['reference'] as String,
+        amountKobo: (data['amountKobo'] as num).toInt(),
+        accessDays: (data['accessDays'] as num).toInt(),
+      );
+    } on FunctionException catch (error) {
+      // The function rejects with a plain-English reason (unknown plan,
+      // over the unit cap, incomplete profile, ...) in the JSON body —
+      // surface that instead of a raw HTTP exception.
+      final Object? details = error.details;
+      final String? reason = details is Map && details['error'] is String
+          ? details['error'] as String
+          : null;
+      throw StateError(reason ?? 'Could not start checkout. Please try again.');
+    }
   }
 
   /// Asks the backend to check a checkout's status with Paystack directly.

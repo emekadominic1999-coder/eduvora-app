@@ -79,6 +79,10 @@ class CbtSubject {
     this.faculties = const <String>[],
     this.minutesPerAttempt = 15,
     this.isGeneralStudies = false,
+    this.department = '',
+    this.level = '',
+    this.semester = '',
+    this.units = 0,
   });
 
   final String id;
@@ -90,6 +94,19 @@ class CbtSubject {
   final List<String> faculties;
   final int minutesPerAttempt;
   final bool isGeneralStudies;
+
+  /// The course this paper corresponds to — used by the course-pack picker
+  /// to group papers by department, level and semester the way real course
+  /// registration does.
+  final String department;
+  final String level;
+
+  /// 'first' or 'second'.
+  final String semester;
+
+  /// Credit units of the underlying course, for the course pack's 23-unit
+  /// registration cap. 0 when unknown.
+  final int units;
 
   bool isRelevantTo(String faculty) =>
       isGeneralStudies || faculties.isEmpty || faculties.contains(faculty);

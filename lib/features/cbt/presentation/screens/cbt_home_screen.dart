@@ -13,6 +13,7 @@ import '../widgets/exam_setup_sheet.dart';
 import '../widgets/paywall_sheet.dart';
 import 'cbt_exam_screen.dart';
 import 'cbt_payment_screen.dart';
+import 'course_pack_picker_screen.dart';
 
 /// The CBT lobby: papers relevant to the student, plus their own record.
 class CbtHomeScreen extends StatefulWidget {
@@ -43,11 +44,9 @@ class _CbtHomeScreenState extends State<CbtHomeScreen> {
   }
 
   /// A paper is "for you" if it matches your current faculty, OR you already
-  /// hold an active entitlement for it -- a paper you paid for must never
-  /// quietly drop out of your list just because you later edited your
-  /// department/faculty. The entitlement itself was never tied to your
-  /// profile in the first place; only this list-filtering step was, and
-  /// that was the actual bug.
+  /// hold an active entitlement covering it -- a paper you paid for must
+  /// never quietly drop out of your list just because you later edited your
+  /// department/faculty.
   Future<List<CbtSubject>> _load() async {
     final StudentProfile? profile = sessionController.profile;
     final List<CbtEntitlement> entitlements = await _paywall.myEntitlements();
@@ -56,20 +55,11 @@ class _CbtHomeScreenState extends State<CbtHomeScreen> {
     final List<CbtSubject> all = await _cbt.all();
     if (_showAllPapers) return all;
 
-    final bool hasBundle = entitlements.any(
-      (CbtEntitlement e) => e.isAllSubjects,
-    );
-    final Set<String> unlockedSubjectIds = entitlements
-        .where((CbtEntitlement e) => !e.isAllSubjects)
-        .map((CbtEntitlement e) => e.subjectId)
-        .toSet();
-
     return all
         .where(
           (CbtSubject s) =>
               s.isRelevantTo(profile?.faculty ?? '') ||
-              hasBundle ||
-              unlockedSubjectIds.contains(s.id),
+              _paywall.hasAccess(s, entitlements),
         )
         .toList();
   }
@@ -87,7 +77,7 @@ class _CbtHomeScreenState extends State<CbtHomeScreen> {
   }
 
   Future<void> _start(CbtSubject subject) async {
-    final bool unlocked = _paywall.hasAccess(subject.id, _entitlements);
+    final bool unlocked = _paywall.hasAccess(subject, _entitlements);
 
     if (!unlocked) {
       final bool tried = await _startFreeTrialOrPaywall(subject);
@@ -142,9 +132,30 @@ class _CbtHomeScreenState extends State<CbtHomeScreen> {
     final CbtPlan? plan = await showPaywallSheet(context, subject);
     if (plan == null || !mounted) return false;
 
+    if (plan == CbtPlan.coursePack) {
+      final List<CbtSubject> all = await _cbt.all();
+      if (!mounted) return false;
+      final CoursePackSelection? selection = await showCoursePackPicker(
+        context,
+        all,
+      );
+      if (selection == null || selection.subjects.isEmpty || !mounted) {
+        return false;
+      }
+
+      final bool? paid = await Navigator.of(context).push<bool>(
+        MaterialPageRoute<bool>(
+          builder: (_) => CbtPaymentScreen.coursePack(selection: selection),
+        ),
+      );
+      if (paid != true || !mounted) return false;
+      await _loadEntitlements();
+      return true;
+    }
+
     final bool? paid = await Navigator.of(context).push<bool>(
       MaterialPageRoute<bool>(
-        builder: (_) => CbtPaymentScreen(subject: subject, plan: plan),
+        builder: (_) => CbtPaymentScreen.singlePaper(subject: subject),
       ),
     );
     if (paid != true || !mounted) return false;
@@ -266,7 +277,7 @@ class _CbtHomeScreenState extends State<CbtHomeScreen> {
                               child: _PaperCard(
                                 subject: s,
                                 best: best,
-                                unlocked: _paywall.hasAccess(s.id, _entitlements),
+                                unlocked: _paywall.hasAccess(s, _entitlements),
                                 trialAvailable: !_paywall.hasUsedFreeTrial(s.id),
                                 onStart: () => _start(s),
                               ),

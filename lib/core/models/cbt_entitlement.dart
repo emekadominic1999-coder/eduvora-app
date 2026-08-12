@@ -5,21 +5,28 @@ enum CbtPlan {
   /// Unlocks one specific paper.
   singlePaper,
 
-  /// Unlocks every paper, current and future, for the access window.
-  semesterAll;
+  /// Unlocks a student-picked set of papers (up to the real course-load
+  /// cap) for their chosen department, level and semester — one flat price
+  /// regardless of how many papers that ends up being.
+  coursePack;
 
   static CbtPlan fromName(String? name) => switch (name) {
-    'semester_all' => CbtPlan.semesterAll,
+    'course_pack' => CbtPlan.coursePack,
     _ => CbtPlan.singlePaper,
   };
 
   String get wireName => switch (this) {
     CbtPlan.singlePaper => 'single_paper',
-    CbtPlan.semesterAll => 'semester_all',
+    CbtPlan.coursePack => 'course_pack',
   };
 }
 
 /// What a student has unlocked, mirroring a row of `cbt_entitlements`.
+///
+/// Every entitlement — however it was bought — is scoped to exactly one
+/// [subjectId]. A course pack is not a single wildcard row; buying one
+/// produces a separate entitlement per paper chosen, so this stays a plain,
+/// unambiguous "do you own this specific paper" check either way.
 @immutable
 class CbtEntitlement {
   const CbtEntitlement({
@@ -28,16 +35,13 @@ class CbtEntitlement {
     required this.expiresAt,
   });
 
-  /// Empty means every subject (a [CbtPlan.semesterAll] purchase).
   final String subjectId;
   final CbtPlan plan;
   final DateTime expiresAt;
 
-  bool get isAllSubjects => subjectId.isEmpty;
-
   bool get isActive => expiresAt.isAfter(DateTime.now());
 
-  bool coversSubject(String id) => isActive && (isAllSubjects || subjectId == id);
+  bool coversSubjectId(String id) => isActive && subjectId == id;
 
   factory CbtEntitlement.fromJson(Map<String, dynamic> json) => CbtEntitlement(
     subjectId: (json['subject_id'] ?? '') as String,

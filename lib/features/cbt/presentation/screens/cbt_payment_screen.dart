@@ -4,14 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/models/cbt.dart';
-import '../../../../core/models/cbt_entitlement.dart';
 import '../../../../core/services/paywall_repository.dart';
 import '../../../../core/theme/app_theme.dart';
+import 'course_pack_picker_screen.dart';
 
 enum _Stage { starting, awaitingPayment, verifying, success, failed }
 
-/// Starts a Paystack checkout for [subject] (or every subject, for
-/// [CbtPlan.semesterAll]) and walks the student through to confirmation.
+/// Starts a Paystack checkout — for one paper, or for a whole
+/// [CoursePackSelection] — and walks the student through to confirmation.
 ///
 /// The actual payment happens on Paystack's own hosted page — opened in the
 /// system browser — which already offers bank transfer, USSD and card
@@ -21,10 +21,21 @@ enum _Stage { starting, awaitingPayment, verifying, success, failed }
 /// Pops `true` once access is confirmed, so the caller can drop straight into
 /// the exam the student was trying to open.
 class CbtPaymentScreen extends StatefulWidget {
-  const CbtPaymentScreen({super.key, required this.subject, required this.plan});
+  // Kept as a distinct required parameter (rather than `required this.subject`)
+  // so this constructor enforces a non-null subject at compile time even
+  // though the field itself is nullable to accommodate .coursePack.
+  const CbtPaymentScreen.singlePaper({super.key, required CbtSubject subject})
+    : subject = subject, // ignore: prefer_initializing_formals
+      coursePack = null;
 
-  final CbtSubject subject;
-  final CbtPlan plan;
+  const CbtPaymentScreen.coursePack({
+    super.key,
+    required CoursePackSelection selection,
+  }) : subject = null,
+       coursePack = selection;
+
+  final CbtSubject? subject;
+  final CoursePackSelection? coursePack;
 
   @override
   State<CbtPaymentScreen> createState() => _CbtPaymentScreenState();
@@ -41,10 +52,15 @@ class _CbtPaymentScreenState extends State<CbtPaymentScreen> {
   Timer? _pollTimer;
   int _checksDone = 0;
 
-  bool get _isBundle => widget.plan == CbtPlan.semesterAll;
+  bool get _isCoursePack => widget.coursePack != null;
 
-  String get _planTitle =>
-      _isBundle ? 'All papers, this semester' : widget.subject.name;
+  String get _planTitle {
+    final CoursePackSelection? pack = widget.coursePack;
+    if (pack == null) return widget.subject!.name;
+    return pack.subjects.length == 1
+        ? pack.subjects.single.name
+        : '${pack.subjects.length} papers (${pack.totalUnits} units)';
+  }
 
   @override
   void initState() {
@@ -64,11 +80,19 @@ class _CbtPaymentScreenState extends State<CbtPaymentScreen> {
       _error = null;
     });
     try {
-      final PaystackCheckout checkout = await _paywall.startCheckout(
-        plan: widget.plan,
-        subjectId: _isBundle ? '' : widget.subject.id,
-        subjectName: _isBundle ? '' : widget.subject.name,
-      );
+      final PaystackCheckout checkout = _isCoursePack
+          ? await _paywall.startCoursePackCheckout(
+              subjectIds: widget.coursePack!.subjects
+                  .map((CbtSubject s) => s.id)
+                  .toList(),
+              department: widget.coursePack!.department,
+              level: widget.coursePack!.level,
+              semester: widget.coursePack!.semester,
+            )
+          : await _paywall.startSinglePaperCheckout(
+              subjectId: widget.subject!.id,
+              subjectName: widget.subject!.name,
+            );
       if (!mounted) return;
       setState(() {
         _checkout = checkout;
@@ -80,7 +104,9 @@ class _CbtPaymentScreenState extends State<CbtPaymentScreen> {
       if (!mounted) return;
       setState(() {
         _stage = _Stage.failed;
-        _error = 'Could not start checkout. Please try again.';
+        _error = error is StateError
+            ? error.message
+            : 'Could not start checkout. Please try again.';
       });
     }
   }

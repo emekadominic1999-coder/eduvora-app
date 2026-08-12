@@ -73,12 +73,14 @@ class _PaywallSheet extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.md),
           _PlanCard(
-            title: 'All papers, this semester',
-            body: 'Every subject · new papers included free',
+            title: 'Build a course pack',
+            body:
+                'Pick your department, level and semester, then choose up '
+                'to 23 units of papers to unlock',
             price: '₦1,200',
             highlighted: true,
             badge: 'BEST VALUE',
-            onTap: () => Navigator.of(context).pop(CbtPlan.semesterAll),
+            onTap: () => Navigator.of(context).pop(CbtPlan.coursePack),
           ),
 
           const SizedBox(height: AppSpacing.lg),

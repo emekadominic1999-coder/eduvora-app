@@ -3,15 +3,16 @@ import { createClient } from 'jsr:@supabase/supabase-js@2';
 // Called by the signed-in student's device to start a checkout. Pricing is
 // computed here, never trusted from the client — otherwise a tampered
 // request could ask Paystack to charge one naira for full access.
-const PLAN_PRICING_KOBO: Record<string, number> = {
-  single_paper: 30000, // NGN 300
-  semester_all: 120000, // NGN 1,200
-};
+const SINGLE_PAPER_KOBO = 30000; // NGN 300
+const COURSE_PACK_KOBO = 120000; // NGN 1,200 flat, regardless of how many papers
 
-const PLAN_ACCESS_DAYS: Record<string, number> = {
-  single_paper: 200,
-  semester_all: 130,
-};
+const SINGLE_PAPER_ACCESS_DAYS = 200;
+const COURSE_PACK_ACCESS_DAYS = 130;
+
+// The real course-registration cap — a course pack can never add up to more
+// than a single semester's worth of units, so it stays a genuine "this
+// semester" purchase rather than a way to buy the whole catalogue cheaply.
+const MAX_COURSE_PACK_UNITS = 23;
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -38,7 +39,15 @@ Deno.serve(async (request: Request) => {
   if (userError || !userData.user) return json({ error: 'Sign in first.' }, 401);
   const user = userData.user;
 
-  let body: { plan?: string; subjectId?: string; subjectName?: string };
+  let body: {
+    plan?: string;
+    subjectId?: string;
+    subjectName?: string;
+    subjectIds?: string[];
+    department?: string;
+    level?: string;
+    semester?: string;
+  };
   try {
     body = await request.json();
   } catch {
@@ -46,24 +55,88 @@ Deno.serve(async (request: Request) => {
   }
 
   const plan = body.plan;
-  if (plan !== 'single_paper' && plan !== 'semester_all') {
+  if (plan !== 'single_paper' && plan !== 'course_pack') {
     return json({ error: 'Unknown plan.' }, 400);
   }
 
-  const subjectId = plan === 'single_paper' ? (body.subjectId ?? '').trim() : '';
-  if (plan === 'single_paper' && !subjectId) {
-    return json({ error: 'subjectId is required for the single_paper plan.' }, 400);
+  const reference = `edu_${crypto.randomUUID().replace(/-/g, '')}`;
+
+  if (plan === 'single_paper') {
+    const subjectId = (body.subjectId ?? '').trim();
+    if (!subjectId) {
+      return json({ error: 'subjectId is required for the single_paper plan.' }, 400);
+    }
+
+    const { error: insertError } = await client.from('cbt_payments').insert({
+      user_id: user.id,
+      subject_id: subjectId,
+      subject_name: body.subjectName ?? '',
+      plan,
+      amount_kobo: SINGLE_PAPER_KOBO,
+      reference,
+      status: 'pending',
+    });
+    if (insertError) {
+      console.error('cbt_payments insert failed', insertError);
+      return json({ error: 'Could not start checkout.' }, 500);
+    }
+
+    return startPaystackCheckout({
+      paystackSecret,
+      client,
+      reference,
+      amountKobo: SINGLE_PAPER_KOBO,
+      email: user.email!,
+      metadata: { user_id: user.id, plan, subject_id: subjectId },
+      accessDays: SINGLE_PAPER_ACCESS_DAYS,
+    });
   }
 
-  const amountKobo = PLAN_PRICING_KOBO[plan];
-  const reference = `edu_${crypto.randomUUID().replace(/-/g, '')}`;
+  // course_pack: the student picked their own set of papers, up to the
+  // real course-load cap, from whatever actually exists for their chosen
+  // department/level/semester. Every number here is re-derived from the
+  // database, never taken from the client's word for it.
+  const subjectIds = Array.from(
+    new Set((body.subjectIds ?? []).map((id) => id.trim()).filter(Boolean)),
+  );
+  if (subjectIds.length === 0) {
+    return json({ error: 'Pick at least one paper to unlock.' }, 400);
+  }
+
+  const { data: chosenSubjects, error: subjectsError } = await client
+    .from('cbt_questions')
+    .select('subject_id, units')
+    .in('subject_id', subjectIds);
+  if (subjectsError) {
+    console.error('cbt_questions lookup failed', subjectsError);
+    return json({ error: 'Could not verify the papers you chose.' }, 500);
+  }
+
+  const unitsBySubject = new Map<string, number>();
+  for (const row of chosenSubjects ?? []) {
+    unitsBySubject.set(row.subject_id, row.units ?? 0);
+  }
+  const missing = subjectIds.filter((id) => !unitsBySubject.has(id));
+  if (missing.length > 0) {
+    return json({ error: `Unknown paper(s): ${missing.join(', ')}.` }, 400);
+  }
+
+  const totalUnits = subjectIds.reduce((sum, id) => sum + (unitsBySubject.get(id) ?? 0), 0);
+  if (totalUnits > MAX_COURSE_PACK_UNITS) {
+    return json(
+      { error: `That's ${totalUnits} units — a course pack can't exceed ${MAX_COURSE_PACK_UNITS}.` },
+      400,
+    );
+  }
 
   const { error: insertError } = await client.from('cbt_payments').insert({
     user_id: user.id,
-    subject_id: subjectId,
-    subject_name: body.subjectName ?? '',
+    subject_ids: subjectIds,
+    department: (body.department ?? '').trim(),
+    level: (body.level ?? '').trim(),
+    semester: (body.semester ?? '').trim(),
     plan,
-    amount_kobo: amountKobo,
+    amount_kobo: COURSE_PACK_KOBO,
     reference,
     status: 'pending',
   });
@@ -72,6 +145,29 @@ Deno.serve(async (request: Request) => {
     return json({ error: 'Could not start checkout.' }, 500);
   }
 
+  return startPaystackCheckout({
+    paystackSecret,
+    client,
+    reference,
+    amountKobo: COURSE_PACK_KOBO,
+    email: user.email!,
+    metadata: { user_id: user.id, plan, subject_ids: subjectIds, total_units: totalUnits },
+    accessDays: COURSE_PACK_ACCESS_DAYS,
+  });
+});
+
+async function startPaystackCheckout(options: {
+  paystackSecret: string;
+  // deno-lint-ignore no-explicit-any
+  client: any;
+  reference: string;
+  amountKobo: number;
+  email: string;
+  metadata: Record<string, unknown>;
+  accessDays: number;
+}): Promise<Response> {
+  const { paystackSecret, client, reference, amountKobo, email, metadata, accessDays } = options;
+
   const paystackResponse = await fetch('https://api.paystack.co/transaction/initialize', {
     method: 'POST',
     headers: {
@@ -79,12 +175,12 @@ Deno.serve(async (request: Request) => {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      email: user.email,
+      email,
       amount: amountKobo,
       currency: 'NGN',
       reference,
       channels: ['bank_transfer', 'ussd', 'card', 'mobile_money'],
-      metadata: { user_id: user.id, plan, subject_id: subjectId },
+      metadata,
     }),
   });
   const paystackData = await paystackResponse.json();
@@ -99,9 +195,9 @@ Deno.serve(async (request: Request) => {
     authorizationUrl: paystackData.data.authorization_url,
     reference,
     amountKobo,
-    accessDays: PLAN_ACCESS_DAYS[plan],
+    accessDays,
   });
-});
+}
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {

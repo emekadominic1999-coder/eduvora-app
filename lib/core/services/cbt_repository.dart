@@ -78,6 +78,10 @@ class CbtRepository {
           faculties: faculty.isEmpty ? const <String>[] : <String>[faculty],
           minutesPerAttempt: (questions.length * 1.2).ceil().clamp(10, 45),
           isGeneralStudies: (first['is_general'] ?? false) as bool,
+          department: department,
+          level: (first['level'] ?? '') as String,
+          semester: (first['semester'] ?? '') as String,
+          units: (first['units'] as num?)?.toInt() ?? 0,
         );
       }).toList();
     } catch (error) {

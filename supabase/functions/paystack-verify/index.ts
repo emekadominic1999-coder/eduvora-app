@@ -12,7 +12,7 @@ import { createClient } from 'jsr:@supabase/supabase-js@2';
 
 const PLAN_ACCESS_DAYS: Record<string, number> = {
   single_paper: 200,
-  semester_all: 130,
+  course_pack: 130,
 };
 
 const CORS_HEADERS = {
@@ -112,14 +112,20 @@ Deno.serve(async (request: Request) => {
   const accessDays = PLAN_ACCESS_DAYS[payment.plan] ?? 30;
   const expiresAt = new Date(Date.now() + accessDays * 24 * 60 * 60 * 1000).toISOString();
 
+  // A course_pack payment covers several papers at once (one flat price) --
+  // every entitlement it produces is still just "this one subject_id, until
+  // this expiry", same shape as a single_paper purchase, one row each.
+  const subjectIds: string[] =
+    payment.plan === 'course_pack' ? (payment.subject_ids ?? []) : [payment.subject_id];
+
   const { error: entitlementError } = await client.from('cbt_entitlements').upsert(
-    {
+    subjectIds.map((subjectId) => ({
       user_id: payment.user_id,
-      subject_id: payment.subject_id,
+      subject_id: subjectId,
       plan: payment.plan,
       expires_at: expiresAt,
       payment_id: payment.id,
-    },
+    })),
     { onConflict: 'user_id,plan,subject_id' },
   );
   if (entitlementError) console.error('entitlement upsert failed', entitlementError);
