@@ -1,0 +1,12 @@
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/branding/eduvora_mark_blue.png"
+  min_sdk_android: 21
+  adaptive_icon_background: "#F8FAFC"
+  adaptive_icon_foreground: "assets/branding/eduvora_mark_blue.png"
+  web:
+    generate: true
+    image_path: "assets/branding/eduvora_mark_blue.png"
+    background_color: "#F8FAFC"
+    theme_color: "#2563EB"
