@@ -36,12 +36,19 @@
 <body>
   <script>
     // Mobile browsers can silently discard the renderer's WebGL context
-    // while this tab sits backgrounded for a while, to reclaim GPU memory.
-    // Flutter never repaints after that, so the student is left looking at
-    // a blank screen until they force-close and reopen the app themselves.
-    // Do that recovery automatically instead: reload as soon as the context
-    // loss is detected, and as a fallback if the tab has been hidden for a
-    // long stretch (some browsers do not fire the event at all).
+    // while this tab sits backgrounded, to reclaim GPU memory, and Flutter
+    // never repaints after that -- the student is left looking at a plain
+    // black rectangle where the app was until they force-close and reopen
+    // it themselves. Recover automatically instead, on whichever signal the
+    // browser actually gives:
+    //   - webglcontextlost fires when it is detected directly.
+    //   - pageshow with event.persisted fires when the browser restores the
+    //     page from its back-forward cache (a frozen snapshot) instead of
+    //     truly reloading it -- the likely cause here, since it skips
+    //     Flutter's normal startup entirely and is common on mobile Safari.
+    //   - visibilitychange is a last-resort catch-all for anything that
+    //     slips past the first two, with a short hidden threshold since
+    //     mobile OSes reclaim a backgrounded tab's resources quickly.
     (function () {
       var reloaded = false;
       function reloadOnce() {
@@ -50,12 +57,15 @@
         window.location.reload();
       }
       document.addEventListener('webglcontextlost', reloadOnce, true);
+      window.addEventListener('pageshow', function (event) {
+        if (event.persisted) reloadOnce();
+      });
       document.addEventListener('visibilitychange', function () {
         if (document.visibilityState === 'hidden') {
           window.__eduvoraHiddenAt = Date.now();
         } else if (window.__eduvoraHiddenAt) {
           var hiddenMs = Date.now() - window.__eduvoraHiddenAt;
-          if (hiddenMs > 5 * 60 * 1000) reloadOnce();
+          if (hiddenMs > 20 * 1000) reloadOnce();
         }
       });
     })();
