@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/models/cbt.dart';
+import '../../../../core/models/cbt_entitlement.dart';
 import '../../../../core/models/student_profile.dart';
 import '../../../../core/services/cbt_repository.dart';
+import '../../../../core/services/paywall_repository.dart';
 import '../../../../core/services/study_repository.dart';
 import '../../../../core/state/session_controller.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/common.dart';
 import '../widgets/exam_setup_sheet.dart';
+import '../widgets/paywall_sheet.dart';
 import 'cbt_exam_screen.dart';
+import 'cbt_payment_screen.dart';
 
 /// The CBT lobby: papers relevant to the student, plus their own record.
 class CbtHomeScreen extends StatefulWidget {
@@ -21,14 +25,22 @@ class CbtHomeScreen extends StatefulWidget {
 class _CbtHomeScreenState extends State<CbtHomeScreen> {
   static const StudyRepository _study = StudyRepository();
   static const CbtRepository _cbt = CbtRepository();
+  static const PaywallRepository _paywall = PaywallRepository();
 
   bool _showAllPapers = false;
   late Future<List<CbtSubject>> _future;
+  List<CbtEntitlement> _entitlements = <CbtEntitlement>[];
 
   @override
   void initState() {
     super.initState();
     _future = _load();
+    _loadEntitlements();
+  }
+
+  Future<void> _loadEntitlements() async {
+    final List<CbtEntitlement> entitlements = await _paywall.myEntitlements();
+    if (mounted) setState(() => _entitlements = entitlements);
   }
 
   Future<List<CbtSubject>> _load() {
@@ -47,10 +59,17 @@ class _CbtHomeScreenState extends State<CbtHomeScreen> {
 
   Future<void> _refresh() async {
     setState(() => _future = _load());
-    await _future;
+    await Future.wait(<Future<void>>[_future, _loadEntitlements()]);
   }
 
   Future<void> _start(CbtSubject subject) async {
+    final bool unlocked = _paywall.hasAccess(subject.id, _entitlements);
+
+    if (!unlocked) {
+      final bool tried = await _startFreeTrialOrPaywall(subject);
+      if (!tried || !mounted) return;
+    }
+
     // Ask how they want to sit it before the clock starts.
     final CbtExamConfig? config = await showExamSetupSheet(context, subject);
     if (config == null || !mounted) return;
@@ -61,6 +80,78 @@ class _CbtHomeScreenState extends State<CbtHomeScreen> {
       ),
     );
     if ((completed ?? false) && mounted) setState(() {});
+  }
+
+  /// A locked paper is offered a short, once-only free trial first. Once that
+  /// is spent, this opens the paywall and, if the student pays, waits for the
+  /// unlock before letting [_start] carry on into the exam setup sheet.
+  ///
+  /// Returns true once the student is clear to proceed to a normal (full,
+  /// timed) sitting; false if they backed out anywhere along the way.
+  Future<bool> _startFreeTrialOrPaywall(CbtSubject subject) async {
+    if (!_paywall.hasUsedFreeTrial(subject.id)) {
+      final bool wantsTrial = await _confirmFreeTrial(subject);
+      if (!mounted || !wantsTrial) return false;
+
+      await _paywall.markFreeTrialUsed(subject.id);
+      if (!mounted) return false;
+      final int count = subject.questions.length < PaywallRepository.freeTrialQuestionCount
+          ? subject.questions.length
+          : PaywallRepository.freeTrialQuestionCount;
+      final bool? completed = await Navigator.of(context).push<bool>(
+        MaterialPageRoute<bool>(
+          builder: (_) => CbtExamScreen(
+            subject: subject,
+            config: CbtExamConfig(
+              questionCount: count,
+              minutes: 10,
+              shuffleQuestions: true,
+              isCustom: true,
+            ),
+          ),
+        ),
+      );
+      if (mounted && (completed ?? false)) setState(() {});
+      return false; // the trial itself was the sitting; nothing further to start
+    }
+
+    final CbtPlan? plan = await showPaywallSheet(context, subject);
+    if (plan == null || !mounted) return false;
+
+    final bool? paid = await Navigator.of(context).push<bool>(
+      MaterialPageRoute<bool>(
+        builder: (_) => CbtPaymentScreen(subject: subject, plan: plan),
+      ),
+    );
+    if (paid != true || !mounted) return false;
+
+    await _loadEntitlements();
+    return true;
+  }
+
+  Future<bool> _confirmFreeTrial(CbtSubject subject) async {
+    final bool? proceed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) => AlertDialog(
+        title: const Text('Try before you unlock'),
+        content: Text(
+          'This paper is locked, but you get '
+          '${PaywallRepository.freeTrialQuestionCount} free questions to try '
+          'it first — no payment needed.',
+        ),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Not now'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Start free trial'),
+          ),
+        ],
+      ),
+    );
+    return proceed ?? false;
   }
 
   @override
@@ -151,6 +242,8 @@ class _CbtHomeScreenState extends State<CbtHomeScreen> {
                               child: _PaperCard(
                                 subject: s,
                                 best: best,
+                                unlocked: _paywall.hasAccess(s.id, _entitlements),
+                                trialAvailable: !_paywall.hasUsedFreeTrial(s.id),
                                 onStart: () => _start(s),
                               ),
                             );
@@ -290,11 +383,15 @@ class _PaperCard extends StatelessWidget {
   const _PaperCard({
     required this.subject,
     required this.best,
+    required this.unlocked,
+    required this.trialAvailable,
     required this.onStart,
   });
 
   final CbtSubject subject;
   final CbtAttempt? best;
+  final bool unlocked;
+  final bool trialAvailable;
   final VoidCallback onStart;
 
   @override
@@ -308,26 +405,49 @@ class _PaperCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color:
-                      (subject.isGeneralStudies
-                              ? AppColours.accent
-                              : AppColours.primary)
-                          .withValues(alpha: 0.12),
-                  borderRadius: AppRadii.sm,
-                ),
-                child: Icon(
-                  subject.isGeneralStudies
-                      ? Icons.public_rounded
-                      : Icons.menu_book_rounded,
-                  size: 20,
-                  color: subject.isGeneralStudies
-                      ? AppColours.accent
-                      : AppColours.primary,
-                ),
+              Stack(
+                clipBehavior: Clip.none,
+                children: <Widget>[
+                  Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color:
+                          (subject.isGeneralStudies
+                                  ? AppColours.accent
+                                  : AppColours.primary)
+                              .withValues(alpha: 0.12),
+                      borderRadius: AppRadii.sm,
+                    ),
+                    child: Icon(
+                      subject.isGeneralStudies
+                          ? Icons.public_rounded
+                          : Icons.menu_book_rounded,
+                      size: 20,
+                      color: subject.isGeneralStudies
+                          ? AppColours.accent
+                          : AppColours.primary,
+                    ),
+                  ),
+                  if (!unlocked)
+                    Positioned(
+                      top: -4,
+                      right: -4,
+                      child: Container(
+                        width: 16,
+                        height: 16,
+                        decoration: const BoxDecoration(
+                          color: AppColours.accent,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.lock_rounded,
+                          size: 10,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                ],
               ),
               const SizedBox(width: AppSpacing.md),
               Expanded(
@@ -375,11 +495,24 @@ class _PaperCard extends StatelessWidget {
                   dense: true,
                 ),
               ],
+              if (!unlocked) ...<Widget>[
+                const SizedBox(width: 6),
+                Pill(
+                  label: trialAvailable ? 'Free trial' : 'Locked',
+                  icon: trialAvailable
+                      ? Icons.play_circle_outline_rounded
+                      : Icons.lock_outline_rounded,
+                  colour: AppColours.accent,
+                  dense: true,
+                ),
+              ],
               const Spacer(),
-              const Icon(
-                Icons.play_circle_fill_rounded,
-                color: AppColours.primary,
-                size: 26,
+              Icon(
+                unlocked
+                    ? Icons.play_circle_fill_rounded
+                    : Icons.lock_rounded,
+                color: unlocked ? AppColours.primary : AppColours.accent,
+                size: unlocked ? 26 : 22,
               ),
             ],
           ),

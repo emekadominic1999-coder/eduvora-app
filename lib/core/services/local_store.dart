@@ -120,4 +120,5 @@ class StoreKeys {
   static const String classLists = 'eduvora.class_lists';
   static const String classEntries = 'eduvora.class_entries';
   static const String videoPlanChecked = 'eduvora.video_plan_checked';
+  static const String cbtFreeTrialUsed = 'eduvora.cbt_free_trial_used';
 }
