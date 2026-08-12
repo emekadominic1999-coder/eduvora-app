@@ -34,6 +34,33 @@
   <link rel="manifest" href="manifest.json">
 </head>
 <body>
+  <script>
+    // Mobile browsers can silently discard the renderer's WebGL context
+    // while this tab sits backgrounded for a while, to reclaim GPU memory.
+    // Flutter never repaints after that, so the student is left looking at
+    // a blank screen until they force-close and reopen the app themselves.
+    // Do that recovery automatically instead: reload as soon as the context
+    // loss is detected, and as a fallback if the tab has been hidden for a
+    // long stretch (some browsers do not fire the event at all).
+    (function () {
+      var reloaded = false;
+      function reloadOnce() {
+        if (reloaded) return;
+        reloaded = true;
+        window.location.reload();
+      }
+      document.addEventListener('webglcontextlost', reloadOnce, true);
+      document.addEventListener('visibilitychange', function () {
+        if (document.visibilityState === 'hidden') {
+          window.__eduvoraHiddenAt = Date.now();
+        } else if (window.__eduvoraHiddenAt) {
+          var hiddenMs = Date.now() - window.__eduvoraHiddenAt;
+          if (hiddenMs > 5 * 60 * 1000) reloadOnce();
+        }
+      });
+    })();
+  </script>
+
   <!--
     You can customize the "flutter_bootstrap.js" script.
     This is useful to provide a custom configuration to the Flutter loader
