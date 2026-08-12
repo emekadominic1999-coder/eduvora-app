@@ -35,7 +35,6 @@ class _CbtHomeScreenState extends State<CbtHomeScreen> {
   void initState() {
     super.initState();
     _future = _load();
-    _loadEntitlements();
   }
 
   Future<void> _loadEntitlements() async {
@@ -43,11 +42,36 @@ class _CbtHomeScreenState extends State<CbtHomeScreen> {
     if (mounted) setState(() => _entitlements = entitlements);
   }
 
-  Future<List<CbtSubject>> _load() {
+  /// A paper is "for you" if it matches your current faculty, OR you already
+  /// hold an active entitlement for it -- a paper you paid for must never
+  /// quietly drop out of your list just because you later edited your
+  /// department/faculty. The entitlement itself was never tied to your
+  /// profile in the first place; only this list-filtering step was, and
+  /// that was the actual bug.
+  Future<List<CbtSubject>> _load() async {
     final StudentProfile? profile = sessionController.profile;
-    return _showAllPapers
-        ? _cbt.all()
-        : _cbt.forFaculty(profile?.faculty ?? '');
+    final List<CbtEntitlement> entitlements = await _paywall.myEntitlements();
+    if (mounted) setState(() => _entitlements = entitlements);
+
+    final List<CbtSubject> all = await _cbt.all();
+    if (_showAllPapers) return all;
+
+    final bool hasBundle = entitlements.any(
+      (CbtEntitlement e) => e.isAllSubjects,
+    );
+    final Set<String> unlockedSubjectIds = entitlements
+        .where((CbtEntitlement e) => !e.isAllSubjects)
+        .map((CbtEntitlement e) => e.subjectId)
+        .toSet();
+
+    return all
+        .where(
+          (CbtSubject s) =>
+              s.isRelevantTo(profile?.faculty ?? '') ||
+              hasBundle ||
+              unlockedSubjectIds.contains(s.id),
+        )
+        .toList();
   }
 
   void _toggleShowAll() {
@@ -59,7 +83,7 @@ class _CbtHomeScreenState extends State<CbtHomeScreen> {
 
   Future<void> _refresh() async {
     setState(() => _future = _load());
-    await Future.wait(<Future<void>>[_future, _loadEntitlements()]);
+    await _future;
   }
 
   Future<void> _start(CbtSubject subject) async {
