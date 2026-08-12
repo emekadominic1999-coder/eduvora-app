@@ -61,12 +61,23 @@ Deno.serve(async (request: Request) => {
     reference = body.reference;
     if (!reference) return json({ error: 'No reference to verify.' }, 400);
 
-    const { data: owned } = await client
+    // A reference belongs either to a CBT purchase or to a tutor session;
+    // either way the caller must be the student who started it.
+    const { data: ownedPayment } = await client
       .from('cbt_payments')
       .select('user_id')
       .eq('reference', reference)
       .maybeSingle();
-    if (!owned || owned.user_id !== userData.user.id) {
+    const { data: ownedSession } = ownedPayment
+      ? { data: null }
+      : await client
+          .from('tutor_sessions')
+          .select('student_id')
+          .eq('reference', reference)
+          .maybeSingle();
+
+    const ownerId = ownedPayment?.user_id ?? ownedSession?.student_id;
+    if (!ownerId || ownerId !== userData.user.id) {
       return json({ error: 'That reference does not belong to you.' }, 403);
     }
   }
@@ -78,7 +89,11 @@ Deno.serve(async (request: Request) => {
     .select('*')
     .eq('reference', reference)
     .maybeSingle();
-  if (!payment) return json({ error: 'Unknown payment reference.' }, 404);
+
+  // Not a CBT purchase, so it must be a tutor session booking.
+  if (!payment) {
+    return await settleTutorSession(client, paystackSecret, reference);
+  }
 
   if (payment.status === 'success') {
     return json({ verified: true, alreadyProcessed: true });
@@ -132,6 +147,49 @@ Deno.serve(async (request: Request) => {
 
   return json({ verified: true, expiresAt });
 });
+
+/// Confirms a tutor-session booking with Paystack and, once the charge is
+/// real, marks the session paid. The tutor's balance is deliberately NOT
+/// credited here -- that happens only when the student confirms the session
+/// actually took place, so a no-show never quietly turns into earnings.
+async function settleTutorSession(
+  // deno-lint-ignore no-explicit-any
+  client: any,
+  paystackSecret: string,
+  reference: string,
+): Promise<Response> {
+  const { data: session } = await client
+    .from('tutor_sessions')
+    .select('*')
+    .eq('reference', reference)
+    .maybeSingle();
+  if (!session) return json({ error: 'Unknown payment reference.' }, 404);
+
+  if (session.status === 'paid' || session.status === 'completed') {
+    return json({ verified: true, alreadyProcessed: true });
+  }
+
+  const verifyResponse = await fetch(
+    `https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`,
+    { headers: { Authorization: `Bearer ${paystackSecret}` } },
+  );
+  const verifyData = await verifyResponse.json();
+
+  const paidOk = verifyResponse.ok &&
+    verifyData.status &&
+    verifyData.data?.status === 'success' &&
+    verifyData.data?.amount === session.amount_kobo &&
+    verifyData.data?.currency === 'NGN';
+
+  if (!paidOk) return json({ verified: false });
+
+  await client
+    .from('tutor_sessions')
+    .update({ status: 'paid', paid_at: new Date().toISOString() })
+    .eq('id', session.id);
+
+  return json({ verified: true });
+}
 
 async function hmacSha512Hex(secret: string, body: string): Promise<string> {
   const key = await crypto.subtle.importKey(

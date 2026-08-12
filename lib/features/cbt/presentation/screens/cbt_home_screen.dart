@@ -9,6 +9,7 @@ import '../../../../core/services/study_repository.dart';
 import '../../../../core/state/session_controller.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/common.dart';
+import '../../../tutors/presentation/screens/tutor_directory_screen.dart';
 import '../widgets/exam_setup_sheet.dart';
 import '../widgets/paywall_sheet.dart';
 import 'cbt_exam_screen.dart';
@@ -200,6 +201,15 @@ class _CbtHomeScreenState extends State<CbtHomeScreen> {
       appBar: AppBar(
         title: const Text('CBT practice'),
         actions: <Widget>[
+          IconButton(
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const TutorDirectoryScreen(),
+              ),
+            ),
+            icon: const Icon(Icons.person_search_rounded),
+            tooltip: 'Find a tutor',
+          ),
           IconButton(
             onPressed: _refresh,
             icon: const Icon(Icons.refresh_rounded),

@@ -4,6 +4,7 @@ import '../../../../core/models/cbt.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/common.dart';
 import '../../../../core/widgets/math_text.dart';
+import '../../../tutors/presentation/screens/tutor_directory_screen.dart';
 import 'cbt_exam_screen.dart';
 
 /// The score report and full answer review.
@@ -155,6 +156,10 @@ class CbtResultScreen extends StatelessWidget {
                   ),
                 ),
               ),
+            // A student who has just struggled is exactly the person a tutor
+            // is useful to, and this is the moment they feel it — so the
+            // offer sits here rather than buried in a menu.
+            if (attempt.percentage < 50) _TutorNudge(subject: subject),
             const SectionHeader(
               title: 'Full review',
               subtitle: 'Every question, with the reasoning',
@@ -314,6 +319,79 @@ class CbtResultScreen extends StatelessWidget {
                   colour: AppColours.primary,
                 ),
               ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Offered after a rough paper: someone who scored well on this exact
+/// paper can walk them through it.
+class _TutorNudge extends StatelessWidget {
+  const _TutorNudge({required this.subject});
+
+  final CbtSubject subject;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.screenPadding,
+        AppSpacing.lg,
+        AppSpacing.screenPadding,
+        0,
+      ),
+      child: EduvoraCard(
+        colour: AppColours.primaryTint,
+        border: Border.all(color: AppColours.primarySoft),
+        shadows: AppShadows.subtle,
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) =>
+                TutorDirectoryScreen(initialSubjectId: subject.id),
+          ),
+        ),
+        child: Row(
+          children: <Widget>[
+            Container(
+              width: 42,
+              height: 42,
+              alignment: Alignment.center,
+              decoration: const BoxDecoration(
+                color: AppColours.primary,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.person_search_rounded,
+                size: 21,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    'Want someone to explain this?',
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'See tutors who scored highly on this same paper.',
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(height: 1.45),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(
+              Icons.chevron_right_rounded,
+              color: AppColours.primary,
+              size: 22,
             ),
           ],
         ),
