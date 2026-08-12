@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
@@ -78,16 +79,17 @@ class _SplashView extends StatefulWidget {
 
 class _SplashViewState extends State<_SplashView>
     with TickerProviderStateMixin {
-  // A brief springy pop-in, then a slow, continuous breathing pulse for as
-  // long as the splash is on screen -- multiplied together so the breathe
-  // scale (1 at rest) never fights the entrance while it is still settling.
+  // A springy pop-in, then a playful, continuous hop: the logo bounces up
+  // with a little sideways wiggle and a squash-and-stretch on top, like a
+  // cheerful character rather than a static badge. All driven off one
+  // repeating 0->1 controller via sine so the motion loops seamlessly.
   late final AnimationController _entrance = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 750),
   )..forward();
-  late final AnimationController _breathe = AnimationController(
+  late final AnimationController _bounce = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 1700),
+    duration: const Duration(milliseconds: 1100),
   );
 
   late final Animation<double> _entranceScale = CurvedAnimation(
@@ -98,23 +100,19 @@ class _SplashViewState extends State<_SplashView>
     parent: _entrance,
     curve: const Interval(0, 0.6, curve: Curves.easeOut),
   );
-  late final Animation<double> _breatheScale = Tween<double>(
-    begin: 1,
-    end: 1.06,
-  ).chain(CurveTween(curve: Curves.easeInOut)).animate(_breathe);
 
   @override
   void initState() {
     super.initState();
     _entrance.addStatusListener((AnimationStatus status) {
-      if (status == AnimationStatus.completed) _breathe.repeat(reverse: true);
+      if (status == AnimationStatus.completed) _bounce.repeat();
     });
   }
 
   @override
   void dispose() {
     _entrance.dispose();
-    _breathe.dispose();
+    _bounce.dispose();
     super.dispose();
   }
 
@@ -129,14 +127,32 @@ class _SplashViewState extends State<_SplashView>
           children: <Widget>[
             const Spacer(),
             AnimatedBuilder(
-              animation: Listenable.merge(<Listenable>[_entrance, _breathe]),
-              builder: (BuildContext context, Widget? child) => Opacity(
-                opacity: _entranceFade.value.clamp(0, 1),
-                child: Transform.scale(
-                  scale: _entranceScale.value * _breatheScale.value,
-                  child: child,
-                ),
-              ),
+              animation: Listenable.merge(<Listenable>[_entrance, _bounce]),
+              builder: (BuildContext context, Widget? child) {
+                // One full sine cycle per lap of _bounce: 0 on the ground at
+                // t=0, peak of the hop at t=0.5, back down at t=1.
+                final double lift = math.sin(math.pi * _bounce.value);
+                final double hopDy = -16 * lift;
+                final double squash = 1 + 0.06 * lift;
+                // A second, faster cycle for the wiggle so it tilts one way
+                // on the way up and the other on the way down.
+                final double wiggle =
+                    0.11 * math.sin(2 * math.pi * _bounce.value);
+
+                return Transform.translate(
+                  offset: Offset(0, hopDy),
+                  child: Transform.rotate(
+                    angle: wiggle,
+                    child: Opacity(
+                      opacity: _entranceFade.value.clamp(0, 1),
+                      child: Transform.scale(
+                        scale: _entranceScale.value * squash,
+                        child: child,
+                      ),
+                    ),
+                  ),
+                );
+              },
               child: const EduvoraLogo(size: 88, onDark: true),
             ),
             const SizedBox(height: AppSpacing.xl),
