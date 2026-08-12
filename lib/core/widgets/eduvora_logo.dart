@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
 
-/// The Eduvora mark: an open book on a rounded royal-blue tile, with a
-/// four-point spark accent in orange.
+/// The Eduvora mark: an open book on a rounded royal-blue tile.
 ///
 /// The book glyph is a bundled asset (`assets/branding/`), traced from the
 /// approved logo artwork rather than hand-painted, so it stays pixel-exact
@@ -20,108 +19,56 @@ class EduvoraLogo extends StatelessWidget {
         ? 'assets/branding/eduvora_mark_blue.png'
         : 'assets/branding/eduvora_mark_white.png';
 
-    return SizedBox(
+    return Container(
       width: size,
       height: size,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: <Widget>[
-          Container(
-            width: size,
-            height: size,
-            decoration: BoxDecoration(
-              gradient: onDark
-                  ? const LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: <Color>[Colors.white, Color(0xFFE0EAFF)],
-                    )
-                  : AppColours.brandGradient,
-              borderRadius: BorderRadius.circular(size * 0.30),
-              boxShadow: onDark ? null : AppShadows.card,
-            ),
-            child: Padding(
-              padding: EdgeInsets.all(size * 0.17),
-              child: Image.asset(markAsset, fit: BoxFit.contain),
-            ),
-          ),
-          Positioned(
-            right: -size * 0.06,
-            bottom: -size * 0.04,
-            child: Container(
-              width: size * 0.34,
-              height: size * 0.34,
-              decoration: BoxDecoration(
-                gradient: AppColours.accentGradient,
-                borderRadius: BorderRadius.circular(size * 0.12),
-                border: Border.all(
-                  color: onDark ? AppColours.primaryDeep : Colors.white,
-                  width: size * 0.045,
-                ),
+      decoration: BoxDecoration(
+        gradient: onDark
+            ? const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: <Color>[Colors.white, Color(0xFFE0EAFF)],
+              )
+            : AppColours.brandGradient,
+        borderRadius: BorderRadius.circular(size * 0.30),
+        boxShadow: onDark ? null : AppShadows.card,
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(size * 0.17),
+        child: Image.asset(
+          markAsset,
+          fit: BoxFit.contain,
+          // The mark is a small bundled asset, but on a shaky mobile
+          // connection its fetch can still lag behind the rest of the
+          // (locally-drawn) splash — without these, Image shows nothing at
+          // all until it resolves, or forever if it never does. Fade it in
+          // once it lands, and fall back to a plain glyph rather than
+          // leaving the tile blank if it doesn't.
+          frameBuilder:
+              (
+                BuildContext context,
+                Widget child,
+                int? frame,
+                bool wasSynchronouslyLoaded,
+              ) {
+                if (wasSynchronouslyLoaded) return child;
+                return AnimatedOpacity(
+                  opacity: frame == null ? 0 : 1,
+                  duration: const Duration(milliseconds: 280),
+                  curve: Curves.easeOut,
+                  child: child,
+                );
+              },
+          errorBuilder:
+              (BuildContext context, Object error, StackTrace? stack) => Icon(
+                Icons.menu_book_rounded,
+                size: size * 0.5,
+                color: onDark ? AppColours.primary : Colors.white,
               ),
-              child: CustomPaint(
-                size: Size(size * 0.34, size * 0.34),
-                painter: const _SparkPainter(colour: Colors.white),
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
-}
-
-/// A four-point spark: two elongated diamonds crossed at right angles,
-/// matching the `ai_spark` node (two crossed rectangular meshes) in the
-/// source asset.
-class _SparkPainter extends CustomPainter {
-  const _SparkPainter({required this.colour});
-
-  final Color colour;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final double w = size.width;
-    final double h = size.height;
-    final Offset centre = Offset(w * 0.5, h * 0.5);
-    final Paint fill = Paint()..color = colour;
-
-    Path spark(double longAxis, double shortAxis) {
-      return Path()
-        ..moveTo(centre.dx, centre.dy - longAxis)
-        ..quadraticBezierTo(
-          centre.dx + shortAxis * 0.28,
-          centre.dy - shortAxis * 0.28,
-          centre.dx + shortAxis,
-          centre.dy,
-        )
-        ..quadraticBezierTo(
-          centre.dx + shortAxis * 0.28,
-          centre.dy + shortAxis * 0.28,
-          centre.dx,
-          centre.dy + longAxis,
-        )
-        ..quadraticBezierTo(
-          centre.dx - shortAxis * 0.28,
-          centre.dy + shortAxis * 0.28,
-          centre.dx - shortAxis,
-          centre.dy,
-        )
-        ..quadraticBezierTo(
-          centre.dx - shortAxis * 0.28,
-          centre.dy - shortAxis * 0.28,
-          centre.dx,
-          centre.dy - longAxis,
-        )
-        ..close();
-    }
-
-    canvas.drawPath(spark(h * 0.46, w * 0.15), fill);
-  }
-
-  @override
-  bool shouldRepaint(covariant _SparkPainter oldDelegate) =>
-      oldDelegate.colour != colour;
 }
 
 /// Logo plus wordmark, used on the landing and sign-in screens.
