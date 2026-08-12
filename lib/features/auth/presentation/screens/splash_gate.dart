@@ -43,10 +43,12 @@ class _SplashGateState extends State<SplashGate> {
   }
 
   Future<void> _bootstrap() async {
-    // A brief hold so the brand mark is not a jarring flash on fast devices.
+    // Held long enough for the splash's entrance and at least one full lap
+    // of its slow breathing hop to actually be seen, not just flashed past
+    // on fast devices with a cached session.
     await Future.wait(<Future<void>>[
       sessionController.bootstrap(),
-      Future<void>.delayed(const Duration(milliseconds: 900)),
+      Future<void>.delayed(const Duration(milliseconds: 2900)),
     ]);
   }
 
@@ -82,14 +84,15 @@ class _SplashViewState extends State<_SplashView>
   // A springy pop-in, then a playful, continuous hop: the logo bounces up
   // with a little sideways wiggle and a squash-and-stretch on top, like a
   // cheerful character rather than a static badge. All driven off one
-  // repeating 0->1 controller via sine so the motion loops seamlessly.
+  // repeating 0->1 controller via sine so the motion loops seamlessly. Kept
+  // slow and unhurried -- a quick twitch reads as a glitch, not a bounce.
   late final AnimationController _entrance = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 750),
+    duration: const Duration(milliseconds: 900),
   )..forward();
   late final AnimationController _bounce = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 1100),
+    duration: const Duration(milliseconds: 1900),
   );
 
   late final Animation<double> _entranceScale = CurvedAnimation(
