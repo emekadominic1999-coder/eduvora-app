@@ -38,14 +38,35 @@ class CbtRepository {
     return remote;
   }
 
+  /// Supabase caps a single `select()` at ~1000 rows by default, so with the
+  /// bank now well past that across all papers combined, a single
+  /// unpaginated fetch silently truncated the result — whole papers past
+  /// the cutoff (by insertion order) would vanish from the list even though
+  /// their rows were still sitting untouched in the database. Page through
+  /// with `.range()` until a page comes back short, so every paper's every
+  /// question is always fetched regardless of how large the bank grows.
+  Future<List<Map<String, dynamic>>> _fetchAllRows() async {
+    const int pageSize = 1000;
+    final List<Map<String, dynamic>> all = <Map<String, dynamic>>[];
+    int start = 0;
+    while (true) {
+      final List<dynamic> page = await SupabaseService.client
+          .from('cbt_questions')
+          .select()
+          .order('created_at')
+          .range(start, start + pageSize - 1);
+      all.addAll(page.whereType<Map<String, dynamic>>());
+      if (page.length < pageSize) break;
+      start += pageSize;
+    }
+    return all;
+  }
+
   Future<List<CbtSubject>> _fetchRemoteSubjects() async {
     if (!SupabaseService.isReady) return <CbtSubject>[];
 
     try {
-      final List<dynamic> rows = await SupabaseService.client
-          .from('cbt_questions')
-          .select()
-          .order('created_at');
+      final List<Map<String, dynamic>> rows = await _fetchAllRows();
 
       final Map<String, List<Map<String, dynamic>>> bySubject =
           <String, List<Map<String, dynamic>>>{};
