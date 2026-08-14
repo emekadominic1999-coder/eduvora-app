@@ -62,7 +62,7 @@ class CourseOutline {
   final String contributorName;
   final DateTime? createdAt;
 
-  bool get hasOutline => topics.isNotEmpty;
+  bool get hasOutline => topics.isNotEmpty || description.isNotEmpty;
 
   String get unitsLabel => creditUnits == 1 ? '1 unit' : '$creditUnits units';
 
