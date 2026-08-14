@@ -165,11 +165,13 @@ class InstitutionFaculties {
       colour: AppColours.accent,
       departments: <String>[
         'Agricultural and Bioresources Engineering',
+        'Biomedical Engineering',
         'Civil Engineering',
         'Electrical Engineering',
         'Electronic Engineering',
-        'Materials and Metallurgical Engineering',
         'Mechanical Engineering',
+        'Mechatronic Engineering',
+        'Metallurgical and Materials Engineering',
       ],
     ),
     Faculty(

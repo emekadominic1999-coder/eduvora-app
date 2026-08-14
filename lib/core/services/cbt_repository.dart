@@ -86,7 +86,16 @@ class CbtRepository {
         final List<CbtQuestion> questions = entry.value
             .map(CbtQuestion.fromJson)
             .toList();
-        final String faculty = (first['faculty'] ?? '') as String;
+        // The `faculty` column can hold more than one faculty as a
+        // comma-separated list — a required ancillary course (MTH 121 and
+        // similar) is often shared by several faculties' departments, not
+        // just the one that authored the question bank.
+        final String facultyRaw = (first['faculty'] ?? '') as String;
+        final List<String> faculties = facultyRaw
+            .split(',')
+            .map((String f) => f.trim())
+            .where((String f) => f.isNotEmpty)
+            .toList();
         final String department = (first['department'] ?? '') as String;
 
         return CbtSubject(
@@ -96,7 +105,7 @@ class CbtRepository {
               ? 'Contributed past questions'
               : 'Past questions for $department',
           questions: questions,
-          faculties: faculty.isEmpty ? const <String>[] : <String>[faculty],
+          faculties: faculties,
           minutesPerAttempt: (questions.length * 1.2).ceil().clamp(10, 45),
           isGeneralStudies: (first['is_general'] ?? false) as bool,
           department: department,
