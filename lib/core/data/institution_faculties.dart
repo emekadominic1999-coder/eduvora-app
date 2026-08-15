@@ -201,9 +201,13 @@ class InstitutionFaculties {
       icon: Icons.gavel_rounded,
       colour: Color(0xFF7C3AED),
       departments: <String>[
-        'International Law and Jurisprudence',
-        'Private and Property Law',
-        'Public and Private Law',
+        'Commercial and Corporate Law',
+        'Customary and Indigenous Law',
+        'International and Comparative Law',
+        'Jurisprudence and Legal Theory',
+        'Private Law',
+        'Property Law',
+        'Public Law',
       ],
     ),
     // Departments not published on the faculty site — standard structure.
