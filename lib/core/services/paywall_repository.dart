@@ -33,6 +33,10 @@ class PaystackCheckout {
 class PaywallRepository {
   const PaywallRepository();
 
+  /// TESTING OVERRIDE: set to false to restore the real paywall. While true,
+  /// every CBT paper reports as unlocked without an entitlement or payment.
+  static const bool testingUnlockAll = true;
+
   /// How many questions a locked paper allows for free, once, before the
   /// paywall is shown. Tracked on-device only — a soft nudge rather than a
   /// hard limit, since a reinstall resets it. Full server-side enforcement
@@ -57,6 +61,7 @@ class PaywallRepository {
   }
 
   bool hasAccess(CbtSubject subject, List<CbtEntitlement> entitlements) =>
+      testingUnlockAll ||
       entitlements.any((CbtEntitlement e) => e.coversSubjectId(subject.id));
 
   bool hasUsedFreeTrial(String subjectId) =>
