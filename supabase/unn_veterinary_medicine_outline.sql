@@ -1,0 +1,112 @@
+-- =============================================================================
+-- University of Nigeria, Nsukka -- Faculty of Veterinary Medicine
+-- Department of Veterinary Medicine
+-- =============================================================================
+-- Transcribed from the department's own official website (course code,
+-- title, credit unit, level and semester for each course). 90 rows.
+--
+-- The department's site publishes the course list but not per-course
+-- syllabus descriptions or topic breakdowns, so description and topics are
+-- left empty here rather than invented.
+--
+-- This is the full six-year Doctor of Veterinary Medicine (DVM) curriculum, shared across the whole Faculty of Veterinary Medicine -- students do not pick a department until the clinical years, so this is filed under the general "Veterinary Medicine" department rather than duplicated across all nine departments. Level here follows the DVM's own year numbering (100-600 Level = Year 1 through Year 6) rather than the course code's leading digit, to match how the source page itself organizes the programme.
+-- =============================================================================
+
+delete from public.course_outlines
+ where institution = 'University of Nigeria, Nsukka'
+   and department = 'Veterinary Medicine';
+
+insert into public.course_outlines
+  (course_code, course_title, institution, faculty, department, level,
+   semester, credit_units, description, topics, contributor_name, is_elective)
+values
+  ('CHM 101', 'Basic Principles of Chemistry I', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '100 Level', 'first', 2, '', '[]'::jsonb, 'Department official website', false),
+  ('CHM 171', 'Basic Practical Chemistry', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '100 Level', 'first', 2, '', '[]'::jsonb, 'Department official website', false),
+  ('PHY 101', 'General Physics for Life Sciences I', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '100 Level', 'first', 2, '', '[]'::jsonb, 'Department official website', false),
+  ('PHY 191', 'Practical Physics', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '100 Level', 'first', 2, '', '[]'::jsonb, 'Department official website', false),
+  ('BIO 151', 'General Biology I', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '100 Level', 'first', 3, '', '[]'::jsonb, 'Department official website', false),
+  ('MTH 111', 'Elementary Mathematics I', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '100 Level', 'first', 3, '', '[]'::jsonb, 'Department official website', false),
+  ('GSP 101', 'The Use of English I', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '100 Level', 'first', 2, '', '[]'::jsonb, 'Department official website', false),
+  ('GSP 103', 'Social Sciences I', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '100 Level', 'first', 2, '', '[]'::jsonb, 'Department official website', false),
+  ('AGR 201', 'Introduction to Agriculture', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '100 Level', 'first', 3, '', '[]'::jsonb, 'Department official website', false),
+  ('FVM 192', 'Basics to Veterinary Medicine', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '100 Level', 'second', 2, '', '[]'::jsonb, 'Department official website', false),
+  ('CHM 112', 'Basic Principles of Chemistry II', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '100 Level', 'second', 2, '', '[]'::jsonb, 'Department official website', false),
+  ('CHM 122', 'Basic Principles of Chemistry III', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '100 Level', 'second', 2, '', '[]'::jsonb, 'Department official website', false),
+  ('BIO 152', 'General Biology II', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '100 Level', 'second', 3, '', '[]'::jsonb, 'Department official website', false),
+  ('BIO 153', 'General Biology (Practical)', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '100 Level', 'second', 2, '', '[]'::jsonb, 'Department official website', false),
+  ('PHY 102', 'General Physics for Life Sciences II', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '100 Level', 'second', 2, '', '[]'::jsonb, 'Department official website', false),
+  ('PHY 103', 'General Physics for Life Sciences III', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '100 Level', 'second', 2, '', '[]'::jsonb, 'Department official website', false),
+  ('GSP 102', 'The Use of English II', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '100 Level', 'second', 2, '', '[]'::jsonb, 'Department official website', false),
+  ('GSP 104', 'Social Sciences II', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '100 Level', 'second', 2, '', '[]'::jsonb, 'Department official website', false),
+  ('VAN 201', 'Introductory Veterinary Anatomy', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '200 Level', 'first', 5, '', '[]'::jsonb, 'Department official website', false),
+  ('VPP 211', 'Introductory Physiology, Blood, Cardiovascular Respiratory Systems and Comparative Physiology of Gastro-Intestinal Tract', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '200 Level', 'first', 5, '', '[]'::jsonb, 'Department official website', false),
+  ('VPP 213', 'Introductory Veterinary Biochemistry', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '200 Level', 'first', 4, '', '[]'::jsonb, 'Department official website', false),
+  ('GSP 101', 'Use of English I (Direct Entry Students)', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '200 Level', 'first', 2, '', '[]'::jsonb, 'Department official website', false),
+  ('GSP 207', 'Humanities I', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '200 Level', 'first', 2, '', '[]'::jsonb, 'Department official website', false),
+  ('COS 101', 'Introduction to Computer Science', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '200 Level', 'first', 2, '', '[]'::jsonb, 'Department official website', false),
+  ('VAN 202', 'Basic Splanchnology', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '200 Level', 'second', 6, '', '[]'::jsonb, 'Department official website', false),
+  ('VAN 204', 'Veterinary Embryology', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '200 Level', 'second', 4, '', '[]'::jsonb, 'Department official website', false),
+  ('VPP 214', 'General Veterinary Biochemistry', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '200 Level', 'second', 4, '', '[]'::jsonb, 'Department official website', false),
+  ('VPP 212', 'Neuromuscular Systems, Sense Organs, and Environmental Physiology', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '200 Level', 'second', 4, '', '[]'::jsonb, 'Department official website', false),
+  ('GSP 102', 'The Use of English II (Direct Entry Students)', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '200 Level', 'second', 2, '', '[]'::jsonb, 'Department official website', false),
+  ('GSP 208', 'Humanities II', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '200 Level', 'second', 2, '', '[]'::jsonb, 'Department official website', false),
+  ('VAN 301', 'Veterinary Histology', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '300 Level', 'first', 4, '', '[]'::jsonb, 'Department official website', false),
+  ('VPP 311', 'Veterinary Biochemistry of Body Fluid', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '300 Level', 'first', 4, '', '[]'::jsonb, 'Department official website', false),
+  ('VPP 313', 'Renal Function and Body Fluid, Reproduction and Endocrinology', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '300 Level', 'first', 4, '', '[]'::jsonb, 'Department official website', false),
+  ('AHP 331', 'General Principles of Animal Production, Genetics and Breeding', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '300 Level', 'first', 3, '', '[]'::jsonb, 'Department official website', false),
+  ('AGE 201', 'Principles of Agricultural Economics (Direct Entry)', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '300 Level', 'first', 4, '', '[]'::jsonb, 'Department official website', false),
+  ('BED 101', 'Elements of Business', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '300 Level', 'first', 2, '', '[]'::jsonb, 'Department official website', false),
+  ('VPP 312', 'General Veterinary Pharmacology', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '300 Level', 'second', 3, '', '[]'::jsonb, 'Department official website', false),
+  ('AHP 332', 'Principles of Animal Nutrition in Health', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '300 Level', 'second', 3, '', '[]'::jsonb, 'Department official website', false),
+  ('VPM 342', 'General Veterinary Microbiology', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '300 Level', 'second', 3, '', '[]'::jsonb, 'Department official website', false),
+  ('VPE 352', 'Veterinary Helminthology I', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '300 Level', 'second', 3, '', '[]'::jsonb, 'Department official website', false),
+  ('VPM 344', 'General Veterinary Pathology', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '300 Level', 'second', 5, '', '[]'::jsonb, 'Department official website', false),
+  ('VPM 346', 'General Veterinary Immunology', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '300 Level', 'second', 2, '', '[]'::jsonb, 'Department official website', false),
+  ('VPP 411', 'Systemic Veterinary Pharmacology', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '400 Level', 'first', 2, '', '[]'::jsonb, 'Department official website', false),
+  ('AHP 431', 'Small Ruminant and Micro Livestock Health and Management', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '400 Level', 'first', 3, '', '[]'::jsonb, 'Department official website', false),
+  ('VPM 441', 'Veterinary Bacteriology', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '400 Level', 'first', 2, '', '[]'::jsonb, 'Department official website', false),
+  ('VPM 443', 'Veterinary Mycology', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '400 Level', 'first', 2, '', '[]'::jsonb, 'Department official website', false),
+  ('VPM 445', 'Veterinary Virology', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '400 Level', 'first', 2, '', '[]'::jsonb, 'Department official website', false),
+  ('VPE 451', 'Veterinary Helminthology II', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '400 Level', 'first', 4, '', '[]'::jsonb, 'Department official website', false),
+  ('VPE 453', 'Veterinary Entomology', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '400 Level', 'first', 2, '', '[]'::jsonb, 'Department official website', false),
+  ('VPE 455', 'Veterinary Protozoology', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '400 Level', 'first', 2, '', '[]'::jsonb, 'Department official website', false),
+  ('VPM 447', 'Pathology of the Haematopoietic, Cardiovascular, Respiratory and Sensory Systems', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '400 Level', 'first', 2, '', '[]'::jsonb, 'Department official website', false),
+  ('VPE 457', 'Parasitic Immunology', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '400 Level', 'first', 2, '', '[]'::jsonb, 'Department official website', false),
+  ('VPP 412', 'Veterinary Chemotherapy', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '400 Level', 'second', 2, '', '[]'::jsonb, 'Department official website', false),
+  ('VPP 414', 'Veterinary Toxicology', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '400 Level', 'second', 2, '', '[]'::jsonb, 'Department official website', false),
+  ('AHP 432', 'Large Ruminant Health and Management', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '400 Level', 'second', 2, '', '[]'::jsonb, 'Department official website', false),
+  ('VPM 442', 'Pathology of the Digestive and Urinogenital Systems', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '400 Level', 'second', 2, '', '[]'::jsonb, 'Department official website', false),
+  ('VPM 444', 'Pathology of the Integumentary, Musculoskeletal, and Nervous Systems', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '400 Level', 'second', 2, '', '[]'::jsonb, 'Department official website', false),
+  ('VPM 446', 'Pathology of Bacterial, Viral, and Poultry Diseases', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '400 Level', 'second', 2, '', '[]'::jsonb, 'Department official website', false),
+  ('VPM 448', 'Pathology of Fungal, Protozoan, Parasitic, Nutritional, Metabolic and Endocrine Diseases', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '400 Level', 'second', 2, '', '[]'::jsonb, 'Department official website', false),
+  ('VMD 462', 'Introduction to Medicine/Diagnostic', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '400 Level', 'second', 2, '', '[]'::jsonb, 'Department official website', false),
+  ('VSR 482', 'Introductory Veterinary Surgery', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '400 Level', 'second', 3, '', '[]'::jsonb, 'Department official website', false),
+  ('VSR 484', 'Veterinary Anaesthesiology', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '400 Level', 'second', 2, '', '[]'::jsonb, 'Department official website', false),
+  ('VOR 472', 'Veterinary Gynaecology', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '400 Level', 'second', 3, '', '[]'::jsonb, 'Department official website', false),
+  ('VPH 521', 'Zoonosis and Environmental Health', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '500 Level', 'first', 2, '', '[]'::jsonb, 'Department official website', false),
+  ('VPH 523', 'Meat, Milk and Fish Hygiene', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '500 Level', 'first', 2, '', '[]'::jsonb, 'Department official website', false),
+  ('VPH 525', 'Epidemiology and Veterinary Economics', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '500 Level', 'first', 2, '', '[]'::jsonb, 'Department official website', false),
+  ('VPH 527', 'Biostatistics and Computer Application', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '500 Level', 'first', 2, '', '[]'::jsonb, 'Department official website', false),
+  ('VPH 529', 'Veterinary Preventive Medicine and Jurisprudence', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '500 Level', 'first', 2, '', '[]'::jsonb, 'Department official website', false),
+  ('AHP 531', 'Swine and Poultry Health Management and Monogastrics', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '500 Level', 'first', 2, '', '[]'::jsonb, 'Department official website', false),
+  ('VMD 561', 'Equine Medicine', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '500 Level', 'first', 2, '', '[]'::jsonb, 'Department official website', false),
+  ('VMD 563', 'Porcine Medicine', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '500 Level', 'first', 2, '', '[]'::jsonb, 'Department official website', false),
+  ('VOR 571', 'Andrology and Artificial Insemination', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '500 Level', 'first', 2, '', '[]'::jsonb, 'Department official website', false),
+  ('VOR 573', 'Obstetrics, Udder Health Management, Mastitis and Neonatal Diseases', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '500 Level', 'first', 3, '', '[]'::jsonb, 'Department official website', false),
+  ('VSR 581', 'Large Animal Surgery', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '500 Level', 'first', 2, '', '[]'::jsonb, 'Department official website', false),
+  ('VMD 562', 'Ruminant Medicine', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '500 Level', 'second', 3, '', '[]'::jsonb, 'Department official website', false),
+  ('VMD 564', 'Small Animal Medicine', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '500 Level', 'second', 2, '', '[]'::jsonb, 'Department official website', false),
+  ('VMD 566', 'Avian Medicine', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '500 Level', 'second', 2, '', '[]'::jsonb, 'Department official website', false),
+  ('VMD 568', 'Aquatic, Laboratory and Wildlife Medicine', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '500 Level', 'second', 2, '', '[]'::jsonb, 'Department official website', false),
+  ('VSR 582', 'Veterinary Radiology, Tomography and Ultrasonography', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '500 Level', 'second', 4, '', '[]'::jsonb, 'Department official website', false),
+  ('VSR 584', 'Small Animal Surgery', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '500 Level', 'second', 3, '', '[]'::jsonb, 'Department official website', false),
+  ('VSR 586', 'Orthopaedics and Lameness', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '500 Level', 'second', 3, '', '[]'::jsonb, 'Department official website', false),
+  ('VAN 502', 'Applied Anatomy', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '500 Level', 'second', 2, '', '[]'::jsonb, 'Department official website', false),
+  ('VPP 611', 'Veterinary Clinical Pharmacology and Toxicology', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '600 Level', 'first', 1, '', '[]'::jsonb, 'Department official website', false),
+  ('VPE 651', 'Veterinary Clinical Parasitology', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '600 Level', 'first', 1, '', '[]'::jsonb, 'Department official website', false),
+  ('FVM 691', 'Clinics I', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '600 Level', 'first', 20, '', '[]'::jsonb, 'Department official website', false),
+  ('FVM 693', 'Project I', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '600 Level', 'first', 3, '', '[]'::jsonb, 'Department official website', false),
+  ('VPM 641', 'Veterinary Clinical Pathology (Haematology, Clinical Biochemistry, and Cytology)', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '600 Level', 'first', 2, '', '[]'::jsonb, 'Department official website', false),
+  ('VOR 671', 'Theriogenology Clinics', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '600 Level', 'first', 1, '', '[]'::jsonb, 'Department official website', false),
+  ('FVM 692', 'Clinics II', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '600 Level', 'second', 20, '', '[]'::jsonb, 'Department official website', false),
+  ('FVM 694', 'Project II', 'University of Nigeria, Nsukka', 'Faculty of Veterinary Medicine', 'Veterinary Medicine', '600 Level', 'second', 3, '', '[]'::jsonb, 'Department official website', false);

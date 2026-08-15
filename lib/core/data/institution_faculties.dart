@@ -79,6 +79,7 @@ class InstitutionFaculties {
         'Animal Science',
         'Crop Science',
         'Food Science and Technology',
+        'Home Science and Management',
         'Nutrition and Dietetics',
         'Soil Science',
       ],
@@ -194,6 +195,7 @@ class InstitutionFaculties {
         'Medical Rehabilitation',
         'Nursing Sciences',
         'Radiography and Radiological Sciences',
+        'Science Laboratory Technology',
       ],
     ),
     Faculty(
@@ -236,6 +238,7 @@ class InstitutionFaculties {
       colour: Color(0xFF0891B2),
       departments: <String>[
         'Clinical Pharmacy and Pharmacy Management',
+        'Pharmaceutical Microbiology and Biotechnology',
         'Pharmaceutical Technology and Industrial Pharmacy',
         'Pharmaceutical and Medicinal Chemistry',
         'Pharmaceutics',
@@ -279,6 +282,7 @@ class InstitutionFaculties {
       departments: <String>[
         'Animal Health and Production',
         'Veterinary Anatomy',
+        'Veterinary Medicine',
         'Veterinary Obstetrics and Reproductive Diseases',
         'Veterinary Parasitology and Entomology',
         'Veterinary Pathology and Microbiology',
