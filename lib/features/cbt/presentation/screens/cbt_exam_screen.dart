@@ -217,7 +217,7 @@ class _CbtExamScreenState extends State<CbtExamScreen> {
             Container(
               margin: const EdgeInsets.symmetric(
                 vertical: 12,
-                horizontal: AppSpacing.md,
+                horizontal: AppSpacing.sm,
               ),
               padding: const EdgeInsets.symmetric(horizontal: 12),
               alignment: Alignment.center,
@@ -250,6 +250,19 @@ class _CbtExamScreenState extends State<CbtExamScreen> {
                 ],
               ),
             ),
+            TextButton(
+              onPressed: () => _submit(),
+              style: TextButton.styleFrom(
+                foregroundColor: AppColours.success,
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                minimumSize: const Size(0, 34),
+              ),
+              child: const Text(
+                'Submit',
+                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
           ],
         ),
         body: Column(
