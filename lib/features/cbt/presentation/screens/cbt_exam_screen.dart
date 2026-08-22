@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../../../core/models/cbt.dart';
+import '../../../../core/services/cbt_progress_store.dart';
 import '../../../../core/services/local_store.dart';
 import '../../../../core/services/study_repository.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -27,11 +28,6 @@ class CbtExamScreen extends StatefulWidget {
 
 class _CbtExamScreenState extends State<CbtExamScreen> {
   static const StudyRepository _study = StudyRepository();
-
-  /// How long a saved in-progress attempt is trusted before it's treated as
-  /// abandoned rather than interrupted (phone lock, a crash, the OS killing
-  /// the app in the background — not "I quietly stopped a day ago").
-  static const Duration _resumeWindow = Duration(hours: 6);
 
   late final PageController _pages;
   final Map<String, int> _answers = <String, int>{};
@@ -108,30 +104,24 @@ class _CbtExamScreenState extends State<CbtExamScreen> {
   /// and is recent enough to trust as an interruption rather than a
   /// long-abandoned attempt.
   Map<String, dynamic>? _readSavedProgress() {
-    if (!LocalStore.isReady) return null;
-    final Map<String, dynamic>? saved = LocalStore.instance.readMap(
-      StoreKeys.cbtInProgress,
-    );
+    final Map<String, dynamic>? saved = CbtProgressStore.readValid();
     if (saved == null) return null;
     if (saved['subjectId'] != widget.subject.id) return null;
-    final String? savedAtRaw = saved['savedAt'] as String?;
-    if (savedAtRaw == null) return null;
-    final DateTime? savedAt = DateTime.tryParse(savedAtRaw);
-    if (savedAt == null) return null;
-    if (DateTime.now().difference(savedAt) > _resumeWindow) return null;
-    final List<dynamic>? questions = saved['questions'] as List<dynamic>?;
-    if (questions == null || questions.isEmpty) return null;
     return saved;
   }
 
   /// Persists everything needed to reconstruct this exact attempt — so a
   /// student never loses a paper to something outside their control, like
-  /// the OS reclaiming the app in the background while their phone is
-  /// locked. A deliberate exit clears this again (see [_leaveIfConfirmed]).
+  /// the browser reclaiming a locked/backgrounded tab and reloading it from
+  /// scratch. [HomeShell] uses the same saved record to walk the student
+  /// straight back into this screen when that happens, rather than leaving
+  /// them stranded on the dashboard. A deliberate exit clears this again
+  /// (see [_leaveIfConfirmed]).
   Future<void> _saveProgress() async {
     if (!LocalStore.isReady || _submitted) return;
     await LocalStore.instance.writeMap(StoreKeys.cbtInProgress, <String, dynamic>{
       'subjectId': widget.subject.id,
+      'subjectName': widget.subject.name,
       'questions': _questions.map((CbtQuestion q) => q.toJson()).toList(),
       'answers': _answers,
       'flagged': _flagged.toList(),
