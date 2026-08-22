@@ -264,12 +264,30 @@ class SessionController extends ChangeNotifier {
   }
 
   /// Bridges Supabase auth events into this controller.
+  ///
+  /// A session going null on this stream is not always a real sign-out: a
+  /// token-refresh cycle that happens to land while the phone is locked (or
+  /// just after it unlocks, before connectivity is fully back) can surface
+  /// as a transient null here even though the client still holds a good
+  /// session underneath. Since this controller drives the app's root
+  /// widget, acting on that immediately would blow away the whole
+  /// navigation stack — including anything mid-flight, like a CBT exam in
+  /// progress — and drop the student back at the sign-in screen for no
+  /// real reason. Only commit to signed-out once a short settle window
+  /// confirms `SupabaseService.currentSession` is genuinely gone too.
   void listenToAuthChanges() {
     if (!SupabaseService.isReady) return;
     SupabaseService.auth.onAuthStateChange.listen(
       (sb.AuthState event) async {
         final sb.Session? session = event.session;
         if (session == null) {
+          if (_status == AuthStatus.signedOut) return;
+          await Future<void>.delayed(const Duration(seconds: 2));
+          if (SupabaseService.currentSession != null) {
+            // The client recovered on its own (e.g. auto-refresh finished
+            // just after the stream fired) — nothing to do.
+            return;
+          }
           if (_status != AuthStatus.signedOut) {
             _profile = null;
             _status = AuthStatus.signedOut;

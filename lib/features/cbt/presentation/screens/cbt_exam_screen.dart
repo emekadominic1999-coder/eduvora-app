@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../../../core/models/cbt.dart';
+import '../../../../core/services/local_store.dart';
 import '../../../../core/services/study_repository.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/common.dart';
@@ -27,7 +28,12 @@ class CbtExamScreen extends StatefulWidget {
 class _CbtExamScreenState extends State<CbtExamScreen> {
   static const StudyRepository _study = StudyRepository();
 
-  final PageController _pages = PageController();
+  /// How long a saved in-progress attempt is trusted before it's treated as
+  /// abandoned rather than interrupted (phone lock, a crash, the OS killing
+  /// the app in the background — not "I quietly stopped a day ago").
+  static const Duration _resumeWindow = Duration(hours: 6);
+
+  late final PageController _pages;
   final Map<String, int> _answers = <String, int>{};
   final Set<String> _flagged = <String>{};
 
@@ -38,16 +44,112 @@ class _CbtExamScreenState extends State<CbtExamScreen> {
   Timer? _timer;
   int _index = 0;
   bool _submitted = false;
+  bool _resumed = false;
+  int _ticksSinceSave = 0;
 
   @override
   void initState() {
     super.initState();
     _config = widget.config ?? CbtExamConfig.standard(widget.subject);
-    // Built once, so the paper cannot reshuffle underneath the student.
-    _questions = _config.buildPaper(widget.subject);
-    _totalSeconds = _config.minutes * 60;
-    _remaining = _totalSeconds;
+
+    final Map<String, dynamic>? saved = _readSavedProgress();
+    if (saved != null) {
+      _questions = (saved['questions'] as List<dynamic>)
+          .map(
+            (dynamic e) => CbtQuestion.fromJson(e as Map<String, dynamic>),
+          )
+          .toList();
+      _answers.addAll(
+        (saved['answers'] as Map<String, dynamic>).map(
+          (String k, dynamic v) => MapEntry<String, int>(k, v as int),
+        ),
+      );
+      _flagged.addAll((saved['flagged'] as List<dynamic>).cast<String>());
+      _index = (saved['index'] as num).toInt().clamp(
+        0,
+        _questions.isEmpty ? 0 : _questions.length - 1,
+      );
+      _totalSeconds = (saved['totalSeconds'] as num).toInt();
+      final DateTime savedAt = DateTime.parse(saved['savedAt'] as String);
+      final int elapsed = DateTime.now().difference(savedAt).inSeconds;
+      _remaining = ((saved['remaining'] as num).toInt() - elapsed).clamp(
+        0,
+        _totalSeconds,
+      );
+      _resumed = true;
+    } else {
+      // Built once, so the paper cannot reshuffle underneath the student.
+      _questions = _config.buildPaper(widget.subject);
+      _totalSeconds = _config.minutes * 60;
+      _remaining = _totalSeconds;
+    }
+
+    _pages = PageController(initialPage: _index);
     _timer = Timer.periodic(const Duration(seconds: 1), _tick);
+
+    if (_resumed) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        if (_remaining <= 0) {
+          _submit(auto: true);
+          return;
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Picked up where you left off on this paper.'),
+            duration: Duration(seconds: 3),
+          ),
+        );
+      });
+    }
+  }
+
+  /// Reads a saved in-progress attempt for this exact subject, if one exists
+  /// and is recent enough to trust as an interruption rather than a
+  /// long-abandoned attempt.
+  Map<String, dynamic>? _readSavedProgress() {
+    if (!LocalStore.isReady) return null;
+    final Map<String, dynamic>? saved = LocalStore.instance.readMap(
+      StoreKeys.cbtInProgress,
+    );
+    if (saved == null) return null;
+    if (saved['subjectId'] != widget.subject.id) return null;
+    final String? savedAtRaw = saved['savedAt'] as String?;
+    if (savedAtRaw == null) return null;
+    final DateTime? savedAt = DateTime.tryParse(savedAtRaw);
+    if (savedAt == null) return null;
+    if (DateTime.now().difference(savedAt) > _resumeWindow) return null;
+    final List<dynamic>? questions = saved['questions'] as List<dynamic>?;
+    if (questions == null || questions.isEmpty) return null;
+    return saved;
+  }
+
+  /// Persists everything needed to reconstruct this exact attempt — so a
+  /// student never loses a paper to something outside their control, like
+  /// the OS reclaiming the app in the background while their phone is
+  /// locked. A deliberate exit clears this again (see [_leaveIfConfirmed]).
+  Future<void> _saveProgress() async {
+    if (!LocalStore.isReady || _submitted) return;
+    await LocalStore.instance.writeMap(StoreKeys.cbtInProgress, <String, dynamic>{
+      'subjectId': widget.subject.id,
+      'questions': _questions.map((CbtQuestion q) => q.toJson()).toList(),
+      'answers': _answers,
+      'flagged': _flagged.toList(),
+      'index': _index,
+      'remaining': _remaining,
+      'totalSeconds': _totalSeconds,
+      'savedAt': DateTime.now().toIso8601String(),
+    });
+  }
+
+  Future<void> _clearSavedProgress() async {
+    if (!LocalStore.isReady) return;
+    final Map<String, dynamic>? saved = LocalStore.instance.readMap(
+      StoreKeys.cbtInProgress,
+    );
+    if (saved != null && saved['subjectId'] == widget.subject.id) {
+      await LocalStore.instance.remove(StoreKeys.cbtInProgress);
+    }
   }
 
   void _tick(Timer timer) {
@@ -59,6 +161,13 @@ class _CbtExamScreenState extends State<CbtExamScreen> {
       return;
     }
     setState(() => _remaining--);
+    // Every ~5s rather than every tick — frequent enough that a lost second
+    // never costs more than that, without hammering storage every tick.
+    _ticksSinceSave++;
+    if (_ticksSinceSave >= 5) {
+      _ticksSinceSave = 0;
+      unawaited(_saveProgress());
+    }
   }
 
   @override
@@ -70,6 +179,7 @@ class _CbtExamScreenState extends State<CbtExamScreen> {
 
   void _select(CbtQuestion question, int option) {
     setState(() => _answers[question.id] = option);
+    unawaited(_saveProgress());
   }
 
   void _goTo(int index) {
@@ -136,6 +246,7 @@ class _CbtExamScreenState extends State<CbtExamScreen> {
       takenAt: DateTime.now(),
     );
     await _study.saveAttempt(attempt);
+    await _clearSavedProgress();
 
     if (!mounted) return;
     await Navigator.of(context).pushReplacement(
@@ -180,7 +291,9 @@ class _CbtExamScreenState extends State<CbtExamScreen> {
   /// Asks before abandoning the paper, then pops if the student confirms.
   Future<void> _leaveIfConfirmed() async {
     final bool leave = await _confirmExit();
-    if (!mounted || !leave) return;
+    if (!leave) return;
+    await _clearSavedProgress();
+    if (!mounted) return;
     Navigator.of(context).pop(false);
   }
 
@@ -413,11 +526,14 @@ class _CbtExamScreenState extends State<CbtExamScreen> {
               Pill(label: question.topic, dense: true),
             const Spacer(),
             TextButton.icon(
-              onPressed: () => setState(() {
-                flagged
-                    ? _flagged.remove(question.id)
-                    : _flagged.add(question.id);
-              }),
+              onPressed: () {
+                setState(() {
+                  flagged
+                      ? _flagged.remove(question.id)
+                      : _flagged.add(question.id);
+                });
+                unawaited(_saveProgress());
+              },
               icon: Icon(
                 flagged ? Icons.flag_rounded : Icons.flag_outlined,
                 size: 17,

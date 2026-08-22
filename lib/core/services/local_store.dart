@@ -121,4 +121,5 @@ class StoreKeys {
   static const String classEntries = 'eduvora.class_entries';
   static const String videoPlanChecked = 'eduvora.video_plan_checked';
   static const String cbtFreeTrialUsed = 'eduvora.cbt_free_trial_used';
+  static const String cbtInProgress = 'eduvora.cbt_in_progress';
 }
