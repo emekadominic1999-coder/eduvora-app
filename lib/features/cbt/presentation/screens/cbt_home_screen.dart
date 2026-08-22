@@ -48,6 +48,14 @@ class _CbtHomeScreenState extends State<CbtHomeScreen> {
   /// hold an active entitlement covering it -- a paper you paid for must
   /// never quietly drop out of your list just because you later edited your
   /// department/faculty.
+  ///
+  /// Deliberately checks the entitlement list directly rather than going
+  /// through [PaywallRepository.hasAccess] — that method also honours the
+  /// testing-only "unlock everything" override, which must only affect
+  /// whether a locked paper can be *started* without paying, not which
+  /// papers show up here as relevant. Routing this list through it too
+  /// meant every paper looked relevant to every faculty while that override
+  /// was on, which is exactly the bug this comment is now warning against.
   Future<List<CbtSubject>> _load() async {
     final StudentProfile? profile = sessionController.profile;
     final List<CbtEntitlement> entitlements = await _paywall.myEntitlements();
@@ -60,7 +68,7 @@ class _CbtHomeScreenState extends State<CbtHomeScreen> {
         .where(
           (CbtSubject s) =>
               s.isRelevantTo(profile?.faculty ?? '') ||
-              _paywall.hasAccess(s, entitlements),
+              entitlements.any((CbtEntitlement e) => e.coversSubjectId(s.id)),
         )
         .toList();
   }

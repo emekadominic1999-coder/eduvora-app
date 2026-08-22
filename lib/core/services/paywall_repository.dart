@@ -35,6 +35,13 @@ class PaywallRepository {
 
   /// TESTING OVERRIDE: set to false to restore the real paywall. While true,
   /// every CBT paper reports as unlocked without an entitlement or payment.
+  ///
+  /// Only meant to affect whether a locked paper can be *started* for free
+  /// — anything deciding which papers to show a student as relevant to
+  /// their faculty must check the real entitlement list directly instead
+  /// of going through [hasAccess], or this override silently makes every
+  /// paper look relevant to every faculty too (that exact bug shipped once
+  /// already — see `cbt_home_screen.dart`'s `_load`).
   static const bool testingUnlockAll = true;
 
   /// How many questions a locked paper allows for free, once, before the
