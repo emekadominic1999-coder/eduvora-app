@@ -1,0 +1,37 @@
+-- =============================================================================
+-- Fix a rendering bug: literal middle-dot characters (U+00B7, "·") inside
+-- \text{...} unit expressions (e.g. "kg·m", "N·s", "J/(mol·K)") crashed
+-- flutter_math_fork's parser, which the app's MathText widget catches and
+-- falls back to showing the raw, unrendered LaTeX source in red -- exactly
+-- what the user spotted and reported (a PHY122 calorimetry question showing
+-- "$c = 4200\ \text{J/(kg·K)}$" as literal red text instead of typeset math).
+-- =============================================================================
+-- 17 rows across 4 subjects (phy-121-mechanics, phy-122-heat-waves-optics,
+-- phy-124-electricity-magnetism-atomic, mth-102-vectors-geometry-dynamics)
+-- carried this character in question, options, and/or explanation. Every
+-- "·" was replaced with a plain space (e.g. "kg·m" -> "kg m", "N·s" ->
+-- "N s", "J/(mol·K)" -> "J/(mol K)"), which reads naturally and renders
+-- without issue. This migration was applied directly via psycopg2
+-- (UPDATE ... WHERE id = ...) rather than plain SQL text, since it required
+-- string substitution across three JSON/text columns per row; this file is
+-- the durable record of what changed, not a re-runnable script.
+--
+-- Affected row ids:
+--   8fb0159e-52bf-41e8-b4bb-24da2d7a4689  (phy-121-mechanics)
+--   9c613dbd-56ef-493f-b3bd-cd601e9b8282  (phy-121-mechanics)
+--   69e0bae3-cb77-4b6e-9388-8e210755062b  (phy-121-mechanics)
+--   5fb35701-6d1b-416c-ba0c-998a2f366346  (phy-121-mechanics)
+--   e6a1310c-d1e9-4f44-a892-285a48b330e3  (phy-121-mechanics)
+--   fd3075c4-9398-465e-b3c0-9ef50e60e536  (phy-121-mechanics)
+--   1cf0f199-8e31-4a3e-91d1-613b8abb645c  (phy-122-heat-waves-optics)
+--   e5ec54d5-0333-4de2-a54b-237f36792d42  (phy-122-heat-waves-optics)
+--   1f5644f1-a058-4361-b9fd-7a5d59966350  (phy-122-heat-waves-optics)
+--   1f5d7692-1181-45a0-85c3-e351a359cefd  (phy-124-electricity-magnetism-atomic)
+--   31631827-4df0-40f0-86d5-ade016d7bd03  (phy-124-electricity-magnetism-atomic)
+--   930be448-94bd-4efd-b021-b35be5f6bacc  (mth-102-vectors-geometry-dynamics)
+--   e480574a-a1a1-4160-94e8-258483474711  (mth-102-vectors-geometry-dynamics)
+--   7b23d747-da39-4ccc-9a67-55276fde2e9d  (mth-102-vectors-geometry-dynamics)
+--   02759e08-07a5-44e4-b33e-a12266241168  (mth-102-vectors-geometry-dynamics)
+--   3cbf7b7a-a5e6-405a-b9d4-9c2b988631cf  (mth-102-vectors-geometry-dynamics)
+--   1d835eef-b5a5-4deb-9b68-0f9867c66b7b  (mth-102-vectors-geometry-dynamics)
+-- =============================================================================
