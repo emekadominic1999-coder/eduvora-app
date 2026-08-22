@@ -1,0 +1,64 @@
+-- =============================================================================
+-- Fix: a borrowed/ancillary course (e.g. MEC261 "Thermodynamics I" on
+-- Electrical Engineering's timetable) showed "Outline not added yet" even
+-- though the owning department (Mechanical Engineering, as MEE261) already
+-- has the real syllabus -- because course_outline_screen.dart only ever
+-- reads the CURRENT student's own department row for that course_code, and
+-- the app has no runtime cross-department fallback (confirmed by code
+-- review: lib/core/services/course_repository.dart's `_fetch` filters
+-- strictly by `.eq('department', department)`, nothing else).
+--
+-- This follows the same pattern as the earlier, narrower
+-- backfill_shared_course_outlines.sql (GSP101/102/111, ECO101 etc.), but
+-- this pass audited EVERY course_outlines row app-wide, not just the ones
+-- already known about.
+-- =============================================================================
+-- Method: for every row with an empty/placeholder description and topics,
+-- looked for another row (same institution) whose course_title matches
+-- (exactly, or via normalized/fuzzy title matching gated on the course code
+-- sharing the same digits -- e.g. MEC261 <-> MEE261, ECON101 <-> ECO101) and
+-- has real content. Copied description + topics only (never course_code,
+-- department, level, semester, or credit_units -- those describe the
+-- requesting department's own registration, which is correct as-is).
+--
+-- Explicitly EXCLUDED from auto-matching, even on a title match:
+--   - "Project Report" / "Seminar" / "SIWES" / "Industrial (Work)
+--     Experience" / "Field Work" -- these are per-student logs, not a fixed
+--     syllabus, so copying one department's version into another's is
+--     meaningless.
+--   - Any match where the subject noun itself differs behind similar
+--     phrasing (e.g. "Introduction to Sociology" vs "Introduction to
+--     Psychology" scored highly on generic string similarity but are not
+--     the same course) -- caught and dropped by an explicit subject-word
+--     check before applying.
+--
+-- 143 rows fixed this way (2 passes: 56 on an exact normalized-title match,
+-- 87 on a fuzzy title match gated by matching course-code digits), plus one
+-- MEC261 row for Electrical Engineering (second semester, "Workshop
+-- Technology I") that had a course_code data-entry slip -- every sibling
+-- department has this exact course under MEC212, only Electrical's copy was
+-- mistakenly saved as a second MEC261 row. Left the code alone (didn't
+-- rename a row's identity without more certainty) and backfilled its
+-- content from MEE212 (Mechanical Engineering's real "Workshop Technology"
+-- outline) since the title match was unambiguous.
+--
+-- One bad auto-match was caught and corrected before writing this file: a
+-- fuzzy pass initially matched "MEC314 Mechanical Engineering Design I"
+-- (Metallurgical and Materials Engineering) to "MEE314 Engineering Drawing
+-- II" purely because both share the digits 314 -- wrong course. Corrected
+-- to pull from "MEE313 Mechanical Engineering Design I", the actual
+-- title-identical source in Mechanical Engineering.
+--
+-- Every CBT subject (course_outlines' sibling table, see
+-- fix_faculty_tags_all_subjects.sql) was already confirmed clean in a prior
+-- pass -- this file only concerns the course_outlines/syllabus feature.
+--
+-- Applied live via direct psycopg2 script (per-row UPDATE, matched by id) --
+-- this file is the durable record, not a re-runnable script, since the
+-- actual fix copies large free-text description/topics blobs row by row.
+-- =============================================================================
+
+-- No SQL to re-run: see the commit message / this file's comment above for
+-- full methodology. The row IDs and empty->source mappings are preserved in
+-- this session's tooling output, not repeated here since the description
+-- and topics content is too large to usefully inline per row.
