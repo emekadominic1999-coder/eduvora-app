@@ -33,8 +33,9 @@ class PaystackCheckout {
 class PaywallRepository {
   const PaywallRepository();
 
-  /// TESTING OVERRIDE: set to false to restore the real paywall. While true,
-  /// every CBT paper reports as unlocked without an entitlement or payment.
+  /// TESTING OVERRIDE: set to true to unlock every CBT paper without an
+  /// entitlement or payment. Live/production value is false -- students pay
+  /// for CBT access via Paystack.
   ///
   /// Only meant to affect whether a locked paper can be *started* for free
   /// — anything deciding which papers to show a student as relevant to
@@ -42,7 +43,7 @@ class PaywallRepository {
   /// of going through [hasAccess], or this override silently makes every
   /// paper look relevant to every faculty too (that exact bug shipped once
   /// already — see `cbt_home_screen.dart`'s `_load`).
-  static const bool testingUnlockAll = true;
+  static const bool testingUnlockAll = false;
 
   /// How many questions a locked paper allows for free, once, before the
   /// paywall is shown. Tracked on-device only — a soft nudge rather than a
