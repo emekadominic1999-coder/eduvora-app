@@ -85,12 +85,53 @@ class _CbtHomeScreenState extends State<CbtHomeScreen> {
     await _future;
   }
 
+  CbtEntitlement? _entitlementFor(String subjectId) {
+    for (final CbtEntitlement e in _entitlements) {
+      if (e.coversSubjectId(subjectId)) return e;
+    }
+    return null;
+  }
+
+  Future<void> _showDeviceBlockedDialog() => showDialog<void>(
+    context: context,
+    builder: (BuildContext context) => AlertDialog(
+      title: const Text('Already in use on another device'),
+      content: const Text(
+        "This paid access is already tied to a different phone. If this is "
+        "your account and you've genuinely switched devices, contact "
+        'support to move your access here.',
+      ),
+      actions: <Widget>[
+        FilledButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('OK'),
+        ),
+      ],
+    ),
+  );
+
   Future<void> _start(CbtSubject subject) async {
-    final bool unlocked = _paywall.hasAccess(subject, _entitlements);
+    bool unlocked = _paywall.hasAccess(subject, _entitlements);
 
     if (!unlocked) {
       final bool tried = await _startFreeTrialOrPaywall(subject);
       if (!tried || !mounted) return;
+      unlocked = true;
+    }
+
+    // A paid entitlement (as opposed to the testing-unlock override) is
+    // tied to whichever device first used it -- catches a student sharing
+    // their login so a friend can sit the paper they didn't pay for.
+    final CbtEntitlement? entitlement = _entitlementFor(subject.id);
+    if (entitlement != null) {
+      final DeviceCheckResult check = await _paywall.verifyDevice(
+        entitlement,
+      );
+      if (!mounted) return;
+      if (check == DeviceCheckResult.blockedOtherDevice) {
+        await _showDeviceBlockedDialog();
+        return;
+      }
     }
 
     // Ask how they want to sit it before the clock starts.

@@ -1,10 +1,25 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' show FunctionException;
+import 'package:uuid/uuid.dart';
 
 import '../models/cbt.dart';
 import '../models/cbt_entitlement.dart';
 import 'local_store.dart';
 import 'supabase_service.dart';
+
+/// Result of checking whether the current device is allowed to use a paid
+/// entitlement.
+enum DeviceCheckResult {
+  /// First use (device just bound) or already matches the bound device.
+  allowed,
+
+  /// A different device already holds this entitlement's binding.
+  blockedOtherDevice,
+
+  /// The check itself failed (e.g. offline) -- treated as allowed so a
+  /// network hiccup doesn't lock a paying student out of their own paper.
+  error,
+}
 
 /// What the paystack-initialize function hands back to start a checkout.
 @immutable
@@ -32,6 +47,8 @@ class PaystackCheckout {
 /// there is no client-side path to unlocking a paper without actually paying.
 class PaywallRepository {
   const PaywallRepository();
+
+  static const Uuid _uuid = Uuid();
 
   /// TESTING OVERRIDE: set to true to unlock every CBT paper without an
   /// entitlement or payment. Live/production value is false -- students pay
@@ -71,6 +88,47 @@ class PaywallRepository {
   bool hasAccess(CbtSubject subject, List<CbtEntitlement> entitlements) =>
       testingUnlockAll ||
       entitlements.any((CbtEntitlement e) => e.coversSubjectId(subject.id));
+
+  /// A random id generated once per install and kept for the life of the
+  /// app (survives sign-out) -- stands in for "this physical device".
+  Future<String> deviceId() async {
+    if (!LocalStore.isReady) return _uuid.v4();
+    final String? existing = LocalStore.instance.readString(
+      StoreKeys.deviceId,
+    );
+    if (existing != null && existing.isNotEmpty) return existing;
+    final String fresh = _uuid.v4();
+    await LocalStore.instance.writeString(StoreKeys.deviceId, fresh);
+    return fresh;
+  }
+
+  /// Binds [entitlement] to this device on first use, or checks this
+  /// device against whatever device it's already bound to. Only ever
+  /// touches `bound_device_id` -- see the database trigger that enforces
+  /// this same rule server-side, since a client-only check is trivially
+  /// bypassed.
+  Future<DeviceCheckResult> verifyDevice(CbtEntitlement entitlement) async {
+    if (!SupabaseService.isReady) return DeviceCheckResult.allowed;
+    final String thisDevice = await deviceId();
+    final String? bound = entitlement.boundDeviceId;
+
+    if (bound != null && bound.isNotEmpty) {
+      return bound == thisDevice
+          ? DeviceCheckResult.allowed
+          : DeviceCheckResult.blockedOtherDevice;
+    }
+
+    try {
+      await SupabaseService.client
+          .from('cbt_entitlements')
+          .update(<String, dynamic>{'bound_device_id': thisDevice})
+          .eq('id', entitlement.id);
+      return DeviceCheckResult.allowed;
+    } catch (error) {
+      debugPrint('[Eduvora] device bind failed: $error');
+      return DeviceCheckResult.error;
+    }
+  }
 
   bool hasUsedFreeTrial(String subjectId) =>
       LocalStore.instance.readBool(_trialKey(subjectId));

@@ -85,7 +85,10 @@ class LocalStore {
   /// Clears everything belonging to the signed-in student but keeps
   /// device-level preferences such as whether the tour has been seen.
   Future<void> clearSession() async {
-    const List<String> keep = <String>[StoreKeys.hasSeenLanding];
+    const List<String> keep = <String>[
+      StoreKeys.hasSeenLanding,
+      StoreKeys.deviceId,
+    ];
     final Set<String> keys = _prefs.getKeys().toSet();
     for (final String key in keys) {
       if (keep.contains(key)) continue;
@@ -122,4 +125,5 @@ class StoreKeys {
   static const String videoPlanChecked = 'eduvora.video_plan_checked';
   static const String cbtFreeTrialUsed = 'eduvora.cbt_free_trial_used';
   static const String cbtInProgress = 'eduvora.cbt_in_progress';
+  static const String deviceId = 'eduvora.device_id';
 }
