@@ -1,0 +1,44 @@
+-- =============================================================================
+-- Built CBT banks for PHY111, PHY112, PHY114, PHY115, PHY116 by reusing
+-- questions already verified for PHY121, PHY122, and PHY124, instead of
+-- re-extracting from the source physics textbook a second time.
+-- =============================================================================
+-- Why this is legitimate, not a shortcut that skips real work: these are
+-- UNN's "General Physics for Life/Physical Sciences" service courses --
+-- lighter, narrower versions of the Physics department's own PHY121
+-- (Mechanics), PHY122 (Heat, Waves and Optics), and PHY124 (Electricity,
+-- Magnetism, Atomic) sequence, taken by other faculties. Comparing each
+-- target course's real course_outlines description against the existing
+-- question banks' topic labels showed near-total overlap:
+--
+--   PHY111 (Life Sciences I)      <- PHY121, minus "Ideal gas laws and
+--   PHY115 (Physical Sciences I)  <- kinetic theory of gases" (neither
+--                                     PHY111 nor PHY115's outline covers
+--                                     gas laws -- PHY121's does).
+--
+--   PHY112 (Life Sciences II)     <- PHY122, no exclusions -- every
+--   PHY116 (Physical Sciences II) <- PHY122 topic (heat, calorimetry,
+--                                     thermodynamics, waves, sound,
+--                                     optics) is explicitly in both
+--                                     outlines.
+--
+--   PHY114 (Life Sciences III)    <- PHY124, minus 5 topics PHY114's
+--                                     outline doesn't reach: Inductance/
+--                                     energy storage, Magnetic properties
+--                                     of matter, Motion of a charged
+--                                     particle/Hall effect, Thermo-
+--                                     electricity, Wave-particle duality/
+--                                     photoelectric effect.
+--
+-- Faculty tags were set from course_outlines' own faculty column for each
+-- new code (not copied from the source subject), department kept as
+-- "Physics and Astronomy" matching the existing three subjects' convention.
+--
+-- Result: PHY111 (95q), PHY115 (95q), PHY112 (168q), PHY116 (168q),
+-- PHY114 (190q) -- all new subjects, none existed before.
+--
+-- Applied live via a single INSERT ... SELECT per target (clones question/
+-- options/correct_index/explanation/topic verbatim, only subject_id/name/
+-- faculty/level/semester/units change) -- this file is the durable record,
+-- not a re-runnable script, since re-running would duplicate every row.
+-- =============================================================================
