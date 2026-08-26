@@ -60,7 +60,7 @@ class PaywallRepository {
   /// of going through [hasAccess], or this override silently makes every
   /// paper look relevant to every faculty too (that exact bug shipped once
   /// already — see `cbt_home_screen.dart`'s `_load`).
-  static const bool testingUnlockAll = false;
+  static const bool testingUnlockAll = true;
 
   /// How many questions a locked paper allows for free, once, before the
   /// paywall is shown. Tracked on-device only — a soft nudge rather than a
