@@ -1,0 +1,34 @@
+-- =============================================================================
+-- Re-clone PHY111/112/114/115/116 from the now-grown PHY121/122/124 pools.
+-- =============================================================================
+-- The original clone (see clone_phy_service_courses_from_phy121_122_124.sql)
+-- was taken before PHY121/122/124 grew from a newly-found textbook plus a
+-- gap-fill pass (103->272, 168->237, 250->266). This redoes the same clone
+-- against the larger pools, replacing the stale rows entirely (delete then
+-- re-insert per target, not an append) so there's no risk of duplicating
+-- the original smaller clone alongside the new one.
+--
+-- One filtering refinement over the original pass: the newer PHY121
+-- questions use much more specific topic labels (e.g. "Boyle's Law",
+-- "Avogadro's Number", "R.M.S. Speed and Molecular Mass") instead of the
+-- one broad "Ideal gas laws and kinetic theory of gases" label the first
+-- extraction used. An exact-string exclude list would have silently let
+-- 14 of these 15 gas/kinetic-theory topics leak into PHY111 and PHY115
+-- (neither of which covers gas laws), so the exclusion here matches by
+-- keyword (gas, kinetic theory, boyle, charles, avogadro, dalton, graham,
+-- r.m.s./root mean square, molecul-) instead of exact topic string.
+--
+-- PHY124's exclude list for PHY114 stayed as an exact match since those
+-- 5 topics (inductance, magnetic properties of matter, Hall effect,
+-- thermoelectricity, photoelectric effect) remained broad, unfragmented
+-- labels even after the new gap-fill pass added Kirchhoff's Laws/bridges/
+-- RC circuits/CRO questions (which are correctly INCLUDED, matching
+-- PHY114's own "Ohm's law: potentiometer, Metre Bridge, Wheatstone
+-- bridge" outline text).
+--
+-- Result: PHY111 95->248, PHY115 95->248, PHY112 168->237,
+-- PHY116 168->237, PHY114 190->206.
+--
+-- Applied live via delete + INSERT...SELECT per target -- this file is
+-- the durable record, not a re-runnable script.
+-- =============================================================================
