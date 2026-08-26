@@ -126,6 +126,7 @@ class CbtExamConfig {
     this.shuffleQuestions = false,
     this.shuffleOptions = false,
     this.isCustom = false,
+    this.topic,
   });
 
   /// A realistic single-sitting mock exam: [standardQuestionCount] questions
@@ -160,6 +161,10 @@ class CbtExamConfig {
   final bool shuffleOptions;
   final bool isCustom;
 
+  /// Restricts a custom paper to one topic within the subject's bank; null
+  /// (or empty) means every topic, same as before this option existed.
+  final String? topic;
+
   Duration get duration => Duration(minutes: minutes);
 
   /// Builds the working question list for an attempt, applying the count and
@@ -169,13 +174,21 @@ class CbtExamConfig {
   /// every topic in the pool rather than a blind random sample of the whole
   /// bank — an exam is meant to touch every part of the course, not risk
   /// clustering by chance around whichever topics happen to be biggest.
+  /// That stratification is skipped once [topic] narrows the pool to a
+  /// single topic, since there is nothing left to spread across.
   List<CbtQuestion> buildPaper(CbtSubject subject, {int? seed}) {
     final Random rng = Random(seed ?? DateTime.now().microsecondsSinceEpoch);
-    final int take = questionCount.clamp(1, subject.questions.length);
+    final String? wantedTopic = topic;
+    final List<CbtQuestion> pool = (wantedTopic == null || wantedTopic.isEmpty)
+        ? subject.questions
+        : subject.questions
+              .where((CbtQuestion q) => q.topic == wantedTopic)
+              .toList();
+    final int take = questionCount.clamp(1, pool.isEmpty ? 1 : pool.length);
 
     final List<CbtQuestion> paper = shuffleQuestions
-        ? _stratifiedSample(subject.questions, take, rng)
-        : subject.questions.take(take).toList();
+        ? _stratifiedSample(pool, take, rng)
+        : pool.take(take).toList();
 
     if (!shuffleOptions) return paper;
     return paper.map((CbtQuestion q) => q.withShuffledOptions(rng)).toList();

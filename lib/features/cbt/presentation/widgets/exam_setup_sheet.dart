@@ -4,6 +4,18 @@ import '../../../../core/models/cbt.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/common.dart';
 
+/// Distinct topics in [questions], sorted alphabetically, blank ones
+/// dropped — a paper with no topic tags at all yields an empty list, and
+/// the caller falls back to hiding the topic picker entirely.
+List<String> _topicsIn(List<CbtQuestion> questions) {
+  final Set<String> topics = <String>{
+    for (final CbtQuestion q in questions)
+      if (q.topic.trim().isNotEmpty) q.topic,
+  };
+  final List<String> sorted = topics.toList()..sort();
+  return sorted;
+}
+
 /// Asks how the student would like to sit a paper before the clock starts.
 ///
 /// Returns the chosen [CbtExamConfig], or null if they backed out.
@@ -29,6 +41,9 @@ class _ExamSetupSheet extends StatefulWidget {
 
 class _ExamSetupSheetState extends State<_ExamSetupSheet> {
   bool _custom = false;
+  String? _selectedTopic;
+  String _topicQuery = '';
+  late final List<String> _topics = _topicsIn(widget.subject.questions);
 
   /// Starts at the whole paper, but never above the custom ceiling — a
   /// two-hundred-question bank must not open the stepper on a value its own
@@ -40,20 +55,43 @@ class _ExamSetupSheetState extends State<_ExamSetupSheet> {
 
   int get _total => widget.subject.questions.length;
 
+  /// How many questions actually match the topic a custom paper is
+  /// restricted to — the whole subject when no topic is chosen.
+  int get _customPoolSize {
+    final String? topic = _selectedTopic;
+    if (topic == null) return _total;
+    return widget.subject.questions.where((CbtQuestion q) => q.topic == topic).length;
+  }
+
   /// How many questions a standard sitting actually draws — the fixed
-  /// count, unless the paper itself holds fewer than that.
+  /// count, unless the paper itself holds fewer than that. Standard mode
+  /// always spans the whole paper, ignoring any topic chosen for custom.
   int get _standardCount =>
       _total < CbtExamConfig.standardQuestionCount
       ? _total
       : CbtExamConfig.standardQuestionCount;
 
   /// A custom paper may go up to a hundred questions, but never beyond what
-  /// the subject actually holds — offering a number the pool cannot fill
-  /// would silently hand back a shorter paper than was asked for.
-  int get _maxCustom =>
-      _total < CbtExamConfig.maxCustomQuestions
-      ? _total
-      : CbtExamConfig.maxCustomQuestions;
+  /// its (possibly topic-narrowed) pool actually holds — offering a number
+  /// the pool cannot fill would silently hand back a shorter paper than was
+  /// asked for.
+  int get _maxCustom {
+    final int pool = _customPoolSize;
+    return pool < CbtExamConfig.maxCustomQuestions
+        ? pool
+        : CbtExamConfig.maxCustomQuestions;
+  }
+
+  void _selectTopic(String? topic) {
+    setState(() {
+      _selectedTopic = topic;
+      _questions = _maxCustom == 0 ? 1 : _maxCustom;
+    });
+  }
+
+  int _countFor(String? topic) => topic == null
+      ? widget.subject.questions.length
+      : widget.subject.questions.where((CbtQuestion q) => q.topic == topic).length;
 
   void _start() {
     final CbtExamConfig config = _custom
@@ -63,6 +101,7 @@ class _ExamSetupSheetState extends State<_ExamSetupSheet> {
             shuffleQuestions: _shuffleQuestions,
             shuffleOptions: _shuffleOptions,
             isCustom: true,
+            topic: _selectedTopic,
           )
         : CbtExamConfig.standard(widget.subject);
     Navigator.of(context).pop(config);
@@ -123,21 +162,46 @@ class _ExamSetupSheetState extends State<_ExamSetupSheet> {
             const SizedBox(height: AppSpacing.xl),
             const Divider(),
             const SizedBox(height: AppSpacing.lg),
+            if (_topics.isNotEmpty) ...<Widget>[
+              Text('Topic', style: Theme.of(context).textTheme.titleSmall),
+              const SizedBox(height: 3),
+              Text(
+                'Practice one topic at a time, or sit the whole paper.',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              _InlineTopicPicker(
+                topics: _topics,
+                selected: _selectedTopic,
+                query: _topicQuery,
+                countFor: _countFor,
+                onQueryChanged: (String v) => setState(() => _topicQuery = v),
+                onSelected: _selectTopic,
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              const Divider(),
+              const SizedBox(height: AppSpacing.lg),
+            ],
             _Stepper(
               label: 'Questions',
               value: _questions,
               suffix: _questions == 1 ? 'question' : 'questions',
               min: 1,
-              max: _maxCustom,
+              max: _maxCustom == 0 ? 1 : _maxCustom,
               step: _maxCustom > 40 ? 5 : 1,
               onChanged: (int v) => setState(() => _questions = v),
             ),
-            if (_total < CbtExamConfig.maxCustomQuestions) ...<Widget>[
+            if (_customPoolSize < CbtExamConfig.maxCustomQuestions) ...<Widget>[
               const SizedBox(height: 6),
               Text(
-                'This paper holds $_total '
-                '${_total == 1 ? 'question' : 'questions'} at the moment. '
-                'It will stretch further as more past questions are added.',
+                _selectedTopic == null
+                    ? 'This paper holds $_customPoolSize '
+                          '${_customPoolSize == 1 ? 'question' : 'questions'} at '
+                          'the moment. It will stretch further as more past '
+                          'questions are added.'
+                    : '"$_selectedTopic" holds $_customPoolSize '
+                          '${_customPoolSize == 1 ? 'question' : 'questions'} at '
+                          'the moment.',
                 style: Theme.of(context).textTheme.bodySmall,
               ),
             ],
@@ -389,6 +453,116 @@ class _ToggleRow extends StatelessWidget {
           Switch(value: value, onChanged: onChanged),
         ],
       ),
+    );
+  }
+}
+
+/// The primary, inline topic selector for a custom paper — shown directly
+/// in the setup sheet rather than behind a tap-through, since picking a
+/// topic is meant to be the first decision a custom sitting makes, not an
+/// optional afterthought. Searchable since a large bank can hold well over
+/// a hundred distinct topics; height-capped so it can't swallow the rest
+/// of the sheet.
+class _InlineTopicPicker extends StatelessWidget {
+  const _InlineTopicPicker({
+    required this.topics,
+    required this.selected,
+    required this.query,
+    required this.countFor,
+    required this.onQueryChanged,
+    required this.onSelected,
+  });
+
+  final List<String> topics;
+  final String? selected;
+  final String query;
+  final int Function(String? topic) countFor;
+  final ValueChanged<String> onQueryChanged;
+  final ValueChanged<String?> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final List<String> filtered = query.trim().isEmpty
+        ? topics
+        : topics
+              .where((String t) => t.toLowerCase().contains(query.toLowerCase()))
+              .toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        if (topics.length > 6) ...<Widget>[
+          SearchField(hint: 'Search topics', onChanged: onQueryChanged),
+          const SizedBox(height: AppSpacing.sm),
+        ],
+        Container(
+          constraints: const BoxConstraints(maxHeight: 260),
+          decoration: BoxDecoration(
+            border: Border.all(color: AppColours.border),
+            borderRadius: AppRadii.sm,
+          ),
+          child: ListView.separated(
+            shrinkWrap: true,
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: 2,
+            ),
+            itemCount: filtered.length + 1,
+            separatorBuilder: (BuildContext context, int index) =>
+                const Divider(height: 1),
+            itemBuilder: (BuildContext context, int index) {
+              if (index == 0) {
+                return _TopicTile(
+                  label: 'All topics',
+                  count: countFor(null),
+                  selected: selected == null,
+                  onTap: () => onSelected(null),
+                );
+              }
+              final String topic = filtered[index - 1];
+              return _TopicTile(
+                label: topic,
+                count: countFor(topic),
+                selected: selected == topic,
+                onTap: () => onSelected(topic),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _TopicTile extends StatelessWidget {
+  const _TopicTile({
+    required this.label,
+    required this.count,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final int count;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      onTap: onTap,
+      contentPadding: EdgeInsets.zero,
+      title: Text(label, style: Theme.of(context).textTheme.titleSmall),
+      trailing: selected
+          ? const Icon(
+              Icons.check_circle_rounded,
+              size: 20,
+              color: AppColours.primary,
+            )
+          : Text(
+              '$count',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
     );
   }
 }
