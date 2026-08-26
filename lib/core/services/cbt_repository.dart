@@ -17,26 +17,37 @@ class CbtRepository {
     final List<CbtSubject> relevant = remote
         .where((CbtSubject s) => s.isRelevantTo(faculty))
         .toList();
-    relevant.sort((CbtSubject a, CbtSubject b) {
-      if (a.isGeneralStudies != b.isGeneralStudies) {
-        return a.isGeneralStudies ? -1 : 1;
-      }
-      return a.name.compareTo(b.name);
-    });
+    relevant.sort(_bySubstanceThenGroup);
     return relevant;
   }
 
   /// Every real paper, regardless of faculty relevance.
   Future<List<CbtSubject>> all() async {
     final List<CbtSubject> remote = await _fetchRemoteSubjects();
-    remote.sort((CbtSubject a, CbtSubject b) {
-      if (a.isGeneralStudies != b.isGeneralStudies) {
-        return a.isGeneralStudies ? -1 : 1;
-      }
-      return a.name.compareTo(b.name);
-    });
+    remote.sort(_bySubstanceThenGroup);
     return remote;
   }
+
+  /// A paper with real questions someone has actually contributed always
+  /// sorts above a "coming soon" placeholder — the whole point of a
+  /// placeholder is to hold a spot in the list, not to compete with real
+  /// content for a student's attention. Within each of those two groups,
+  /// general-studies papers come first, then alphabetical by name, same
+  /// ordering as before placeholders existed.
+  static int _bySubstanceThenGroup(CbtSubject a, CbtSubject b) {
+    final bool aPlaceholder = _isPlaceholder(a);
+    final bool bPlaceholder = _isPlaceholder(b);
+    if (aPlaceholder != bPlaceholder) {
+      return aPlaceholder ? 1 : -1;
+    }
+    if (a.isGeneralStudies != b.isGeneralStudies) {
+      return a.isGeneralStudies ? -1 : 1;
+    }
+    return a.name.compareTo(b.name);
+  }
+
+  static bool _isPlaceholder(CbtSubject s) =>
+      s.questions.every((CbtQuestion q) => q.topic == 'Coming Soon');
 
   /// Supabase caps a single `select()` at ~1000 rows by default, so with the
   /// bank now well past that across all papers combined, a single
