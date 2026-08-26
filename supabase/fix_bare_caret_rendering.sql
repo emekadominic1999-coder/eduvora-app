@@ -1,0 +1,27 @@
+-- =============================================================================
+-- Fix: exponents rendering as literal "x^2" instead of superscript.
+-- =============================================================================
+-- User-reported example: an MTH103 question showed "Find the y-intercepts
+-- of the graph of x^2 + y^2 = 9" with the caret printed literally, because
+-- the whole expression sat outside any `$...$` span -- MathText only
+-- LaTeX-renders text between dollar signs, everything else is plain
+-- Flutter Text, so a bare "x^2" outside `$...$` just prints the caret.
+--
+-- Swept every cbt_questions row (question, options, explanation) for a
+-- letter/digit/closing-bracket followed by `^` outside any `$...$` span.
+-- Found 14 rows in MTH103 (all in the question stem itself, e.g. the
+-- calculus/related-rates/hyperbolic-function batch) plus 8 more once the
+-- same sweep was extended to options and explanations (6 more in MTH103,
+-- 2 in COS101's binary-conversion questions). All rewritten to wrap the
+-- math in `$...$` with proper LaTeX (`^{}`, `\frac{}{}` for the few that
+-- also had a bare slash, `\int`/`\sqrt`/`\tanh`/`\sinh`/`\cosh` etc.).
+--
+-- Also caught and fixed one unrelated mojibake character (a stray "�"
+-- replacement character from a botched multiplication-dot in a COS101
+-- explanation, likely from an earlier encoding mishap) -- replaced with
+-- a proper $\times$.
+--
+-- Applied live via direct per-row UPDATE by id -- this file is the
+-- durable record, not a re-runnable script, since it targets specific
+-- row ids with hand-written replacement text.
+-- =============================================================================
