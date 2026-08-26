@@ -34,3 +34,7 @@ values
    'This GST312 practice paper is coming soon. Check back later -- new questions are added regularly.',
    '["OK", "Coming soon", "Check back later", "Not yet available"]'::jsonb, 0,
    'This paper has not been built yet.', 'Coming Soon', true, 'second', 0);
+
+-- Follow-up: removed the two remaining old-code placeholders entirely
+-- rather than guess which GST code they became (GSP 102, GSP 106).
+delete from public.cbt_questions where subject_id in ('gsp-102-coming-soon', 'gsp-106-coming-soon');
