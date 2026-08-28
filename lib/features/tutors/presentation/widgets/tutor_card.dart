@@ -79,7 +79,9 @@ class TutorCard extends StatelessWidget {
             children: <Widget>[
               if (headline != null) ...<Widget>[
                 Pill(
-                  label: 'Verified · ${headline.cbtScore}%',
+                  label: headline.verifiedByCbt
+                      ? 'Verified · ${headline.cbtScore}%'
+                      : 'Reviewed',
                   icon: Icons.verified_rounded,
                   colour: AppColours.success,
                   dense: true,

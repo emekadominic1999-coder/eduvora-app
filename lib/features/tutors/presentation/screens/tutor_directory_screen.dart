@@ -193,6 +193,7 @@ class _Intro extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Tutor? mine = myProfile;
+    final bool isPending = mine?.status == TutorStatus.pending;
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.screenPadding,
@@ -222,6 +223,8 @@ class _Intro extends StatelessWidget {
                   child: Text(
                     mine == null
                         ? 'Learn from someone who has proved it'
+                        : isPending
+                        ? 'Your application is under review'
                         : 'You teach on Eduvora',
                     style: TextStyle(
                       fontSize: 15,
@@ -237,8 +240,13 @@ class _Intro extends StatelessWidget {
               mine == null
                   ? 'Every tutor here has sat the same CBT paper you are '
                         'revising and scored '
-                        '${TutorRepository.minCbtScore}% or above on it. '
-                        'Book a session, pay in the app, rate them afterwards.'
+                        '${TutorRepository.minCbtScore}% or above on it, or '
+                        'was approved by hand. Book a session, pay in the '
+                        'app, rate them afterwards.'
+                  : isPending
+                  ? 'You applied through manual review — an operator will '
+                        'approve or reject it directly. You will show up in '
+                        'the directory once that happens.'
                   : 'Students can find you for the papers you have been '
                         'verified on. Keep your rating up and you will appear '
                         'higher in the list.',
@@ -252,11 +260,19 @@ class _Intro extends StatelessWidget {
             FilledButton.icon(
               onPressed: onBecomeTutor,
               icon: Icon(
-                mine == null ? Icons.school_rounded : Icons.edit_rounded,
+                mine == null
+                    ? Icons.school_rounded
+                    : isPending
+                    ? Icons.hourglass_top_rounded
+                    : Icons.edit_rounded,
                 size: 18,
               ),
               label: Text(
-                mine == null ? 'Become a tutor' : 'Edit my tutoring',
+                mine == null
+                    ? 'Become a tutor'
+                    : isPending
+                    ? 'View my application'
+                    : 'Edit my tutoring',
               ),
               style: FilledButton.styleFrom(
                 backgroundColor: Colors.white,

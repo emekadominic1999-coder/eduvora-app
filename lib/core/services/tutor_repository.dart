@@ -218,6 +218,34 @@ class TutorRepository {
         .toList(),
   });
 
+  /// The slower path in: no CBT score required, just [applicationNote]
+  /// explaining why this student would be a good tutor. Creates or updates
+  /// a 'pending' profile for an operator to approve by hand — never
+  /// approves automatically, since there is nothing here the server can
+  /// verify itself. Only for a first-time applicant; an already-approved
+  /// tutor should add courses through [apply] instead.
+  Future<void> applyManual({
+    required String headline,
+    required String bio,
+    required String applicationNote,
+    required List<({String subjectId, String subjectName, int hourlyRateKobo})>
+    courses,
+  }) => _invoke('tutor-apply-manual', <String, dynamic>{
+    'headline': headline,
+    'bio': bio,
+    'applicationNote': applicationNote,
+    'courses': courses
+        .map(
+          (({String subjectId, String subjectName, int hourlyRateKobo}) c) =>
+              <String, dynamic>{
+                'subjectId': c.subjectId,
+                'subjectName': c.subjectName,
+                'hourlyRateKobo': c.hourlyRateKobo,
+              },
+        )
+        .toList(),
+  });
+
   // ---------------------------------------------------------------- sessions
 
   /// Every session the signed-in student is part of, on either side.

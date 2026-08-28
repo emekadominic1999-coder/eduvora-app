@@ -7,6 +7,7 @@ import '../../../../core/services/study_repository.dart';
 import '../../../../core/services/tutor_repository.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/common.dart';
+import 'manual_tutor_review_screen.dart';
 
 /// Apply to teach. A course can only be chosen once the student has actually
 /// scored [TutorRepository.minCbtScore] or better on that paper — the list
@@ -131,6 +132,17 @@ class _BecomeTutorScreenState extends State<BecomeTutorScreen> {
     }
   }
 
+  /// Hands off to the slower, no-CBT-required path. If it goes through,
+  /// this screen pops too — a fresh 'pending' profile now exists, so the
+  /// caller (the tutor directory) needs to refresh rather than show the
+  /// score-gated form this screen was still displaying.
+  Future<void> _openManualReview() async {
+    final bool? submitted = await Navigator.of(context).push<bool>(
+      MaterialPageRoute<bool>(builder: (_) => const ManualTutorReviewScreen()),
+    );
+    if ((submitted ?? false) && mounted) Navigator.of(context).pop(true);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -160,6 +172,10 @@ class _BecomeTutorScreenState extends State<BecomeTutorScreen> {
                 padding: const EdgeInsets.only(bottom: AppSpacing.xxl),
                 children: <Widget>[
                   const _Explainer(),
+                  if (widget.existing?.status == TutorStatus.pending)
+                    const _PendingReviewBanner(),
+                  if (widget.existing == null)
+                    _ManualReviewLink(onTap: _openManualReview),
                   const SectionHeader(
                     title: 'Your headline',
                     subtitle: 'One line students see first',
@@ -326,6 +342,105 @@ class _BecomeTutorScreenState extends State<BecomeTutorScreen> {
                 ],
               );
             },
+      ),
+    );
+  }
+}
+
+/// Shown when the signed-in student's own profile is sitting at 'pending'
+/// — they went through manual review and are waiting on an operator, not
+/// stuck or rejected.
+class _PendingReviewBanner extends StatelessWidget {
+  const _PendingReviewBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.screenPadding,
+        AppSpacing.lg,
+        AppSpacing.screenPadding,
+        0,
+      ),
+      child: EduvoraCard(
+        colour: AppColours.warningSoft,
+        shadows: AppShadows.subtle,
+        child: Row(
+          children: <Widget>[
+            const Icon(
+              Icons.hourglass_top_rounded,
+              size: 19,
+              color: AppColours.warning,
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: Text(
+                'Your application is under review. You can still update the '
+                'details below — resubmitting keeps it in the queue.',
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(height: 1.45),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The escape hatch to the no-CBT-required path, for a first-time
+/// applicant who does not want to sit a formal paper for a side gig.
+class _ManualReviewLink extends StatelessWidget {
+  const _ManualReviewLink({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.screenPadding,
+        AppSpacing.lg,
+        AppSpacing.screenPadding,
+        0,
+      ),
+      child: EduvoraCard(
+        onTap: onTap,
+        padding: const EdgeInsets.all(AppSpacing.md),
+        shadows: AppShadows.subtle,
+        child: Row(
+          children: <Widget>[
+            const Icon(
+              Icons.rate_review_outlined,
+              size: 19,
+              color: AppColours.textMuted,
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    "Don't want to sit the CBT?",
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Apply for manual review instead — an operator reviews '
+                    'you directly, no score needed.',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
+              ),
+            ),
+            const Icon(
+              Icons.chevron_right_rounded,
+              size: 20,
+              color: AppColours.textFaint,
+            ),
+          ],
+        ),
       ),
     );
   }

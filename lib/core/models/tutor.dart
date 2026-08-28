@@ -25,12 +25,18 @@ class TutorCourse {
     required this.subjectName,
     required this.cbtScore,
     required this.hourlyRateKobo,
+    this.verifiedByCbt = true,
   });
 
   final String subjectId;
   final String subjectName;
   final int cbtScore;
   final int hourlyRateKobo;
+
+  /// False for a course an operator approved by hand (no paper was sat,
+  /// so [cbtScore] is meaningless — always 0 for these) rather than the
+  /// automatic CBT-score check.
+  final bool verifiedByCbt;
 
   double get hourlyRateNaira => hourlyRateKobo / 100;
 
@@ -42,6 +48,7 @@ class TutorCourse {
     subjectName: (json['subject_name'] ?? '') as String,
     cbtScore: (json['cbt_score'] as num?)?.toInt() ?? 0,
     hourlyRateKobo: (json['hourly_rate_kobo'] as num?)?.toInt() ?? 0,
+    verifiedByCbt: (json['verification_method'] as String? ?? 'cbt') == 'cbt',
   );
 }
 
@@ -55,6 +62,7 @@ class Tutor {
     required this.bio,
     required this.status,
     required this.courses,
+    this.applicationNote = '',
     this.fullName = '',
     this.department = '',
     this.level = '',
@@ -72,6 +80,10 @@ class Tutor {
   final String bio;
   final TutorStatus status;
   final List<TutorCourse> courses;
+
+  /// Set only on the manual-review path — why this student says they'd be
+  /// a good tutor, for whoever approves the application to read.
+  final String applicationNote;
 
   /// Joined from the student's profile for display.
   final String fullName;
@@ -131,6 +143,7 @@ class Tutor {
       bio: (json['bio'] ?? '') as String,
       status: TutorStatus.fromName(json['status'] as String?),
       courses: courses,
+      applicationNote: (json['application_note'] ?? '') as String,
       fullName: (profile?['full_name'] ?? '') as String,
       department: (profile?['department'] ?? '') as String,
       level: (profile?['level'] ?? '') as String,

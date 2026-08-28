@@ -305,14 +305,20 @@ class _CourseRow extends StatelessWidget {
               color: AppColours.successSoft,
               borderRadius: AppRadii.sm,
             ),
-            child: Text(
-              '${course.cbtScore}%',
-              style: const TextStyle(
-                fontSize: 12.5,
-                fontWeight: FontWeight.w800,
-                color: AppColours.success,
-              ),
-            ),
+            child: course.verifiedByCbt
+                ? Text(
+                    '${course.cbtScore}%',
+                    style: const TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w800,
+                      color: AppColours.success,
+                    ),
+                  )
+                : const Icon(
+                    Icons.rate_review_rounded,
+                    size: 18,
+                    color: AppColours.success,
+                  ),
           ),
           const SizedBox(width: AppSpacing.md),
           Expanded(
@@ -326,9 +332,14 @@ class _CourseRow extends StatelessWidget {
                   style: Theme.of(context).textTheme.titleSmall,
                 ),
                 const SizedBox(height: 2),
-                const Text(
-                  'Verified on the Eduvora CBT paper',
-                  style: TextStyle(fontSize: 11.5, color: AppColours.textMuted),
+                Text(
+                  course.verifiedByCbt
+                      ? 'Verified on the Eduvora CBT paper'
+                      : 'Approved by Eduvora after manual review',
+                  style: const TextStyle(
+                    fontSize: 11.5,
+                    color: AppColours.textMuted,
+                  ),
                 ),
               ],
             ),
