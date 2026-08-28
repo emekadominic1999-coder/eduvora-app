@@ -20,6 +20,12 @@ class TutorRepository {
   /// binding check is server-side.
   static const int minCbtScore = 75;
 
+  /// The smallest attempt that counts towards that score. Mirrors
+  /// MIN_ATTEMPT_QUESTIONS_FOR_TUTOR in the edge functions — without this, a
+  /// lucky score on the 5-question free trial would look eligible here and
+  /// then be rejected on submit, for reasons the screen never explained.
+  static const int minAttemptQuestions = 20;
+
   /// Eduvora's cut, for display on the tutor's earnings screen.
   static const double commission = 0.15;
 

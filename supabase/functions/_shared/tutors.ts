@@ -9,6 +9,15 @@ export const PLATFORM_COMMISSION = 0.15;
 /// Verified against cbt_attempts server-side, never taken from the client.
 export const TUTOR_MIN_SCORE = 75;
 
+/// The smallest attempt that counts towards that score. Without this, a
+/// student could pass the free trial (5 questions, PaywallRepository's
+/// freeTrialQuestionCount) with a lucky 100% and be verified to teach a
+/// paper they have barely touched -- a standard sitting is 35 questions
+/// (CbtExamConfig.standardQuestionCount), so 20 is a real, substantial
+/// showing without unfairly excluding a smaller custom paper someone sat
+/// deliberately to prove themselves.
+export const MIN_ATTEMPT_QUESTIONS_FOR_TUTOR = 20;
+
 /// Sanity bounds on an hourly rate, in kobo (₦500 – ₦10,000 an hour).
 export const MIN_HOURLY_RATE_KOBO = 50000;
 export const MAX_HOURLY_RATE_KOBO = 1000000;
@@ -71,7 +80,7 @@ export async function bestCbtScore(
   let best = 0;
   for (const attempt of data) {
     const total = attempt.total_questions ?? 0;
-    if (total <= 0) continue;
+    if (total < MIN_ATTEMPT_QUESTIONS_FOR_TUTOR) continue;
     const percentage = ((attempt.score ?? 0) / total) * 100;
     if (percentage > best) best = percentage;
   }

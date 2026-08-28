@@ -61,10 +61,23 @@ class _BecomeTutorScreenState extends State<BecomeTutorScreen> {
     super.dispose();
   }
 
-  /// The student's best percentage on a paper, from their own attempts.
+  /// The student's best percentage on a paper, counting only attempts
+  /// substantial enough to actually demonstrate mastery — the same floor
+  /// the edge function enforces server-side, so this screen never shows
+  /// "eligible" for something a lucky free-trial score would only get
+  /// rejected for on submit.
   int _bestScore(String subjectId) {
-    final CbtAttempt? best = _study.bestAttemptFor(subjectId);
-    return best == null ? 0 : best.percentage.round();
+    final List<CbtAttempt> real = _study
+        .attemptsFor(subjectId)
+        .where(
+          (CbtAttempt a) =>
+              a.totalQuestions >= TutorRepository.minAttemptQuestions,
+        )
+        .toList();
+    if (real.isEmpty) return 0;
+    return real
+        .map((CbtAttempt a) => a.percentage.round())
+        .reduce((int a, int b) => a > b ? a : b);
   }
 
   bool _eligible(String subjectId) =>
@@ -183,8 +196,10 @@ class _BecomeTutorScreenState extends State<BecomeTutorScreen> {
                   SectionHeader(
                     title: 'Courses you can teach',
                     subtitle:
-                        '${TutorRepository.minCbtScore}% or above on the '
-                        'CBT paper unlocks a course',
+                        '${TutorRepository.minCbtScore}% or above on a '
+                        'full sitting (${TutorRepository.minAttemptQuestions}+ '
+                        'questions) unlocks a course — the free trial is too '
+                        'short to count',
                   ),
                   if (eligible.isEmpty)
                     const Padding(
@@ -252,6 +267,9 @@ class _BecomeTutorScreenState extends State<BecomeTutorScreen> {
                                 child: _LockedCourse(
                                   subject: s,
                                   score: _bestScore(s.id),
+                                  triedOnlyShortAttempts: _study
+                                      .attemptsFor(s.id)
+                                      .isNotEmpty,
                                 ),
                               ),
                             )
@@ -463,10 +481,20 @@ class _EligibleCourse extends StatelessWidget {
 }
 
 class _LockedCourse extends StatelessWidget {
-  const _LockedCourse({required this.subject, required this.score});
+  const _LockedCourse({
+    required this.subject,
+    required this.score,
+    required this.triedOnlyShortAttempts,
+  });
 
   final CbtSubject subject;
   final int score;
+
+  /// True when the student has sat this paper, but only ever in attempts
+  /// too short to count (e.g. the free trial) — score is 0 in that case
+  /// even though they have genuinely tried it, so the message must say
+  /// that rather than the flatly untrue "you have not sat this paper yet".
+  final bool triedOnlyShortAttempts;
 
   @override
   Widget build(BuildContext context) {
@@ -493,10 +521,14 @@ class _LockedCourse extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    score == 0
-                        ? 'You have not sat this paper yet'
-                        : 'Your best is $score% — '
-                              '${TutorRepository.minCbtScore}% needed',
+                    score > 0
+                        ? 'Your best is $score% — '
+                              '${TutorRepository.minCbtScore}% needed'
+                        : triedOnlyShortAttempts
+                        ? 'Only the free trial so far — sit a full '
+                              '${TutorRepository.minAttemptQuestions}+ '
+                              'question paper to count'
+                        : 'You have not sat this paper yet',
                     style: const TextStyle(
                       fontSize: 11.5,
                       color: AppColours.textMuted,
