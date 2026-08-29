@@ -1,0 +1,75 @@
+-- =============================================================================
+-- Faculty of Agriculture course outlines: gap audit and description backfill
+-- =============================================================================
+-- Follow-up to faculty_of_agriculture_course_outlines.sql, after the user
+-- reported that courses they opened (e.g. AEC 201 under Agricultural
+-- Economics) showed no outline content.
+--
+-- DIAGNOSIS. The rows were present and correctly addressed -- department and
+-- level strings matched the app's picker lists exactly, and
+-- CourseRepository._fetch does not filter on description -- so nothing was
+-- hidden. The rows were simply BARE: 182 of 349 Faculty of Agriculture rows
+-- had an empty description, because the source handbook's "COURSE
+-- DESCRIPTION" section only covers a subset of the courses that appear in
+-- its curriculum structure tables. Verified directly on page 3: the COURSE
+-- DESCRIPTION section opens at AEC 202, so AEC 201 is genuinely never
+-- described in the document. The 178MB scan has no text layer (0 extractable
+-- characters across all 54 pages) and no OCR is installed locally, so the
+-- page images remain the only source.
+--
+-- BACKFILL APPLIED (182 bare rows -> 85):
+--   * 83 rows filled by cross-referencing the same course code's real
+--     description from its owning department elsewhere in course_outlines,
+--     per the standing ancillary cross-referencing rule.
+--   * 7 rows recovered from earlier extraction passes whose descriptions had
+--     been dropped during the merge (AEC 512, ANS 371, HND 102/201/251/261,
+--     SSL 104).
+--   * 3 rows filled via code aliases (CHEM 112 <- CHM 112, CHEM 122 <-
+--     CHM 122, HSN 102 <- HND 102).
+--
+-- GSP -> GST RECONCILIATION. The handbook predates the user's GSP->GST
+-- renaming, so its General Studies rows carried legacy GSP codes with no
+-- descriptions, while the app's populated GST rows sat alongside them. The
+-- mapping was established from title evidence already in the table rather
+-- than guessed -- GST 311 carries the title "The Social Sciences" and GST 312
+-- "Issues in Peace and Conflict Resolution Studies", matching GSP 201 and
+-- GSP 202 exactly:
+--     GSP 101 -> GST 111   Use of English I
+--     GSP 102 -> GST 114   Use of English II
+--     GSP 201 -> GST 311   The Social Sciences
+--     GSP 202 -> GST 312   Issues in Peace and Conflict Resolution Studies
+--     GSP 207 -> GST 211   Humanities I
+--     GSP 208 -> GST 212   Humanities II
+-- 15 Faculty of Agriculture rows converted, each taking the fullest existing
+-- GST description. The rename collided with GST rows already present in the
+-- same (department, level) in three cases; those 3 duplicates were deleted.
+--
+-- RESULT: 346 rows, 264 (76%) with a real description.
+--   Agricultural Economics                        62 rows  79% described
+--   Agricultural Extension & Rural Development    25 rows  80% described
+--   Animal Science                                71 rows  70% described
+--   Crop Science                                  84 rows  73% described
+--   Food Science & Technology                     14 rows  86% described
+--   Home Science & Management                     54 rows  80% described
+--   Soil Science                                  36 rows  73% described
+--
+-- KNOWN REMAINING GAPS, deliberately left rather than fabricated:
+--   * 85 rows (45 distinct codes) have no description in the handbook and
+--     none anywhere else in course_outlines. Mostly ancillary/service
+--     courses (BIO 151/152/153/154, MTH 111, FRE 101/102, CED 341/342,
+--     AG/AGR 101/102, CAB 161, AFC 101) plus genuinely undescribed
+--     departmental courses (AEC 101/201/452, AEX 132/311/412/513/515/517,
+--     FST 102/222/311/442, SSC 242/431/441/462, ANS 101/402, ABE 306,
+--     AHP 433, AIC 532, FVM/PVM 433). These need a source document; writing
+--     them from general knowledge would be fabricating academic content.
+--   * 3 of the 10 Faculty of Agriculture departments in the app's picker
+--     have ZERO rows -- Agronomy, Fisheries & Aquaculture, and Forestry &
+--     Wildlife Management. The handbook covers only the other 7; no
+--     extraction pass ever saw these department names. They need their own
+--     handbook upload.
+--   * AGR 201 carries the placeholder description "Elective." (9 chars) from
+--     the source table.
+--
+-- Applied live via direct psycopg2 scripts -- this file is the durable
+-- record, not a re-runnable script.
+-- =============================================================================
