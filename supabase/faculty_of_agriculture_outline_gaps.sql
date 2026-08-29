@@ -132,3 +132,17 @@
 -- Book pages absent from the PDF entirely: 16-18, 32-34, 44-46, 58-60,
 -- 74-80, 94-96, 108-113.
 -- =============================================================================
+
+-- -----------------------------------------------------------------------------
+-- Open questions above, resolved by the user:
+--   1. Copy descriptions across the renumbered AEX variants -- APPLIED.
+--        AEX 132 <- AEX 102 (1 row), AEX 513 <- AEX 521 (1 row),
+--        AEX 517 <- AEX 541 (2 rows).
+--      The text is genuine handbook prose; only the course number differs
+--      between the curriculum tables and the description section.
+--   2. PVM 433 renamed to FVM 433 -- APPLIED (1 row). The course stays under
+--      Animal Science; only the misread prefix was corrected. No duplicate
+--      (code, department, level) resulted.
+--
+-- FINAL: 346 rows, 286 (83%) described, 0 duplicates.
+-- -----------------------------------------------------------------------------
