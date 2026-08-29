@@ -2,43 +2,57 @@
 -- Populate course_outlines from a real 54-page Faculty of Agriculture
 -- handbook/prospectus the user supplied.
 -- =============================================================================
--- The document mixes curriculum structure tables (course code/title/units
--- by year and semester) with full per-course descriptions, department by
--- department. Extracted via 3 parallel passes (pages 1-18, 19-36, 37-54),
--- each producing (course_code, course_title, department, level, semester,
--- credit_units, description, topics) records -- description/topics left
--- empty for a course that only ever appeared in a bare structure table,
--- never guessed.
+-- FIRST PASS (superseded, see correction below): extracted via 3 parallel
+-- passes attributing each course's department by its own code prefix (e.g.
+-- CSC421 -> Crop Science). 159 rows were inserted, 9 updated. But this
+-- document's actual convention is different: a department's curriculum page
+-- legitimately lists OTHER departments' course codes as its own required
+-- ancillary/elective courses (e.g. CSC321 appearing as an elective inside
+-- Agricultural Economics' own programme structure), and a course's true
+-- `department` for this table must be whichever department's curriculum
+-- section it physically appears under -- not the subject its own code
+-- prefix suggests. The user caught this ("go add those 38 ancillary courses
+-- under the right agric department") after noticing courses were missing
+-- from Agricultural Economics; a full re-check confirmed the same
+-- mis-attribution affected many of the already-inserted rows too (e.g.
+-- Agricultural Economics had zero 100-Level rows).
 --
--- 263 raw records -> 216 after deduplicating the same (course_code,
--- department) pair appearing more than once (a structure-table mention
--- plus a full description later always kept the described version).
+-- CORRECTION (applied live): the original 159 first-pass rows (identified
+-- precisely via created_at timestamp, matching the original insert count
+-- and per-department breakdown exactly) were deleted, and the document was
+-- re-extracted with department attributed by page section / "DEPARTMENT OF
+-- X" header / dominant "Major Courses" listing, not by code prefix. One
+-- known agent error was caught and manually corrected during merge: pages
+-- 1-16 were wrongly bulk-tagged "Agricultural Extension" based on a false
+-- claim of a department header on page 5 (page 5 was directly re-read and
+-- actually shows AEC 554/552/561/562/592 -- Agricultural Economics
+-- content); corrected so AEC-coded courses in that block went to
+-- Agricultural Economics and only genuinely AEX-coded courses stayed under
+-- Agricultural Extension & Rural Development. Department names were also
+-- canonicalized to exactly match the app's hardcoded department picker
+-- list (lib/core/data/academic_structure.dart), fixing prior mismatches
+-- such as "Agricultural Extension" -> "Agricultural Extension & Rural
+-- Development", "Food Science and Technology" -> "Food Science &
+-- Technology", "Home Science, Nutrition and Dietetics" -> "Home Science &
+-- Management".
 --
--- Of those 216, 178 were genuine Faculty of Agriculture department rows
--- (Agricultural Economics, Agricultural Extension, Animal Science, Crop
--- Science, Soil Science, Food Science and Technology, Home Science
--- Nutrition and Dietetics) and were upserted here: matched against
--- existing course_outlines rows by (course_code, department), updating
--- only when the newly extracted description was real and longer than
--- what already existed, otherwise inserting a new row.
+-- The corrected extraction produced 296 raw records, deduplicated by
+-- (normalized course_code, department) to 292 unique records (preferring
+-- whichever duplicate had the fuller description). Upserted against the
+-- live table (matching by course_code + department; update only when the
+-- new description was longer than what existed, otherwise insert):
 --
--- The remaining 38 were EXCLUDED, not inserted: these were ancillary/
--- service courses (Chemistry, Mathematics, Biology, Computer Science,
--- French, Veterinary Medicine, Agricultural/Bioresources Engineering,
--- Entrepreneurship, General Studies, and an inconsistently-named
--- "Agriculture (General)"/"Agriculture" bucket) that appeared inside an
--- Agriculture department's own curriculum table. The extraction agents'
--- instructions asked for "the department that owns this course," which
--- for these rows meant the course's real subject department (e.g.
--- Chemistry) rather than which Agriculture department requires it --
--- backwards from this table's actual convention (department = whose
--- curriculum this row represents). Rather than guess the correct
--- Agriculture-side department after the fact, these were dropped
--- entirely; their real content already exists (or will, via the earlier
--- bulk placeholder pass) under each course's actual owning department.
+--   inserted: 249   updated: 5   skipped (no improvement): 38
 --
--- Result: 159 new rows inserted, 9 existing rows updated with a fuller
--- description than they had before.
+-- Final department distribution (Faculty of Agriculture, all rows):
+--   Agricultural Economics                        62  (now includes 100 Level)
+--   Agricultural Extension & Rural Development     25
+--   Animal Science                                 71
+--   Crop Science                                   86
+--   Food Science & Technology                      14
+--   Home Science & Management                      54
+--   Soil Science                                   37
+--   total                                          349
 --
 -- Applied live via direct psycopg2 upsert script -- this file is the
 -- durable record, not a re-runnable script, since it targets specific
