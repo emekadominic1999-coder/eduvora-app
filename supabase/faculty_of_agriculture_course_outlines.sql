@@ -1,0 +1,46 @@
+-- =============================================================================
+-- Populate course_outlines from a real 54-page Faculty of Agriculture
+-- handbook/prospectus the user supplied.
+-- =============================================================================
+-- The document mixes curriculum structure tables (course code/title/units
+-- by year and semester) with full per-course descriptions, department by
+-- department. Extracted via 3 parallel passes (pages 1-18, 19-36, 37-54),
+-- each producing (course_code, course_title, department, level, semester,
+-- credit_units, description, topics) records -- description/topics left
+-- empty for a course that only ever appeared in a bare structure table,
+-- never guessed.
+--
+-- 263 raw records -> 216 after deduplicating the same (course_code,
+-- department) pair appearing more than once (a structure-table mention
+-- plus a full description later always kept the described version).
+--
+-- Of those 216, 178 were genuine Faculty of Agriculture department rows
+-- (Agricultural Economics, Agricultural Extension, Animal Science, Crop
+-- Science, Soil Science, Food Science and Technology, Home Science
+-- Nutrition and Dietetics) and were upserted here: matched against
+-- existing course_outlines rows by (course_code, department), updating
+-- only when the newly extracted description was real and longer than
+-- what already existed, otherwise inserting a new row.
+--
+-- The remaining 38 were EXCLUDED, not inserted: these were ancillary/
+-- service courses (Chemistry, Mathematics, Biology, Computer Science,
+-- French, Veterinary Medicine, Agricultural/Bioresources Engineering,
+-- Entrepreneurship, General Studies, and an inconsistently-named
+-- "Agriculture (General)"/"Agriculture" bucket) that appeared inside an
+-- Agriculture department's own curriculum table. The extraction agents'
+-- instructions asked for "the department that owns this course," which
+-- for these rows meant the course's real subject department (e.g.
+-- Chemistry) rather than which Agriculture department requires it --
+-- backwards from this table's actual convention (department = whose
+-- curriculum this row represents). Rather than guess the correct
+-- Agriculture-side department after the fact, these were dropped
+-- entirely; their real content already exists (or will, via the earlier
+-- bulk placeholder pass) under each course's actual owning department.
+--
+-- Result: 159 new rows inserted, 9 existing rows updated with a fuller
+-- description than they had before.
+--
+-- Applied live via direct psycopg2 upsert script -- this file is the
+-- durable record, not a re-runnable script, since it targets specific
+-- existing rows by id and contains large free-text descriptions.
+-- =============================================================================
