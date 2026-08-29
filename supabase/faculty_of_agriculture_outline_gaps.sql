@@ -73,3 +73,62 @@
 -- Applied live via direct psycopg2 scripts -- this file is the durable
 -- record, not a re-runnable script.
 -- =============================================================================
+
+-- =============================================================================
+-- SECOND PASS: root cause of the missing descriptions
+-- =============================================================================
+-- The user re-photographed two pages showing FST descriptions that this table
+-- had blank, proving the content was in the handbook. Investigating why the
+-- extraction missed it found the real fault, and it was in the processing,
+-- not the upload:
+--
+-- The PDF embeds 88 photographs at native 4160x2340. Many PDF *pages* stack
+-- 2-3 of those photos together, and the first pass rendered the PAGES at 1.3x
+-- zoom -- collapsing three 4160px-wide photos into a single 773px-wide sideways
+-- image. Descriptions that are perfectly legible in the source were an
+-- unreadable smear at that scale. Re-extracting the 88 embedded images at
+-- native resolution and rotating them upright made them sharp.
+--
+-- Confirmed by re-scan: images 45-51 (book pp. 66-72) contain the complete FST
+-- COURSE DESCRIPTION section. It had been present all along.
+--
+-- FILLED THIS PASS (85 bare rows -> 64):
+--   * FST 102, 222, 311, 442 -- transcribed from the user's two photos
+--     (5 rows; FST 453 and 511 already had text). Food Science & Technology
+--     is now 100% described.
+--   * SSC 242, 431, 441, 462 and AG/AGR 102 -- from the re-extracted Soil
+--     Science section (16 rows). The book heads these "SSL nnn" but cites the
+--     same courses as "SSC nnn" in its own prerequisite lines (SSL 431's text
+--     reads "Pre-requisite: SSC 211"; SSL 441 cites "AG 102 & SSC 241"), so
+--     the prefixes are interchangeable in this handbook and the mapping is
+--     evidenced rather than assumed. Descriptions only were written; existing
+--     titles kept, since the book prints "Agricultural Metrology" where it
+--     means Meteorology.
+--
+-- RESULT: 346 rows, 282 (82%) described, no duplicates.
+--
+-- CONFIRMED ABSENT FROM THE HANDBOOK (not a scanning failure):
+--   * AEC 201 -- the Agricultural Economics description section opens at
+--     AEC 202. Verified directly on book p. 12.
+--   * ANS 402 -- printed as a heading inside the description section on
+--     p. 40 with no paragraph beneath it; ANS 411 follows immediately. A
+--     typesetting omission in the source.
+--   * HND 273 -- the HND description series runs 262 -> 311, and no 273 row
+--     appears in any HND curriculum table.
+--
+-- OPEN QUESTIONS DELIBERATELY LEFT FOR THE USER (not auto-applied, since each
+-- would assert a description under a code the book never prints it under, or
+-- delete a row on inference):
+--   1. Code-variant pairs, same department and level, near-identical titles:
+--        AEX 132 (bare) vs AEX 102 (described) -- identical title
+--        AEX 513 (bare) vs AEX 521 (described)
+--        AEX 517 (bare) vs AEX 541 (described)
+--      Curriculum tables cite one number, the description section prints
+--      another -- most likely a renumbering between handbook editions.
+--   2. FVM 433 (Crop Science) and PVM 433 (Animal Science) carry the
+--      identical title "Animal Health and Management" at the same level; the
+--      scans show FVM as the printed prefix, so PVM 433 may be a misread.
+--
+-- Book pages absent from the PDF entirely: 16-18, 32-34, 44-46, 58-60,
+-- 74-80, 94-96, 108-113.
+-- =============================================================================
