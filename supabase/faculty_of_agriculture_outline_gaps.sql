@@ -146,3 +146,43 @@
 --
 -- FINAL: 346 rows, 286 (83%) described, 0 duplicates.
 -- -----------------------------------------------------------------------------
+
+-- =============================================================================
+-- THIRD PASS: legacy course codes in the handbook
+-- =============================================================================
+-- The user pointed out that "MTH 111" in this handbook is the course the rest
+-- of the app (and UNN today) calls MTH 101. That turned out to be one instance
+-- of a general pattern: this handbook edition uses superseded or misread codes
+-- for courses that already exist, described, under their current codes.
+--
+-- MTH 111 -> MTH 101 "Elementary Mathematics I":
+--   Crop Science and Soil Science each carried BOTH MTH 101 (described) and a
+--   blank MTH 111 at 100 Level -- the same course listed twice. Those 2
+--   duplicates were deleted. The other 2 rows (Animal Science, Home Science &
+--   Management) were the only maths entry for their department, so they were
+--   renamed to MTH 101 and given the canonical description (445 chars, the
+--   text 13 of 25 existing MTH 101 rows already carry).
+--
+-- Applied on the same principle, each an exact title match:
+--   AIC 532 -> AEC 532 "Agricultural Cooperatives" (Animal Science 500L):
+--     renamed and filled. AIC is a misread of AEC.
+--   AEC 452 -> AEC 422 "Farm Management and Accounting Practice" (Animal
+--     Science 400L): renamed and filled -- a renumbering, identical title.
+--   GS 102 (Crop Science 100L): deleted. It is the legacy code for Use of
+--     English II, and GST 114 already sat in the same department and level.
+--   AFC 101 (Soil Science 100L): deleted as a misread duplicate of AEC 101,
+--     same title, same department and level.
+--
+-- RESULT: 342 rows, 290 (85%) described, 0 duplicates.
+--
+-- STILL OPEN, not auto-applied (titles are close but not identical, so each
+-- would be an inference rather than a correction):
+--   AEX 412 "Extension Practice(s)"  vs  AEX 422 "Agricultural Extension
+--     Practices" (both 400L) -- likely the same course.
+--   AEX 515 "Agricultural Extension Administration"  vs  AEX 511 "Extension
+--     Administration, Organization and Supervision" (both 500L) -- probable.
+--   AEX 311 "Introduction to Agric. Extension & Rural Sociology" -- appears to
+--     merge two described courses, AEX 201 "Introduction to Agricultural
+--     Extension" and AEX 301 "Introduction to Rural Sociology". No single
+--     source description fits, so none was copied.
+-- =============================================================================
