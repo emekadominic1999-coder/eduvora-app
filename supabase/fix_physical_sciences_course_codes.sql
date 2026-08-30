@@ -1,0 +1,85 @@
+-- =============================================================================
+-- Course-code integrity audit, Faculty of Physical Sciences (in progress)
+-- =============================================================================
+-- Triggered by the user spotting PHY 107, PHY 105 and CHM 111 in the app and
+-- asking where they came from. Investigation found they predate this
+-- session (created 2026-08-13/15, contributor "Faculty of Engineering
+-- handbook"/"Department official website") -- generic labels I could not
+-- verify without the original source. The user's standing instruction going
+-- forward: every course in the app must trace to something they actually
+-- uploaded, or to UNN's real website -- nothing assumed.
+--
+-- STEP 1 -- the three flagged codes. Verified directly against UNN's own
+-- Electronic Engineering department page (ece.unn.edu.ng/first-year-courses/):
+-- CHM 111, PHY 105 and PHY 107 do not exist in the real Engineering
+-- first-year curriculum (real codes are CHM 101/112/122/171, PHY 116/121/
+-- 124/195). Deleted 5 rows: PHY 105 and PHY 107 under Civil Engineering and
+-- Electronic Engineering, CHM 111 under Civil Engineering.
+--
+-- STEP 2 -- Physics and Astronomy department, verified against
+-- physicalscs.unn.edu.ng/physics-and-astronomy-department-course-modules/:
+--   MTH 101/102/103 -> MTH 111/121/122 ("Elementary/General Mathematics
+--     I/II/III"). Important: this is NOT the same "MTH 111 = MTH 101" legacy
+--     mapping established earlier for the Faculty of Agriculture handbook --
+--     UNN genuinely runs parallel course codes per faculty for equivalent
+--     content (the same pattern already known from the PHY 111/115/121
+--     bank families). Applying one faculty's real numbering to another
+--     faculty without checking is exactly the kind of assumption the user
+--     told us to stop making.
+--   PHY 242/243 -> PHY 241/242: code AND semester were both wrong. The real
+--     page has PHY 241 "Waves" (first semester) and PHY 242 "Physical
+--     Optics" (second semester); the database had them one number and one
+--     semester off in both directions.
+--
+-- STEP 3 -- Mathematics department, verified against the same source (the
+-- Mathematics course-module page independently lists the identical
+-- MTH 111/121/122 first-year codes, corroborating step 2's mapping). Applied
+-- the same MTH 101/102/103 -> 111/121/122 fix to the Mathematics department.
+--
+-- STEP 4 -- Statistics ancillary courses (STA 1xx), verified against UNN
+-- Statistics Department's own official course-module document (fetched
+-- directly from statistics.unn.edu.ng, not a search summary). Ground truth:
+--   STA 111 Probability I, STA 112 Probability II,
+--   STA 131 Inference I,   STA 132 Inference II,   STA 172 Statistical
+--   Computing I.
+-- The database had these shuffled onto the wrong codes identically across
+-- every department that carried them (Computer Science, Mathematics,
+-- Statistics, Economics) -- one systemic error, propagated by cross-
+-- referencing from a single bad source rather than four independent
+-- mistakes. Fixed in dependency order (vacating each target code before
+-- filling it) by matching on title, not department, so the fix landed
+-- everywhere the error had spread:
+--   STA 132 "Statistical Computing[ I]" -> STA 172         (2 rows)
+--   STA 122 "Inference II"              -> STA 132         (3 rows)
+--   STA 111 "Inference I"               -> STA 131         (3 rows)
+--   STA 113 "Probability I"             -> STA 111         (2 rows)
+--
+-- ONE ROW LEFT UNRESOLVED: Economics' STA 132 "Laboratory for Inference II"
+-- collided with the STA122->STA132 move above and was skipped rather than
+-- overwritten -- "Laboratory for Inference II" doesn't match anything in
+-- the verified source document, so it needs its own check before touching.
+-- Economics also still needs its own department page verified independently
+-- (only cross-checked here via the shared STA ancillary courses).
+--
+-- FLAGGED, NOT YET RESOLVED (need more evidence before acting):
+--   PHY 382 -- database says "An Introduction to Astronomy", one fetch of
+--     the Physics page said "Nanoscience and Nanotechnology"; a follow-up
+--     search didn't resolve it, left alone rather than guess.
+--   GLG 211 vs GEOL 211 (Crystallography) -- prefix mismatch, not yet
+--     checked against Geology's own page.
+--   Computer Science and Geoinformatics & Surveying each carry their own
+--     "PHY 242" with yet another different title again ("Waves" and
+--     "Geometric Optics" respectively) -- both are 200-level Physics-major
+--     courses per the real page's own "Service Courses" vs major-programme
+--     split, so neither should likely be an ancillary requirement for those
+--     departments at all. Needs each department's own page checked.
+--
+-- STILL TO AUDIT in Faculty of Physical Sciences: Computer Science, Pure
+-- and Industrial Chemistry, Geology, and Economics' own department page.
+-- This file will be extended as that work continues -- the audit covers
+-- every faculty, not just this one, per the user's instruction to check
+-- everything "from day one."
+--
+-- Applied live via direct psycopg2 scripts -- this file is the durable
+-- record, not a re-runnable script.
+-- =============================================================================
