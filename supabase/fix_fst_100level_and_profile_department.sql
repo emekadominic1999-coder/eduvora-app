@@ -1,0 +1,56 @@
+-- =============================================================================
+-- Fix: Food Science & Technology showed no course outline for a 100 Level
+-- student, and the underlying account's own department string was broken.
+-- =============================================================================
+-- The user reported seeing no course outline on their own account (Food
+-- Science & Technology, 100 Level). Two independent bugs were stacked:
+--
+-- BUG 1 -- profile department string mismatch. The account's `profiles.department`
+-- was 'Food Science and Technology' (the word "and"), while every row in
+-- course_outlines -- and the app's own hardcoded department picker in
+-- lib/core/data/academic_structure.dart -- uses 'Food Science & Technology'
+-- (an ampersand). CourseRepository._fetch matches department with a plain
+-- .eq(), so the mismatch alone returned zero rows regardless of what existed.
+-- Fixed by updating the one affected profile row to the canonical spelling.
+--
+-- BUG 2 -- a real, separate content gap. Even with the spelling fixed, Food
+-- Science & Technology had ZERO rows at 100 Level (only 200/400/500 existed).
+-- The Faculty of Agriculture handbook's own FST First Year curriculum table
+-- (book p.61) had never been extracted in any earlier pass over that PDF --
+-- unlike the ancillary-course gaps fixed previously, this was the
+-- department's OWN first-year table, not a borrowed elective.
+--
+-- Inserted the 15 courses that table actually lists, department='Food
+-- Science & Technology', level='100 Level':
+--   First semester (19 units): CHM 101, CHM 171, BIO 151, MTH 101 (book
+--     prints "MTH 111" here; inserted directly as MTH 101 per the earlier,
+--     separately-confirmed correction that this handbook's MTH 111 is the
+--     course now called MTH 101 everywhere else in the app), MTH 121,
+--     PHY 101, PHY 191, GST 111.
+--   Second semester (15 units): FST 102 (FST's own major course), CHM 112,
+--     CHM 122, MTH 122, PHY 102, TED 154, GST 114.
+--
+-- Descriptions were filled by cross-referencing the same course code's real
+-- description from wherever it already exists elsewhere in course_outlines
+-- (exact code match first, falling back to an exact course-title match),
+-- per the standing ancillary cross-referencing rule. Two codes had no
+-- description anywhere in the table and were left blank rather than
+-- fabricated: BIO 151 (General Biology I), TED 154 (Metal Work
+-- Fundamentals).
+--
+-- One cross-reference pull was caught and corrected before it shipped: the
+-- first attempt for GST 111 matched on course code alone and grabbed a
+-- differently-labelled row's text. Re-checked directly and it turned out to
+-- be a harmless pre-existing quirk already present throughout the app --
+-- GST 111 carries several cosmetic title variants across different
+-- departments ("Use of English I", "Study Skills and Basic Research
+-- Methods", "Communication in English I") that all correctly hold the same
+-- underlying description content -- not a new error introduced here.
+--
+-- RESULT: profiles row corrected (1 row). course_outlines: Food Science &
+-- Technology now has 15 rows at 100 Level (was 0), 42 rows total across the
+-- department.
+--
+-- Applied live via direct psycopg2 scripts -- this file is the durable
+-- record, not a re-runnable script.
+-- =============================================================================
