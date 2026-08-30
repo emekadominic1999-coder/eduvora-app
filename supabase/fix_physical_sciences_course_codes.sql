@@ -83,3 +83,39 @@
 -- Applied live via direct psycopg2 scripts -- this file is the durable
 -- record, not a re-runnable script.
 -- =============================================================================
+
+-- -----------------------------------------------------------------------------
+-- STEP 5 -- database-wide MTH 101/102/103 -> 111/121/122 fix, and an
+-- important correction to Faculty of Agriculture.
+-- -----------------------------------------------------------------------------
+-- After confirming the MTH code mismatch independently in Physics and
+-- Astronomy, Mathematics, and Computer Science (three separate official
+-- UNN documents all agreeing on MTH 111/121/122), checked how far MTH
+-- 101/102/103 spread: 24+ departments across nearly every science and
+-- engineering faculty. Applied the same fix database-wide (47 rows).
+--
+-- This directly reverted a PRIOR, deliberate correction: earlier in this
+-- project the user personally identified that the Faculty of Agriculture
+-- handbook's "MTH 111" corresponds to what Agriculture calls "MTH 101" --
+-- and Food Science & Technology's rows (among others) had been set to
+-- 101/102/103 specifically on that instruction. The mass fix silently
+-- undid it for every Faculty of Agriculture department that had it.
+--
+-- Caught before this went further, flagged to the user directly rather
+-- than assumed either way, and confirmed: the Agriculture-specific
+-- 101/102/103 correction stands. Reverted the 7 affected rows (Animal
+-- Science, Crop Science, Food Science & Technology x3, Home Science &
+-- Management, Soil Science) back to MTH 101/102/103.
+--
+-- "Agricultural and Bioresources Engineering" was deliberately NOT
+-- reverted -- despite its content originating from the same Agriculture
+-- handbook, its faculty tag is 'Faculty of Engineering' (it's an
+-- administratively real Engineering department), so it correctly follows
+-- Engineering's MTH 111/121/122 numbering like Civil/Electrical/Electronic
+-- Engineering do, not Agriculture's.
+--
+-- Net effect: MTH 111/121/122 is now correct everywhere EXCEPT the 7
+-- Faculty of Agriculture rows, which correctly use MTH 101/102/103 as a
+-- genuine faculty-specific parallel code, confirmed twice now by the user
+-- directly.
+-- -----------------------------------------------------------------------------
