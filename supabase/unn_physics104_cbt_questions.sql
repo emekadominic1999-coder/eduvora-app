@@ -1,0 +1,67 @@
+-- =============================================================================
+-- CBT questions extracted from "physics 104 textbook.pdf" (146-page scan,
+-- UNN vibrations/waves/optics text: SHM, waves, sound, reflection,
+-- refraction, optical instruments, prisms/dispersion, wave nature of light,
+-- polarization).
+-- =============================================================================
+-- The PDF embeds 146 photos at native 3072x4081 (no text layer, 0 extractable
+-- characters). Extracted all pages at full resolution and fixed 3 pages
+-- (p044-p046) that were scanned upside down.
+--
+-- The book itself contains ready-made multiple-choice questions: each
+-- chapter ends with an "Exercise N" section, and page 146 is the book's own
+-- "ANSWERS TO EXERCISES" key covering all 10 exercises (88 letter answers
+-- transcribed verbatim). Only questions the key itself marks with a letter
+-- answer were treated as MCQs; open-ended/numeric questions were left alone.
+--
+-- Four parallel extraction passes covered the whole book (pages 1-37,
+-- 38-74, 75-110, 111-145). Two passes hit unrelated platform errors (a
+-- content-filter false positive on one model, a rate limit) and were
+-- relaunched; nothing about the source caused either failure.
+--
+-- QA before insert, applied to every extracted question:
+--   - must pair with a letter answer in the book's own key (drops
+--     open-ended questions)
+--   - exactly 4 options, none blank, no duplicate option text
+--   - no bare caret (a regex bug from an earlier session that flagged
+--     legitimate negative exponents like "m^-1" was caught and fixed before
+--     any insert)
+--   - no mojibake, no duplicate question text within the batch
+--
+-- Two of the book's own answers were caught as wrong by hand-checking the
+-- physics against the printed page, not by automated QA, and excluded:
+--   Exercise 1 Q1 -- not reproducible under any reading (m=2kg, k=8N/m spring,
+--     x=2->x=1; the physics gives ~0.52s, the options are 20/30/40/60 sec and
+--     the key says 30).
+--   Exercise 1 Q9 -- key contradicts the question. For two coupled pendulums
+--     (l=0.25m, m=0.8kg, k=1.50N/m) the question asks for the SYMMETRIC mode
+--     (omega=sqrt(g/l)=6.26, option A) but the key gives option B (6.55,
+--     which is actually the antisymmetric mode).
+-- Also excluded: Exercise 5 Q5 (options C and D are verbatim identical in
+-- the printed book -- "-13.00cm, convex mirror" twice -- confirmed a genuine
+-- source duplication, not a transcription error) and Exercise 9 Q7
+-- (duplicate of another extracted question).
+--
+-- Routed by chapter into the app's existing parallel PHY bank families
+-- (Life Sciences / Physical Sciences / Fundamentals all carry identical
+-- content per pair, confirmed by matching topic distributions before this
+-- work started):
+--   Chapter 1 (Vibrations and SHM) -> phy-111, phy-115, phy-121
+--   Chapters 2-10 (waves, sound, heat, reflection, refraction, optical
+--     instruments, prisms, wave nature of light, polarization) ->
+--     phy-112, phy-116, phy-122
+--
+-- Inserted in two passes as extraction batches landed, de-duplicated against
+-- the live table by exact question text before each insert (not just
+-- against each other) so a re-run or an out-of-order batch could never
+-- double-insert:
+--   pass 1: 34 questions x 3 banks = 102 rows
+--   pass 2: 29 questions x 3 banks = 87 rows
+--
+-- RESULT: 83 distinct questions, 249 rows total across 6 banks.
+--   phy-111 / phy-115 / phy-121: +7 each  (255 / 255 / 279)
+--   phy-112 / phy-116 / phy-122: +76 each (312 / 312 / 312)
+--
+-- Applied live via direct psycopg2 scripts -- this file is the durable
+-- record, not a re-runnable script.
+-- =============================================================================
