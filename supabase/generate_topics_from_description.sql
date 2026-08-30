@@ -1,0 +1,47 @@
+-- =============================================================================
+-- Fix: "About this course" showed real content while "Course outline" showed
+-- "No outline added yet", for 316 rows.
+-- =============================================================================
+-- lib/features/courses/presentation/screens/course_detail_screen.dart renders
+-- two separate sections from two separate columns: "About this course" from
+-- `description` (course_detail_screen.dart:23), "Course outline" from the
+-- `topics` jsonb array (course_detail_screen.dart:42-63, gated on
+-- course.hasOutline). Filling `description` alone -- which is what every
+-- Faculty of Agriculture extraction pass this session did -- left `topics`
+-- empty, so the outline section stayed on its empty state even though the
+-- syllabus text was sitting right above it.
+--
+-- Found 316 rows database-wide with a real description (>=40 chars) and an
+-- empty topics array. 311 were this session's own Faculty of Agriculture
+-- work (245 across the seven Agriculture departments, 66 under "Agricultural
+-- and Bioresources Engineering", an ancillary department populated by the
+-- same handbook). The other 5 were all the same course_outlines row for
+-- "CVE 221" duplicated across five unrelated departments, from an earlier
+-- session's Engineering extraction pass.
+--
+-- FIX: mechanically derive `topics` from the existing `description` text --
+-- no new content invented, nothing reworded. Split on sentence boundaries;
+-- long semicolon-joined sentences (common in this handbook, e.g. "Chemical
+-- composition of soils...; soil acidity and liming; mineral nutrition...")
+-- were further split on semicolons. A short trailing fragment (<15 chars)
+-- was merged into the previous topic rather than left as its own line.
+--
+-- Before applying, a random sample was hand-reviewed and one real quality
+-- problem was caught: a few descriptions (CVE 221 across all 5 of its
+-- duplicate rows, plus fragments inside ANS 542, ANS 241, ANS 541, COS 101,
+-- CS 101) carry provenance/caveat commentary written into the description
+-- field by an earlier session's extraction pass -- e.g. "The programme
+-- table's left edge is cut off by the book's binding..." and a bare
+-- "Elective" -- which would have become nonsense outline bullets. Added a
+-- filter to strip such commentary and single filler words before splitting.
+-- The 5 CVE 221 rows had NOTHING left after filtering (the description was
+-- entirely commentary, no real syllabus text) and were correctly left with
+-- no topics rather than fabricating any.
+--
+-- RESULT: 311 of 316 rows given a topics array; 5 (all CVE 221) skipped, with
+-- description-without-topics gap left as the honest signal that row still
+-- needs a real source.
+--
+-- Applied live via direct psycopg2 script -- this file is the durable
+-- record, not a re-runnable script.
+-- =============================================================================
