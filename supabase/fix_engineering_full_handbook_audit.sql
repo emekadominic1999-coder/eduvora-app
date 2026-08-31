@@ -1,0 +1,79 @@
+-- =============================================================================
+-- Full Faculty of Engineering handbook audit (all 8 departments, 143 pages)
+-- =============================================================================
+-- The user uploaded a second, complete Faculty of Engineering handbook
+-- (separate from the earlier Mechanical-only one) and asked for it to be
+-- checked across every department it covers. Extracted all 143 pages at
+-- native resolution and dispatched four parallel audits comparing every
+-- course row against the live database.
+--
+-- CONFIRMED AND APPLIED:
+--   ABE (Agricultural and Bioresources Engineering): GST 212 was mistitled
+--     "Humanities II" -- retitled to "Nigerian Peoples and Culture", matching
+--     the GSP 208 -> GST 212 mapping already cross-verified across many
+--     other departments this session (Public Administration, Psychology,
+--     Statistics, etc.). ABE was the outlier, not the rest of the app.
+--   Biomedical Engineering: was missing GST 212 entirely at 300L second
+--     semester (book p.71) -- inserted. Also had "BME 532 Stem Cell
+--     Engineering" under the wrong code -- corrected to BME 534 (book p.84,
+--     verified twice).
+--   Metallurgical and Materials Engineering: 9 rows at 500 Level carried the
+--     literal placeholder title "Elective Course" instead of their real
+--     names -- filled in from the book's own elective list (p.199) and
+--     cross-checked against the description section (pp.210-213): MEC 522
+--     Manufacturing and Tools Engineering, MME 521 Tools Steels, MME 538
+--     Advanced Phase Transformations and Heat Treatment, MME 546 Powder
+--     Metallurgy, MME 552 Coal and Coke Technology, MME 556 Refractory
+--     Materials and Industrial Furnaces, MME 574 Paper Production
+--     Technology, MME 582 Solid State Materials & Electronics, MME 584
+--     Special Materials.
+--   Mechatronic Engineering: fully clean across all 5 years, both semesters
+--     -- zero findings.
+--
+-- OPEN, NOT RESOLVED -- genuine conflicts between the user's own primary
+-- sources, put to the user rather than guessed:
+--
+--   1. PHY 107 / CHM 111 / PHY 105 for Civil Engineering. Earlier this
+--      session these exact three codes were DELETED from Civil and
+--      Electronic Engineering after the user asked where they came from --
+--      verified at the time against UNN's live official Electronic
+--      Engineering "First Year Courses" page, which does not list them.
+--      This NEW handbook's own Civil Engineering chapter (book p.89)
+--      explicitly lists all three as real First Year courses. Two of the
+--      user's own primary sources now contradict each other on the same
+--      three codes. Not reinstated pending the user's decision on which
+--      source should win.
+--
+--   2. Mechanical Engineering's own course prefix. The standalone
+--      Mechanical Engineering handbook (processed earlier) consistently
+--      used "MEE" (confirmed by direct reads of its First Year table and
+--      Service Courses section: "MEE 181 Technical Drawing I", "MEE 101 -
+--      Technical Drawing I") -- that prefix is what the database currently
+--      uses throughout Mechanical Engineering. This NEW combined handbook's
+--      Mechanical Engineering chapter uses "MEC" in its own outline tables
+--      and "ME" in its own descriptions -- "MEE" appears nowhere in it.
+--      Electronic Engineering's chapter (in this same new handbook)
+--      independently corroborates "MEC" for the two courses it shares with
+--      Mechanical (MEC 211, MEC 261). Not renamed pending the user's
+--      decision -- this would touch the majority of Mechanical
+--      Engineering's ~100 rows if applied.
+--
+--   3. Two Metallurgical and Materials Engineering codes where the SAME
+--      book contradicts itself between its own elective table and its own
+--      description section: "Manufacturing and Tools Engineering" (table:
+--      MEC 522, description: MME 522) and "Paper Production Technology"
+--      (table: MME 574, description: MME 572). The database currently
+--      follows each course's elective-table code. Left as-is; there is no
+--      external evidence to break the tie.
+--
+--   4. Ten Mechanical Engineering fifth-year electives the audit found
+--      sitting at 500 Level first semester where the book places them in
+--      second semester, plus a same-number collision (562 used for both
+--      Refrigeration and Nuclear Engineering) and a 541/543 swap (Systems
+--      Engineering vs Vibrations and Control) -- all reported in terms of
+--      the disputed MEC/MEE prefix, so resolving them depends on item 2
+--      above being settled first.
+--
+-- Applied live via direct psycopg2 scripts -- this file is the durable
+-- record, not a re-runnable script.
+-- =============================================================================
