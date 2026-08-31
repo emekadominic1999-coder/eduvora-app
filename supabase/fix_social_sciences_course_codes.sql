@@ -102,16 +102,42 @@
 --   as GST 311 under the app's established GSP->GST renaming convention --
 --   not a real gap.
 --
--- POLITICAL SCIENCE: only a tail page of its course descriptions fell
--- within the audited page ranges; its own curriculum timetable was not
--- reached. One possibly-missing course was flagged (PSC 453, "Politics of
--- Human Rights, Conflict Resolution & Management") but its level/semester
--- could not be confirmed from the pages read, so it was NOT inserted --
--- needs its own dedicated pass.
+-- POLITICAL SCIENCE (verified against book pp.93-103, 112-136 -- a second
+-- pass reached its curriculum tables after the first pass only saw a tail
+-- description page):
+--   Missing and inserted: PSC 453 "Politics of Human Rights, Conflict
+--     Resolution & Management" (400L 1st sem, confirmed on book p.115),
+--     plus the standard CED 341/342 pair (Introduction to Entrepreneurship
+--     / Business Development and Management, 300L) that every other
+--     department in this faculty already carries.
+--   Deliberately NOT inserted: PSC 335, 341, 343 and the electives PSC 333
+--     and 351. Book p.132 (the page carrying their descriptions) is fully
+--     motion-blurred, and their curriculum-table page (p.116) was never
+--     photographed at all -- only a cut-off strip of it survived at the
+--     edge of an adjacent photo, with codes legible but titles truncated.
+--     Rather than guess a title, these were left for a re-shot photo.
+--   Everything else across all four years checked out clean -- codes,
+--     levels, and semesters all matched the book.
 --
--- PHILOSOPHY: not yet reached by any audit pass in this round -- its
--- section of the book falls outside all four page ranges searched so far
--- and still needs auditing directly.
+-- PHILOSOPHY (verified against book p.96 curriculum table, pp.99-103
+-- descriptions):
+--   The 300-level table was scrambled relative to the database. Real
+--   mapping per the book: PHIL 331 "Philosophy of Mathematics" (1st sem),
+--   PHIL 336 "Further Logic" (2nd sem), PHIL 346 "Marxist Philosophy"
+--   (2nd sem), PHIL 362 "Philosophy of Development II" (2nd sem). The
+--   database had Philosophy of Mathematics sitting under PHIL 346 in the
+--   wrong semester, Marxist Philosophy sitting under PHIL 336, no PHIL 331
+--   at all, "Further Logic" missing entirely, and PHIL 362 mislabeled
+--   "Political and Social Philosophy" (not a title the book uses for this
+--   course at all). Untangled in dependency order: moved the existing
+--   PHIL 346 row to PHIL 331 with the correct semester, moved the existing
+--   PHIL 336 row into the now-free PHIL 346, inserted a fresh PHIL 336 for
+--   "Further Logic", and retitled PHIL 362 to match the book.
+--   The book contradicts itself elsewhere between its curriculum tables
+--   and its description section for roughly 14 other Philosophy courses
+--   (e.g. table "PHIL 411" vs description "PHIL 414"); the database
+--   already follows the tables in every one of those cases, which is the
+--   right call, so none of them were touched.
 --
 -- Applied live via direct psycopg2 scripts -- this file is the durable
 -- record, not a re-runnable script.
