@@ -45,3 +45,25 @@
 -- Applied live via direct psycopg2 script -- this file is the durable
 -- record, not a re-runnable script.
 -- =============================================================================
+
+-- -----------------------------------------------------------------------------
+-- SECOND PASS: the same gap reopened after every insert batch since the
+-- first pass, because new rows were inserted with topics=[] and the
+-- generation script was never re-run against them.
+-- -----------------------------------------------------------------------------
+-- The user caught this directly in the app: COS 101 under Food Science and
+-- Technology (inserted in today's FST-missing-levels fix) had a full "About
+-- this course" description but an empty "Course outline". Re-ran the same
+-- split-on-sentence-boundary generation across the whole table, catching
+-- every row inserted since the first pass (FST's Second/Third/Fourth/Fifth
+-- Year insert, the Agricultural Extension and Soil Science gap-fill, and
+-- Biomedical/Electrical/Civil/Electronic Engineering's First Year fixes).
+--
+-- RESULT: 71 more rows given topics. The same 5 CVE 221 duplicate rows
+-- (description is entirely provenance commentary, no real content) remain
+-- correctly topic-less rather than fabricated.
+--
+-- This needs to become routine, not a one-off: any future insert of a row
+-- with a real description should get its topics generated in the same pass,
+-- not as an afterthought once a user notices it's missing.
+-- -----------------------------------------------------------------------------
