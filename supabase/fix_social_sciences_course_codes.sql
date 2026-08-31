@@ -1,0 +1,118 @@
+-- =============================================================================
+-- Course-code integrity audit, Faculty of Social Sciences
+-- =============================================================================
+-- Continuation of the Physical Sciences audit, extended per the user's
+-- instruction to check every faculty against what they actually uploaded.
+-- Source: "faculty of social science.pdf" (144 pages, the user's own
+-- upload), covering all 8 Faculty of Social Sciences departments:
+-- Economics, Geography, Philosophy, Political Science, Psychology, Public
+-- Administration and Local Government, Religion and Cultural Studies,
+-- Social Work.
+--
+-- Extracted all 144 pages at native resolution and dispatched four parallel
+-- audits, each comparing every course row in its page range against the
+-- live database (dumped per-department beforehand) rather than blindly
+-- re-extracting -- the same discrepancy-first approach used for Physical
+-- Sciences. Findings below are organized by department.
+--
+-- ECONOMICS (verified against book pp.13-17, 23-45):
+--   Missing entirely: ECO 304 "Intermediate Macroeconomic Theory II"
+--     (300L 2nd sem) -- the database had only ECO 303 "Theory I" sitting in
+--     second semester, effectively merging two real courses into one
+--     misplaced row. Split them: ECO 303 moved to first semester (where it
+--     belongs, pairing with ECO 304 as first written first), ECO 304
+--     inserted fresh.
+--   Missing: ECO 451 "Energy Economics" (400L 1st sem elective), confirmed
+--     twice in the book (curriculum table p.17, full description p.37).
+--   Wrong semester (book says first, database had second) on 8 courses:
+--     ECO 223, 271, 273 (200L), 333, 351, 363 (300L), 453, 471 (400L).
+--
+-- GEOGRAPHY (verified against book pp.55-61, 67-72):
+--   The ENTIRE 300L first-semester elective block was missing -- 6 courses
+--   never made it into the database: GEO 311 Principles of Hydrology,
+--   GEO 313 Runoff Processes in Drainage Basin, GEO 335 Environmental
+--   Remote Sensing, GEO 337 Aerial Photo Interpretation, GEO 353 Land
+--   Resource Evaluation, GEO 363 Soil Conservation and Protection.
+--   Also missing: GEO 431 "Advanced Cartographic Methods I" (400L major --
+--   the database only had its Part II, GEO 432) and GEO 461 "Environmental
+--   Protection and Management" (400L major).
+--   Wrong code: GEO 483 "The Developing World" -> GEO 453. GEO 483 never
+--     appears anywhere in the book; GEO 453 never appeared in the database.
+--     The already-correct companion course GEO 454 "The Developed World"
+--     confirms 453/454 as the intended pair.
+--   ECO 203 was missing from Geography's own elective list. The book's
+--     title for it here is internally garbled ("Micro Economic Theory I",
+--     contradicting Economics' own tables, which define ECO 203 as
+--     Macroeconomic Theory I) -- inserted using Economics' real,
+--     already-verified title and description per the standing ancillary
+--     cross-referencing rule, not the garbled title printed on this page.
+--
+-- PSYCHOLOGY (verified against book pp.143-147, 153-162):
+--   Missing: PSY 353 "Community Psychology" (300L 1st sem elective).
+--   Wrong code: VTE 133 -> VTE 135 "Principles of Business & Marketing
+--     Education" (100L 2nd sem elective).
+--   Wrong semester: PSY 442 "Psychology of Union Management Relations" --
+--     database had it in first semester; the book's own first-semester
+--     Year Four list doesn't include it at all, only the second-semester
+--     list does.
+--
+-- PUBLIC ADMINISTRATION AND LOCAL GOVERNMENT (verified against book
+-- pp.170-174, 175-183):
+--   Wrong code, most consequential finding in this department: the
+--   database had "PUB 241: Introduction to Financial Accounting I", but
+--   the book is explicit (both the curriculum table and two separate
+--   description pages) that PUB 241 is "Introduction to Cost and
+--   Management Accounting" and PUB 243 is Financial Accounting I. One
+--   wrong code had silently deleted a whole course from the outline.
+--   Moved the existing row to PUB 243, then inserted PUB 241 fresh with
+--   its real title.
+--   Also missing: PUB 244 "Introduction to Business" (200L 2nd sem major),
+--   and two Year-Two-first-semester electives, PHL 131 "Introduction to
+--   Logic and Clear Thought" and PSY 241 "Introduction to Social
+--   Psychology" (the latter already existed correctly under Psychology
+--   itself -- just wasn't carried into Public Administration's own
+--   outline as its curriculum requires).
+--   Wrong level: PUB 420 "Comparative Public Administration" was at 300L;
+--     the book puts it in Year Four, not Year Three. SOC 102 and EDU 102
+--     were both at 100L when the book places them as Year Two second-
+--     semester electives.
+--   Flagged, not acted on: the book prints "PHL 101" where the database
+--     has "PHIL 101" for the same Introduction to Philosophy course --
+--     left alone pending a check against Philosophy's own listing, since
+--     it's a Philosophy-owned course cross-referenced here.
+--
+-- RELIGION AND CULTURAL STUDIES (verified against book pp.300-312, the
+-- description section -- this range didn't include the department's own
+-- timetable, so semester placement could not be independently checked):
+--   Missing: RCS 201 "History of Religions", RCS 202 "Basic Concepts in
+--     the Study of Religion and Society", RCS 208 "Introduction to
+--     Philosophy of Religion" -- all printed under 200 Level on book p.302.
+--   Wrong code: RCS 432 -> RCS 422 "New Testament Texts II" (book p.310),
+--     corroborated by the correctly-stored RCS 324 "New Testament Text I"
+--     and by RCS 431 already existing separately and correctly.
+--   Duplicate: the database had both RCS 301 and RCS 341 titled
+--     "Religious Interpretation of Society" -- only RCS 341 appears
+--     anywhere in the book. Deleted the phantom RCS 301.
+--
+-- SOCIAL WORK (verified against book pp.319-343, full four-year table):
+--   Every SWK code checked out clean against both the timetable and
+--   description sections -- no missing courses, no wrong codes, no wrong
+--   level/semester. The one apparent gap the audit flagged (GSP 201 "The
+--   Social Sciences" at 200L) turned out to already be correctly present
+--   as GST 311 under the app's established GSP->GST renaming convention --
+--   not a real gap.
+--
+-- POLITICAL SCIENCE: only a tail page of its course descriptions fell
+-- within the audited page ranges; its own curriculum timetable was not
+-- reached. One possibly-missing course was flagged (PSC 453, "Politics of
+-- Human Rights, Conflict Resolution & Management") but its level/semester
+-- could not be confirmed from the pages read, so it was NOT inserted --
+-- needs its own dedicated pass.
+--
+-- PHILOSOPHY: not yet reached by any audit pass in this round -- its
+-- section of the book falls outside all four page ranges searched so far
+-- and still needs auditing directly.
+--
+-- Applied live via direct psycopg2 scripts -- this file is the durable
+-- record, not a re-runnable script.
+-- =============================================================================
