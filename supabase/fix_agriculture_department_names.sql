@@ -1,0 +1,87 @@
+-- =============================================================================
+-- CRITICAL: Faculty of Agriculture used the wrong department name strings
+-- for the entire session's worth of work -- likely invisible to students.
+-- =============================================================================
+-- While auditing Mechanical Engineering, a routine grep of
+-- lib/core/data/academic_structure.dart surfaced a "universityFaculties"
+-- list with names that didn't match anything used all session. Tracing it
+-- properly found the REAL, live source: academic_structure.dart imports
+-- InstitutionFaculties from institution_faculties.dart, and
+-- facultiesForInstitution('University of Nigeria, Nsukka', ...) resolves to
+-- `unnFaculties` -- confirmed by directly tracing the onboarding screen's
+-- department dropdown (lib/features/onboarding/presentation/screens/
+-- onboarding_screen.dart:647-731), which reads `_faculty.departments`
+-- straight from `AcademicStructure.facultiesForInstitution(...)`. That list
+-- is the literal, exact set of strings a real student's department dropdown
+-- offers and saves to `profiles.department`.
+--
+-- unnFaculties' Faculty of Agriculture departments are:
+--   Agricultural Economics, Agricultural Extension, Animal Science,
+--   Crop Science, Food Science and Technology, Home Science and Management,
+--   Nutrition and Dietetics, Soil Science.
+--
+-- Every extraction pass this session (and course_outlines' pre-existing
+-- Agriculture rows) used different strings:
+--   'Agricultural Extension & Rural Development'  (should be 'Agricultural
+--     Extension' -- no "& Rural Development", not a real UNN department name)
+--   'Food Science & Technology'   (should be 'Food Science and Technology')
+--   'Home Science & Management'   (should be 'Home Science and Management')
+-- Since CourseRepository._fetch matches department with an exact .eq(), any
+-- row under the wrong string was invisible to every real student in that
+-- department, regardless of how accurate its content was. This makes the
+-- content-accuracy work in faculty_of_agriculture_outline_gaps.sql and
+-- fix_fst_100level_and_profile_department.sql correct in substance but
+-- silently unreachable until now.
+--
+-- CONFIRMING EVIDENCE this wasn't a guess: cbt_questions (a separate table,
+-- populated in part by an earlier, different session) already had a
+-- handful of rows correctly spelled 'Food Science and Technology',
+-- 'Home Science and Management', 'Agricultural Extension', and 'Nutrition
+-- and Dietetics' -- proof these are the app's actual established strings,
+-- not a new convention being introduced here.
+--
+-- FIXED: renamed all 3 mismatches across both tables.
+--   course_outlines: 25 rows (Agricultural Extension), 29 rows (Food
+--     Science and Technology), 54 rows (Home Science and Management).
+--   cbt_questions: the equivalent placeholder rows, plus two unrelated
+--     casing/typo variants caught in the same pass ('Animal Sciences' ->
+--     'Animal Science', 'Nutrition And Dietetics' -> 'Nutrition and
+--     Dietetics').
+--   No collisions -- the correct department strings had zero existing rows
+--     in course_outlines before this fix, confirmed before renaming.
+--
+-- ALSO REVERTED a mistake from earlier this session: the user's own
+-- profile had been changed from 'Food Science and Technology' to 'Food
+-- Science & Technology' in the belief that '&' was the app's canonical
+-- form (course_outlines used it pervasively at the time, and no one had
+-- yet traced the actual dropdown source). That was backwards -- 'Food
+-- Science and Technology' was correct all along. Reverted the profile back
+-- and confirmed live: the account now correctly sees 5 course rows at its
+-- level, matching what course_outlines actually has for Food Science and
+-- Technology 200 Level.
+--
+-- STILL OPEN, deliberately not resolved here: 'Nutrition and Dietetics' is
+-- a real, separate UNN department per unnFaculties, but has ZERO rows in
+-- course_outlines -- every HND-coded course this session extracted from
+-- the Faculty of Agriculture handbook was filed under 'Home Science and
+-- Management' instead, because the handbook's own chapter header covers
+-- both subjects together ("DEPARTMENT OF HOME SCIENCE, NUTRITION AND
+-- DIETETICS"). Whether some of those 54 rows should split out into
+-- 'Nutrition and Dietetics', and by what rule, needs the user's input
+-- before acting -- reallocating real course content on a guess is exactly
+-- the kind of assumption this whole audit exists to eliminate.
+--
+-- SCOPE CHECK PERFORMED: compared every department string in course_
+-- outlines against the complete unnFaculties list for all four faculties
+-- audited so far this session (Agriculture, Physical Sciences, Social
+-- Sciences, Engineering). Agriculture was the ONLY one with a mismatch --
+-- Physical Sciences, Social Sciences and Engineering all already used the
+-- exact real department strings. Faculties not yet audited (Biological
+-- Sciences, Education, Environmental Studies, Arts, Business
+-- Administration, Dentistry, Pharmaceutical Sciences, Veterinary Medicine)
+-- have not been checked against unnFaculties and may carry the same class
+-- of bug -- worth a dedicated pass.
+--
+-- Applied live via direct psycopg2 scripts -- this file is the durable
+-- record, not a re-runnable script.
+-- =============================================================================
