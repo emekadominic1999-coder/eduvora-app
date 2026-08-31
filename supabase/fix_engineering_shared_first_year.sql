@@ -1,0 +1,50 @@
+-- =============================================================================
+-- Fix: the shared Engineering First Year had wrong codes in three
+-- departments, and was missing entirely from a fourth.
+-- =============================================================================
+-- Per the user's request to check every faculty with an uploaded handbook,
+-- cross-referenced the First Year ancillary block (common to every UNN
+-- Engineering department per the user's own Mechanical Engineering
+-- handbook, Chapter 2) against all 8 Engineering departments.
+--
+-- Mechatronic, Metallurgical and Materials, and Agricultural and
+-- Bioresources Engineering already matched the confirmed table exactly --
+-- no changes needed.
+--
+-- Electrical Engineering: MTH 112 -> MTH 121 (Elementary Mathematics II
+--   was under the wrong code); a duplicate CHM 171 in second semester
+--   (should be a distinct course, Basic Principles of Organic Chemistry)
+--   -> CHM 122.
+--
+-- Civil Engineering, the most scrambled of the three: MTH 112 -> 121,
+--   MTH 113 -> 122, PHY 192 -> 195, PHY 109 -> 124, ENG 101/102 -> EGR
+--   101/102 (wrong prefix), CHM 121 -> 122, and a literal duplicate row
+--   -- "GST 111 Use of English (Cont'd)" sitting in second semester
+--   alongside first semester's real GST 111 -- corrected to GST 114.
+--
+-- Electronic Engineering: MTH 121 and MTH 112 had both the wrong code AND
+--   the wrong semester for each other (121 was titled "III" in first
+--   semester, 112 was titled "II" in second semester -- backwards on both
+--   counts). Swapped them into their real codes and semesters. Also
+--   PHY 192 -> 195, PHY 109 -> 124.
+--
+-- Biomedical Engineering: ZERO rows existed at 100 Level -- the entire
+--   First Year was missing. Inserted the full confirmed 16-course table.
+--
+-- Two Mechanical Engineering title fixes from the earlier handbook audit,
+-- applied in this same pass: MEE 563 corrected to "Automotive Engine
+-- Fundamentals" (was "Automotive Engineering Fundamentals" -- the book's
+-- own description is entirely about engines) and MEE 551 corrected to
+-- "Fluid Dynamics II".
+--
+-- NOT resolved: MEE 101 vs MEE 181, both "Technical Drawing I". The
+-- book's Chapter 3 "Service Courses" section prints MEE 101 specifically
+-- as the code offered to OTHER departments taking it as an elective/
+-- service course, while MEE 181 already sits correctly in Mechanical's own
+-- First Year table. Left both as-is rather than merge them on a guess --
+-- this looks like the same service-course-vs-major-course code split seen
+-- elsewhere in the database (e.g. PHY 111 vs PHY 121), not an error.
+--
+-- Applied live via direct psycopg2 scripts -- this file is the durable
+-- record, not a re-runnable script.
+-- =============================================================================
