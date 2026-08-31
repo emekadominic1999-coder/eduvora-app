@@ -1,0 +1,57 @@
+-- =============================================================================
+-- Fix: Food Science and Technology was missing almost its entire curriculum
+-- past First Year, plus two other departments' Second Year gaps applied.
+-- =============================================================================
+-- The user checked their own account's Second Year outline directly in the
+-- app and found the required ancillary courses missing -- confirmed against
+-- the Faculty of Agriculture handbook (book pp.61-63, Food Science and
+-- Technology's own Five Year Programme table): the department's ancillary
+-- courses had only ever been extracted for First Year (fixed in an earlier
+-- commit). Second Year onward was never done.
+--
+-- Checked all five levels against the book and found:
+--   200 Level: 5 major courses existed, 0 ancillary. Inserted 16 (CHM 221/
+--     222/232/273, STA 203/204, MCB 201, MEC 101, AGR 201, HND 211/212,
+--     COS 101/202, GST 311/312).
+--   300 Level: ZERO rows existed at all -- the entire Third Year was
+--     missing, majors included. Inserted all 16 courses from both semesters
+--     (FST 311/321/323/331/333/322/332/334 majors, plus CED 341/342,
+--     BCH 381, MCB 325, AEC 202, CSC 544, GST 211/212 ancillary).
+--   400 Level: only SIWES and Technical Writing existed. Inserted the 4
+--     missing majors (FST 411/421/423/433) and 4 ancillary courses
+--     (BCH 431, ANS 271, MCB 451, MCB 425).
+--   500 Level: inserted 3 missing majors (FST 521 Food Packaging
+--     Technology, FST 523/525 the two laboratory courses).
+--
+-- One item transcribed exactly as printed despite looking unusual: the book
+-- cites "CSc 544" as a Third-Year ancillary (a 500-level code inside a
+-- 300-level table) -- kept as printed rather than silently "corrected",
+-- since I have no independent evidence of what the intended code was.
+--
+-- RESULT: Food Science and Technology now has real coverage at every level
+-- (15/21/16/11/9 rows respectively), up from 15/5/0/3/6.
+--
+-- SEPARATE FIX applied in the same pass: a background agent had earlier
+-- found and transcribed Agricultural Extension's and Soil Science's Second
+-- Year tables (both were sitting at 1 row, same missing-ancillary pattern
+-- as FST) from the same handbook, but that data was never applied -- an
+-- urgent department-name audit interrupted the session before it could be.
+-- Applied now: 38 rows inserted (19 Agricultural Extension, 19 Soil
+-- Science), 1 already-present row skipped. Both departments now show 20
+-- rows at 200 Level, up from 1 each.
+--
+-- STILL THIN, not yet resolved:
+--   Agricultural Economics 100 Level (1 row) -- the handbook's First Year
+--     table for this department sits on book pages 1-9, which were never
+--     among the 88 photographed pages. Needs a new photo, not a re-read.
+--   Animal Science 200 Level (6 rows) and Soil Science 300/400/500 Level
+--     (4 rows each) -- not yet individually re-checked against the book;
+--     may be genuinely thin (smaller elective-heavy years) or may be the
+--     same missing-ancillary pattern. Worth a dedicated check.
+--   Home Science and Management 500 Level (0 rows) -- confirmed earlier
+--     this is NOT a bug: the book states this is a four-year programme,
+--     so no 500 Level exists to have courses.
+--
+-- Applied live via direct psycopg2 scripts -- this file is the durable
+-- record, not a re-runnable script.
+-- =============================================================================
