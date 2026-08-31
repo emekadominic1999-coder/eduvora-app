@@ -77,3 +77,22 @@
 -- Applied live via direct psycopg2 scripts -- this file is the durable
 -- record, not a re-runnable script.
 -- =============================================================================
+
+-- -----------------------------------------------------------------------------
+-- User's decisions on the two open conflicts above:
+--   1. PHY 107 / CHM 111 / PHY 105 for Civil Engineering: leave deleted.
+--      The live UNN page wins over this handbook for these three codes.
+--   2. Mechanical Engineering prefix: keep MEE. The standalone Mechanical
+--      handbook wins over this combined handbook's MEC/ME usage.
+--
+-- Applied the remaining confirmed, undisputed findings from the same audit
+-- pass (Civil and Electrical Engineering, book pp.75-129): four Biomedical
+-- Engineering title-wording corrections, matching the book's own phrasing
+-- exactly -- BME 306 "Technical Report Writing and Presentation", BME 421
+-- "Health Information Management System", BME 511 "Biomedical Devices and
+-- 3D Manufacturing Processes", BME 524 "Dental Material".
+--
+-- Civil Engineering (200-500 Level, all 8 remaining blocks) and Electrical
+-- Engineering (all 10 year/semester blocks) came back fully clean against
+-- this handbook -- no further changes.
+-- -----------------------------------------------------------------------------
