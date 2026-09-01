@@ -273,8 +273,19 @@ class SessionController extends ChangeNotifier {
   /// widget, acting on that immediately would blow away the whole
   /// navigation stack — including anything mid-flight, like a CBT exam in
   /// progress — and drop the student back at the sign-in screen for no
-  /// real reason. Only commit to signed-out once a short settle window
-  /// confirms `SupabaseService.currentSession` is genuinely gone too.
+  /// real reason. Only commit to signed-out once a settle window confirms
+  /// `SupabaseService.currentSession` is genuinely gone too.
+  ///
+  /// The settle window polls rather than checking once after a fixed delay:
+  /// a single 2-second check was too short in practice — real resume-from-
+  /// background timing (network reconnecting, secure storage unlocking,
+  /// Supabase's own internal token refresh) routinely runs past 2 seconds,
+  /// which was misread as a genuine sign-out and wiped `_profile`. That, in
+  /// turn, tore down and rebuilt the whole app (`SplashGate` swaps to
+  /// `AuthScreen` the instant `status` isn't `ready`), so a student on the
+  /// course outline screen would see it flash empty — no header, no
+  /// courses — every time they returned to the app, because the freshly
+  /// rebuilt screen re-fetched against a momentarily-null profile.
   void listenToAuthChanges() {
     if (!SupabaseService.isReady) return;
     SupabaseService.auth.onAuthStateChange.listen(
@@ -282,11 +293,17 @@ class SessionController extends ChangeNotifier {
         final sb.Session? session = event.session;
         if (session == null) {
           if (_status == AuthStatus.signedOut) return;
-          await Future<void>.delayed(const Duration(seconds: 2));
-          if (SupabaseService.currentSession != null) {
-            // The client recovered on its own (e.g. auto-refresh finished
-            // just after the stream fired) — nothing to do.
-            return;
+          const Duration pollInterval = Duration(milliseconds: 1000);
+          const int maxPolls = 8; // up to ~8s total, well past normal resume jitter
+          for (int i = 0; i < maxPolls; i++) {
+            await Future<void>.delayed(pollInterval);
+            if (SupabaseService.currentSession != null) {
+              // The client recovered on its own (e.g. auto-refresh finished
+              // a little after the stream fired) — nothing to do. Never
+              // touch `_profile` or `_status` on this path: it was correct
+              // before the transient blip and stays correct now.
+              return;
+            }
           }
           if (_status != AuthStatus.signedOut) {
             _profile = null;
