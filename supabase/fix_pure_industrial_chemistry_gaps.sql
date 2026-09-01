@@ -1,0 +1,38 @@
+-- =============================================================================
+-- Fix: Pure and Industrial Chemistry was missing most of its own 200/300/400
+-- Level major courses.
+-- =============================================================================
+-- The user uploaded a 4-page excerpt of the department's own Four-Year
+-- Standard Programme (book pp.192-195) and pointed out courses were
+-- missing. Checked every course row against the database directly.
+--
+-- First Year (p.192) was already correct -- every course present with real
+-- descriptions except BIO 151/152, which carry only a 9-character
+-- placeholder (Biology's own content, out of scope for this document).
+--
+-- Second Year (p.193) had almost its entire major-course sequence missing
+-- as rows, not just descriptions: CHM 221, 222, 232, 252, 272, 273, 274.
+-- Third Year (p.194) was missing CHM 301, 311, 321, 351 (first semester)
+-- and CHM 302, 312, 314, 322 (second semester). Fourth Year (p.195) was
+-- missing CHM 471 entirely, and had a genuine mix-up: the row stored as
+-- CHM 422 carried the title "Chemistry of Natural Products", but the book
+-- places that title under CHM 424 (a second-semester elective) and titles
+-- CHM 422 itself "Advanced Organic Chemistry II" -- a real major course
+-- that had no row of its own as a result.
+--
+-- Inserted 17 rows total. Seven came with real description text already
+-- transcribed from the user's earlier Combined Honours photo (book p.214),
+-- which happened to describe exactly these Second Year courses: CHM 221,
+-- 222, 232, 252, 272, 273, 274. The other ten (CHM 301, 311, 321, 351,
+-- 302, 312, 314, 322, 471, 424) were inserted as bare rows -- code, title,
+-- level, semester, units -- with no description, since this 4-page excerpt
+-- is only the curriculum table, not the course-description section. Fixed
+-- CHM 422's title to "Advanced Organic Chemistry II".
+--
+-- The user said more of this handbook is coming in further uploads --
+-- the ten bare rows above should get real descriptions once the
+-- department's own COURSE DESCRIPTION pages are provided.
+--
+-- Applied live via direct psycopg2 script -- this file is the durable
+-- record, not a re-runnable script.
+-- =============================================================================
