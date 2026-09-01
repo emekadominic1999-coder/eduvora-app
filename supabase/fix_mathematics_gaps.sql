@@ -1,0 +1,57 @@
+-- =============================================================================
+-- Mathematics department audit against the user's own uploaded handbook
+-- =============================================================================
+-- The user sent 4 pages of the Mathematics department's own "Standard
+-- Four-Year Programme" table (book pp.91, 92, 93, 94) as the reference for
+-- what the course outline should contain.
+--
+-- 100 Level (p.91) and 200 Level (p.92): fully clean -- every course in the
+-- book already existed in course_outlines with the correct code, level and
+-- semester. Only pre-existing placeholder descriptions (desc length 9, from
+-- an earlier session) remain for BIO 151, PHY 125/136/156/193, STA 134 --
+-- none of these have real content anywhere else in the database either
+-- (checked directly), and this table-only page doesn't carry course
+-- descriptions, so they stay honestly blank rather than guessed.
+--
+-- 300 Level (p.93): found two courses missing entirely -- MTH 329
+-- "Calculus in RN" and MTH 335 "Introduction to Operation Research", both
+-- First Year electives. Inserted as bare rows (no description available
+-- from this table-only page).
+--   Also flagged, not auto-applied: the book's Third Year First Semester
+--   major list includes "MTH 327 Elementary Differential Equation II",
+--   which does not exist in the database, while the database already has
+--   "MTH 322 Elements of Differential Equations II" at 300 Level second
+--   semester -- similar title, different code and semester. Left both
+--   alone rather than merge them on a title-similarity guess; needs the
+--   department's own description section to confirm whether these are the
+--   same course under different codes or genuinely two different courses.
+--   Separately confirmed the book prints "MTH 338" twice on the same page
+--   with two different titles (Optimization Theory II, and Special Theory
+--   of Relativity) -- a book-internal typo, not a database error: the
+--   database's existing MTH 334 "Special Theory of Relativity" is already
+--   correct and was left untouched.
+--
+-- 400 Level (p.94): found three courses missing entirely -- MTH 443
+-- "Numerical Analysis II" (first semester elective), MTH 452 "Project"
+-- (second semester major), MTH 444 "Numerical Analysis III" (second
+-- semester elective). All three inserted as bare rows.
+--   Also confirms (not a new finding, just corroboration): MTH 201-208
+--   "Advanced Mathematics I-VIII" service-course titles already match what
+--   this book's own Service Courses section shows, consistent with the
+--   earlier database-wide MTH 20x title normalization this session.
+--
+-- Checked COS 333 (Mathematics elective, "Systems Analysis and Design",
+-- still a placeholder description) for a cross-reference match against
+-- Computer Science's own COS 333 -- it exists there with real content, but
+-- titled "Software Engineering II", a different course under the same
+-- code. NOT applied: reusing it would attach the wrong subject matter to
+-- Mathematics' outline. Left blank rather than fabricated.
+--
+-- RESULT: 5 rows inserted (MTH 329, 335, 443, 452, 444). Mathematics now
+-- has complete course-level coverage against this handbook at every level
+-- except the 6 pre-existing placeholder descriptions noted above, which
+-- need a source this document doesn't provide.
+--
+-- Applied live via direct psycopg2 script -- this file is the durable
+-- record, not a re-runnable script.
+-- =============================================================================
