@@ -80,3 +80,27 @@
 -- course numbers for its 200-level organic/analytical chemistry (CHM 371,
 -- 372, 373, 324), not 221/222/232/273. No cross-reference match exists.
 -- -----------------------------------------------------------------------------
+
+-- -----------------------------------------------------------------------------
+-- FOURTH PASS: 5 more courses filled from documents already on hand.
+-- -----------------------------------------------------------------------------
+-- The user photographed the Faculty of Engineering handbook's "Combined
+-- Honours Degree / Course Description" section (book p.214, right after the
+-- individual department chapters end) and sent it directly -- it carries
+-- CHM 221, 222, 232 and 273's real descriptions. Applied app-wide: 12 rows
+-- filled across every department that had these codes blank, not just FST.
+--
+-- Also found MEC 101 "Technical Drawing" could be filled by cross-reference
+-- after all: MEE 181 "Technical Drawing I" (Mechanical Engineering, from
+-- the earlier handbook) is the same course under Engineering's own real
+-- prefix. Filled MEC 101 from it.
+--
+-- CONFIRMED, database-wide (not just Agriculture), that CED 341/342, AGR
+-- 201, BIO 151, and TED 154/222 have NO description anywhere in
+-- course_outlines at all, across any department, in any handbook processed
+-- so far -- Agriculture, Physical Sciences, Social Sciences, or either
+-- Engineering handbook. These need their own owning-unit source documents:
+-- CED (Centre for Entrepreneurship Development, not a faculty), Biological
+-- Sciences (BIO 151), and Education/Vocational Technical Education
+-- (TED 154/222) -- none of which have been uploaded yet.
+-- -----------------------------------------------------------------------------
