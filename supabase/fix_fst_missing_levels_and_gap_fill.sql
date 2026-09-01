@@ -55,3 +55,28 @@
 -- Applied live via direct psycopg2 scripts -- this file is the durable
 -- record, not a re-runnable script.
 -- =============================================================================
+
+-- -----------------------------------------------------------------------------
+-- THIRD PASS: filled 13 more real descriptions after the user pointed out
+-- several FST courses still showed no "About this course" content.
+-- -----------------------------------------------------------------------------
+-- Re-scanned the handbook's own FST COURSE DESCRIPTION section (book
+-- pp.67-72, correcting an earlier page-range estimate of pp.61-63 which was
+-- actually FST's structure tables, not its descriptions). Found and applied
+-- real prose for 13 of the 24 rows still blank: FST 321, 322, 331, 332,
+-- 333, 334, 411, 421, 423, 433, 521, 523, 525.
+--
+-- Confirmed genuinely absent from this handbook (swept all 88 pages, not
+-- just FST's own section): CHM 221, CHM 222, CHM 232, CHM 273, CED 341,
+-- CED 342, TED 222, TED 154, MEC 101, AGR 201, BIO 151. These are service
+-- courses owned by other faculties (Physical Sciences, Education,
+-- Engineering, the entrepreneurship centre) -- this Agriculture handbook
+-- was never going to carry their syllabi. They need those departments' own
+-- source material, not another pass over this book.
+--
+-- Also checked whether Pure and Industrial Chemistry's own course_outlines
+-- entries could supply CHM 221/222/232/273 by cross-reference, per the
+-- user's suggestion -- they don't: that department uses entirely different
+-- course numbers for its 200-level organic/analytical chemistry (CHM 371,
+-- 372, 373, 324), not 221/222/232/273. No cross-reference match exists.
+-- -----------------------------------------------------------------------------
