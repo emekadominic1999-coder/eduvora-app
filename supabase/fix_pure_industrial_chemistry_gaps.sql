@@ -36,3 +36,26 @@
 -- Applied live via direct psycopg2 script -- this file is the durable
 -- record, not a re-runnable script.
 -- =============================================================================
+
+-- -----------------------------------------------------------------------------
+-- SECOND UPLOAD: 8 more real descriptions, resolving an earlier ambiguity.
+-- -----------------------------------------------------------------------------
+-- The user sent 7 more pages of the same Combined Honours course
+-- description section (book pp.213, 215-219), continuing where the first
+-- upload's single page (p.214) left off. Filled real description text for
+-- CHM 301, 302, 311, 312, 314, 321, 322, 424 -- app-wide (12 rows across
+-- every department carrying these codes, per the standing ancillary
+-- cross-referencing rule, applied automatically this time without being
+-- asked).
+--
+-- Also independently confirmed two things this session had already gotten
+-- right by inference: book p.216 prints "CHM 324: ORGANIC CHEMISTRY III"
+-- (matching what was already stored, resolving the earlier book-internal
+-- "III" vs "IV" ambiguity in the database's favor), and book p.215 prints
+-- "CHM 422: ADVANCED ORGANIC CHEMISTRY II" (confirming the earlier CHM 422
+-- retitle from "Chemistry of Natural Products" was correct).
+--
+-- CHM 351 and CHM 471 -- the last two of the ten bare rows from the first
+-- upload -- do not appear anywhere in these 7 pages either. Still need
+-- their own source.
+-- -----------------------------------------------------------------------------
