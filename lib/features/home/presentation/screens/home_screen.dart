@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/models/academic_video.dart';
 import '../../../../core/models/news_item.dart';
@@ -14,6 +15,9 @@ import '../../../../core/widgets/institution_crest.dart';
 import '../../../chats/presentation/screens/assistant_screen.dart';
 import '../../../videos/presentation/screens/video_player_screen.dart';
 import '../widgets/quick_action_grid.dart';
+
+const String _youtubeChannelUrl =
+    'https://www.youtube.com/channel/UCdAnOw6sv-1ZrvxZ3CX8vfQ';
 
 /// The dashboard: greeting, progress, quick access to every feature, the
 /// latest lectures for the student's department and the noticeboard strip.
@@ -131,6 +135,7 @@ class _HomeScreenState extends State<HomeScreen>
                             loading: loading,
                           ),
                         ),
+                        const SliverToBoxAdapter(child: _YoutubePrompt()),
                         SliverToBoxAdapter(
                           child: SectionHeader(
                             title: 'Noticeboard',
@@ -636,6 +641,79 @@ class _NewsStrip extends StatelessWidget {
             ),
           );
         }).toList(),
+      ),
+    );
+  }
+}
+
+class _YoutubePrompt extends StatelessWidget {
+  const _YoutubePrompt();
+
+  Future<void> _open() async {
+    final Uri uri = Uri.parse(_youtubeChannelUrl);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.screenPadding,
+        AppSpacing.xl,
+        AppSpacing.screenPadding,
+        0,
+      ),
+      child: EduvoraCard(
+        onTap: _open,
+        colour: const Color(0xFFFFF0F0),
+        shadows: const <BoxShadow>[],
+        border: Border.all(color: const Color(0xFFFFD0D0)),
+        child: Row(
+          children: <Widget>[
+            Container(
+              width: 44,
+              height: 44,
+              decoration: const BoxDecoration(
+                color: Color(0xFFFF0000),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.smart_display_rounded,
+                color: Colors.white,
+                size: 21,
+              ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    'Subscribe on YouTube',
+                    style: TextStyle(
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFFB30000),
+                    ),
+                  ),
+                  SizedBox(height: 3),
+                  Text(
+                    'New lecture videos and past-question walkthroughs, '
+                    'every week.',
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      height: 1.4,
+                      color: AppColours.textMuted,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded, color: Color(0xFFB30000)),
+          ],
+        ),
       ),
     );
   }
