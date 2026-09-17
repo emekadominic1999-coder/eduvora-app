@@ -51,4 +51,17 @@
 --
 -- Applied live via direct psycopg2 script (batched execute_values insert)
 -- -- this file is the durable record, not a re-runnable script.
+--
+-- REPHRASE PASS (same day): the user objected sharply to "According to the
+-- text, ..." filler openers -- "This is university... we're not using
+-- English literature here, this is a biology [exam]." Same rewrite pattern
+-- as GST111: split the 723-question set into 5 batches, rewrote question
+-- wording only via background agents (options/correct_index/explanation/
+-- topic/has_figure/figure_page/figure_description verified byte-identical
+-- before/after), deleted and re-inserted the full BIO 151 set. Verified 0
+-- remaining "according to the text/textbook/this page" openers and 0
+-- content mismatches. This correction is now a standing generation rule --
+-- see feedback_cbt_question_phrasing memory -- so future CBT extraction
+-- should apply professional subject-appropriate phrasing from the first
+-- draft, not need a fix-up pass.
 -- =============================================================================
