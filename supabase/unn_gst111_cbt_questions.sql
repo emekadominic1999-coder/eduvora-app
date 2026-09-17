@@ -1,0 +1,48 @@
+-- =============================================================================
+-- GST 111 (Use of English & Study Skills) CBT question bank
+-- =============================================================================
+-- Source: user-uploaded "gst111.pdf" -- a 368-page photographed textbook
+-- covering the full combined GST 111 syllabus at UNN: English grammar
+-- (parts of speech, sentence structure, concord, phrasal/clausal
+-- constituents), the writing process (paragraphs, essays, capitalization,
+-- punctuation, spelling), formal communication (letters, CVs, memoranda,
+-- reports, speeches, minutes of meetings, book reviews), pragmatics and
+-- common errors, formulaic/figurative language, and library/ICT skills
+-- (information literacy, digital libraries, ICT in language learning,
+-- video-conferencing tools).
+--
+-- Course-code note: the user confirmed GST 111 is the renamed GSP 101 (not
+-- GSP 111) -- consistent with the GSP->GST modernization convention already
+-- recorded in the legacy-course-codes memory, and confirmed by the
+-- textbook's own content matching the "Study Skills and Basic Research
+-- Methods" / combined "Use of English" title variants already present
+-- across course_outlines for GST 111 in ~50 departments.
+--
+-- Extraction process: pages were photographed at native resolution via
+-- pymupdf, rotated to upright per page, and split into 8 page-range chunks
+-- processed by parallel background agents (each instructed to skip
+-- non-textbook pages and never fabricate content). 31 non-textbook pages
+-- were found accidentally mixed into the source PDF and excluded, including:
+--   - An unrelated OPay payment receipt (personal financial data)
+--   - Eduvora app promo/marketing graphics
+--   - Personal photos unrelated to the course
+--   - Book cover, table-of-contents-only, and duplicate-photograph pages
+--   - Third-party consultancy/marketplace ads
+-- Zero pages were fabricated or guessed; two agents self-reported and
+-- corrected mid-session tool-read issues (re-verifying all affected pages
+-- against the actual images before finalizing any questions).
+--
+-- RESULT: 1,065 raw questions generated across all 8 chunks; 4 exact
+-- duplicates removed, 0 malformed, leaving 1,061 unique multiple-choice
+-- questions inserted with:
+--   subject_id   = 'gst-111-use-of-english-study-skills'
+--   subject_name = 'GST111: Use of English & Study Skills'
+--   institution  = 'University of Nigeria, Nsukka'
+--   faculty = '', department = '' (is_general = true, matching the existing
+--     GST212/GST312 pattern -- General Studies courses apply app-wide, not
+--     to one faculty/department)
+--   level = '100 Level', semester = 'first', units = 2
+--
+-- Applied live via direct psycopg2 script (batched execute_values insert)
+-- -- this file is the durable record, not a re-runnable script.
+-- =============================================================================
