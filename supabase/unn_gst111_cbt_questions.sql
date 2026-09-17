@@ -45,4 +45,18 @@
 --
 -- Applied live via direct psycopg2 script (batched execute_values insert)
 -- -- this file is the durable record, not a re-runnable script.
+--
+-- REPHRASE PASS (same day): the user flagged that ~70% of question stems
+-- started with the repetitive filler "According to the text, ..." -- reads
+-- like a secondary-school worksheet, not a professional university CBT
+-- exam. Split the 1,061-question set into 6 batches, had each rewritten by
+-- a background agent (question wording only -- options, correct_index,
+-- explanation, and topic verified byte-identical before/after, checked
+-- programmatically), then deleted and re-inserted the full GST 111 set with
+-- the rewritten phrasing. Named-source citations (rule numbers, scholars,
+-- specific tools) were kept where informative but reworded away from the
+-- literal "according to X as cited in the text" boilerplate. Verified 0
+-- remaining generic "according to the text/textbook" openers and 0 content
+-- mismatches (one flagged "mismatch" was a bonus fix: a mojibake "?"
+-- character in one explanation, corrected to a proper em dash).
 -- =============================================================================
