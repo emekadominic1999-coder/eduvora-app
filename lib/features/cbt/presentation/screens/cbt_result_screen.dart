@@ -508,6 +508,10 @@ class _ReviewCard extends StatelessWidget {
               color: AppColours.text,
             ),
           ),
+          if (question.imageUrl.isNotEmpty) ...<Widget>[
+            const SizedBox(height: AppSpacing.md),
+            QuestionFigure(imageUrl: question.imageUrl),
+          ],
           const SizedBox(height: AppSpacing.md),
           ...List<Widget>.generate(question.options.length, (int i) {
             final bool isCorrect = i == question.correctIndex;

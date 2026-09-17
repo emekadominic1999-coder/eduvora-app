@@ -1,0 +1,35 @@
+-- =============================================================================
+-- CBT question image support (diagrams, drawings, equations)
+-- =============================================================================
+-- Added at the user's request while preparing a Biology (BIO151) CBT bank
+-- from a photographed textbook: 134 of the 723 questions generated
+-- reference an actual figure in the book (cell diagrams, life-cycle
+-- diagrams, classification charts, chemical structures) and the user wants
+-- students to see the real image, not just read a text description of it.
+--
+-- Changes (already applied live via direct psycopg2 script; this file is
+-- the durable record, matching the pattern used by
+-- PAYWALL_course_pack.sql's semester/units columns -- a later addition to
+-- cbt_questions, not part of its original create table block):
+--   1. cbt_questions.image_url (text, default '') -- empty for the vast
+--      majority of (text-only) questions.
+--   2. A new public storage bucket `cbt-question-images`, readable by
+--      anon/authenticated (same public-read pattern as materials/
+--      academic-videos) and insertable by any authenticated user (no
+--      per-user folder restriction, since this content is curated via the
+--      SQL Editor alongside the question rows themselves, not uploaded by
+--      students the way group attachments or materials are).
+--
+-- App-side: lib/core/models/cbt.dart (CbtQuestion.imageUrl),
+-- lib/core/services/cbt_repository.dart (parses image_url),
+-- lib/core/widgets/common.dart (new QuestionFigure widget -- tap to view
+-- full-screen), wired into both lib/features/cbt/presentation/screens/
+-- cbt_exam_screen.dart and cbt_result_screen.dart so a figure shows during
+-- the exam and again during answer review.
+--
+-- Not yet done: no question rows have image_url populated yet -- the
+-- BIO151 questions are held offline pending the user telling us which
+-- course code to attach them to. Uploading the 103 source page images to
+-- the new bucket and wiring image_url per question is a follow-up step
+-- once that's decided.
+-- =============================================================================

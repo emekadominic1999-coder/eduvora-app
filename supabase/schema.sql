@@ -486,6 +486,12 @@ create table if not exists public.cbt_questions (
   created_at      timestamptz not null default now()
 );
 
+-- A supporting diagram, drawing, chart or equation for the question -- e.g.
+-- a labelled cell diagram in a biology paper. Empty for the vast majority
+-- of (text-only) questions. Stored in the public `cbt-question-images`
+-- bucket below.
+alter table public.cbt_questions add column if not exists image_url text not null default '';
+
 create index if not exists cbt_questions_subject_idx on public.cbt_questions (subject_id);
 create index if not exists cbt_questions_faculty_idx on public.cbt_questions (faculty);
 
@@ -597,6 +603,26 @@ on conflict (id) do nothing;
 insert into storage.buckets (id, name, public)
 values ('academic-videos', 'academic-videos', true)
 on conflict (id) do nothing;
+
+-- Diagrams/drawings/equations attached to cbt_questions.image_url. Content
+-- here is curated (added via the SQL Editor alongside the question rows
+-- themselves), not student-uploaded, so unlike materials/academic-videos
+-- there's no per-user folder restriction on the insert policy.
+insert into storage.buckets (id, name, public)
+values ('cbt-question-images', 'cbt-question-images', true)
+on conflict (id) do nothing;
+
+drop policy if exists "cbt question images are publicly readable" on storage.objects;
+create policy "cbt question images are publicly readable"
+  on storage.objects for select
+  to anon, authenticated
+  using (bucket_id = 'cbt-question-images');
+
+drop policy if exists "authenticated users upload cbt question images" on storage.objects;
+create policy "authenticated users upload cbt question images"
+  on storage.objects for insert
+  to authenticated
+  with check (bucket_id = 'cbt-question-images');
 
 drop policy if exists "material files are publicly readable" on storage.objects;
 create policy "material files are publicly readable"

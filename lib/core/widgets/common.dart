@@ -426,6 +426,66 @@ class FilterChipRow<T> extends StatelessWidget {
   }
 }
 
+/// A supporting diagram, drawing, chart or equation attached to a CBT
+/// question — tap to view it full-screen, since a labelled figure is often
+/// too dense to read at card width.
+class QuestionFigure extends StatelessWidget {
+  const QuestionFigure({super.key, required this.imageUrl});
+
+  final String imageUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => showDialog<void>(
+        context: context,
+        builder: (BuildContext context) => Dialog(
+          insetPadding: const EdgeInsets.all(AppSpacing.md),
+          child: InteractiveViewer(
+            child: Image.network(imageUrl, fit: BoxFit.contain),
+          ),
+        ),
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          border: Border.all(color: AppColours.border),
+          borderRadius: AppRadii.sm,
+        ),
+        constraints: const BoxConstraints(maxHeight: 260),
+        width: double.infinity,
+        clipBehavior: Clip.antiAlias,
+        child: Image.network(
+          imageUrl,
+          fit: BoxFit.contain,
+          errorBuilder: (_, _, _) => Container(
+            height: 120,
+            color: AppColours.surfaceMuted,
+            alignment: Alignment.center,
+            child: const Icon(
+              Icons.broken_image_rounded,
+              color: AppColours.textFaint,
+            ),
+          ),
+          loadingBuilder:
+              (BuildContext context, Widget child, ImageChunkEvent? progress) =>
+                  progress == null
+                  ? child
+                  : const Padding(
+                      padding: EdgeInsets.all(AppSpacing.xl),
+                      child: Center(
+                        child: SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(strokeWidth: 2.4),
+                        ),
+                      ),
+                    ),
+        ),
+      ),
+    );
+  }
+}
+
 /// Circular avatar showing a student's initials.
 class InitialsAvatar extends StatelessWidget {
   const InitialsAvatar({

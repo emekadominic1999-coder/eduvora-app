@@ -46,6 +46,10 @@ class AppConfig {
   /// Storage bucket holding photos and documents shared inside study groups.
   static const String groupAttachmentsBucket = 'group-attachments';
 
+  /// Storage bucket holding diagrams/drawings/equations attached to CBT
+  /// questions (`cbt_questions.image_url`).
+  static const String cbtQuestionImagesBucket = 'cbt-question-images';
+
   /// A shared attachment above this size is refused client-side, so a
   /// student on a weak campus connection gets a clear message instead of a
   /// long silent hang.

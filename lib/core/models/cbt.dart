@@ -12,6 +12,7 @@ class CbtQuestion {
     required this.correctIndex,
     this.explanation = '',
     this.topic = '',
+    this.imageUrl = '',
   });
 
   final String id;
@@ -20,6 +21,11 @@ class CbtQuestion {
   final int correctIndex;
   final String explanation;
   final String topic;
+
+  /// A supporting diagram, drawing, chart or equation for this question —
+  /// e.g. a labelled cell diagram in a biology paper. Empty when the
+  /// question is text-only, which is most of them.
+  final String imageUrl;
 
   String get correctOption => correctIndex >= 0 && correctIndex < options.length
       ? options[correctIndex]
@@ -64,6 +70,7 @@ class CbtQuestion {
     correctIndex: (json['correct_index'] as num?)?.toInt() ?? 0,
     explanation: (json['explanation'] ?? '') as String,
     topic: (json['topic'] ?? '') as String,
+    imageUrl: (json['image_url'] ?? '') as String,
   );
 }
 
