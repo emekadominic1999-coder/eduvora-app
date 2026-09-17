@@ -1,0 +1,54 @@
+-- =============================================================================
+-- BIO 151 (General Biology I) CBT question bank
+-- =============================================================================
+-- Source: user-uploaded "Bio151.pdf" -- a 194-page photographed multi-author
+-- university biology textbook (Sections: Microbiology; Plant Science and
+-- Biotechnology; Zoology and Environmental Biology; Biochemistry).
+--
+-- Course-code confirmation: the user explicitly confirmed this is BIO 151
+-- after being asked directly -- BIO 151 "General Biology I" already exists
+-- in course_outlines across 17 departments spanning 6 faculties (Education,
+-- Agriculture, Biological Sciences, Physical Sciences, Veterinary Medicine,
+-- Social Sciences), the same shared-ancillary-course pattern already used
+-- for MTH 101/PHY 111/COS 101. No course_outlines row existed for this
+-- subject prior to the user's own upload of course-description content, so
+-- this CBT bank was built from the textbook alone, per the user's explicit
+-- instruction not to reference any course outline while extracting.
+--
+-- Extraction process: pages were photographed at native resolution via
+-- pymupdf, rotated to upright per page (only 3 of 194 pages needed it),
+-- and split into 5 page-range chunks processed by parallel background
+-- agents (each instructed to skip non-content pages -- table of contents,
+-- duplicate photographs, bibliography-only pages -- and never fabricate
+-- content). 14 non-content source pages were correctly skipped; 0 pages
+-- were flagged unreadable.
+--
+-- RESULT: 723 unique multiple-choice questions across 149 topics, inserted
+-- with:
+--   subject_id   = 'bio-151-general-biology-1'
+--   subject_name = 'BIO 151: General Biology I'
+--   institution  = 'University of Nigeria, Nsukka'
+--   faculty = 'Faculty of Education, Faculty of Agriculture, Faculty of
+--     Biological Sciences, Faculty of Physical Sciences, Faculty of
+--     Veterinary Medicine, Faculty of Social Sciences' (department = '' --
+--     shared ancillary course, not owned by one department)
+--   level = '100 Level', semester = 'first', units = 3 (the majority value
+--     across the 17 existing course_outlines rows; 3 disagree and say 2)
+--   is_general = false (department/faculty-scoped like MTH101/PHY111, not
+--     a university-wide GST course)
+--
+-- IMAGES: 134 of the 723 questions reference an actual diagram, drawing,
+-- chart or equation from the textbook (has_figure noted per question
+-- during extraction, with the source page number and a figure
+-- description). image_url is inserted as '' for every row in this pass --
+-- the 103 distinct source page images are held in the scratchpad, pending
+-- a service_role key from the user to upload them to the new
+-- `cbt-question-images` storage bucket (see
+-- add_cbt_question_image_support.sql) and backfill image_url per question.
+-- A DB password alone (used for this insert) cannot upload to Storage --
+-- actual file bytes live in Supabase's S3-compatible backend, reachable
+-- only through the Storage API, not raw Postgres.
+--
+-- Applied live via direct psycopg2 script (batched execute_values insert)
+-- -- this file is the durable record, not a re-runnable script.
+-- =============================================================================
