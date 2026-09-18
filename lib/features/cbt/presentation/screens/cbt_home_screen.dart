@@ -175,8 +175,11 @@ class _CbtHomeScreenState extends State<CbtHomeScreen> {
           ),
         ),
       );
-      if (mounted && (completed ?? false)) setState(() {});
-      return false; // the trial itself was the sitting; nothing further to start
+      if (!mounted) return false;
+      if (completed != true) return false; // they backed out of the trial
+      setState(() {});
+      // The trial is finished: offer the unlock straight away instead of
+      // leaving the student to work out they must tap the paper again.
     }
 
     final CbtPlan? plan = await showPaywallSheet(context, subject);
