@@ -1,0 +1,53 @@
+-- =============================================================================
+-- Fix "mentions a figure/table but shows no image" across all CBT subjects
+-- =============================================================================
+-- The user spotted this directly in the app: several BIO151 questions said
+-- things like "In Fig. 11.2, ..." or "In Table 2.1, ..." with no image
+-- actually attached -- because the original extraction agents wrote the
+-- question referencing a real figure/table in the source text, but didn't
+-- consistently flag has_figure for every such question.
+--
+-- Audited all three CBT subjects with real image support (GST111, GST312,
+-- BIO151) by scanning for "Fig./Figure/Table/Chart/Diagram \d" in the
+-- question text with an empty image_url:
+--
+--   BIO151 (bio-151-general-biology-1): 8 questions found, referencing 4
+--     distinct source pages not previously captured as figures:
+--       - Table 2.1 (prokaryotic vs eukaryotic cells) -- p009 of the source
+--         PDF, previously used for a DIFFERENT figure (Fig 2.2 Venn
+--         diagram) on the same page -- redrawn under a distinct filename
+--         (p009_table21.png) to avoid overwriting that existing image.
+--       - Table 2.2 (archaea vs bacteria) -- p012.
+--       - Fig. 18.13 (blood constituents) -- p118, which ALSO already held
+--         a different figure (Fig 18.12b Haversian canal) -- again given a
+--         distinct filename (p118_fig1813.png) rather than colliding.
+--       - Table 23.1 (aldehyde nomenclature) -- p159.
+--     All 4 redrawn as clean matplotlib tables/diagrams, uploaded to
+--     cbt-question-images/bio151-redrawn/, and wired to their 8 questions.
+--
+--   GST111 (gst-111-use-of-english-study-skills): 5 questions found.
+--     - 2 referenced "Fig 2" (an Information Literacy Indicators matrix) on
+--       p004 of the source PDF -- redrawn and uploaded to
+--       cbt-question-images/gst111-redrawn/p004_fig2.png, wired to both.
+--     - 3 referenced "Table 1/2/3" (pronoun case forms: Subjective,
+--       Objective, Possessive). The source page for these specific tables
+--       could not be located after a genuine search (this section of the
+--       source PDF has non-monotonic/jumbled page ordering, unlike most of
+--       the book) -- rather than fabricate an unverified table image, these
+--       3 questions were REPHRASED to drop the "Per Table N" framing while
+--       keeping the exact same factual content, options, and correct
+--       answer (e.g. "Per Table 1 (Subjective Case), what is the pronoun
+--       form of the 3rd person plural?" -> "What is the subjective-case
+--       pronoun form for the 3rd person plural?").
+--
+--   GST312 (gst-312-peace-conflict-resolution-2): 0 found -- this subject
+--     was built after the redraw-from-the-start rule was already in place,
+--     so it had no mismatches to begin with.
+--
+-- Verified live after the fix: a repeat scan of all three subjects returns
+-- zero remaining mismatches.
+--
+-- Applied live via direct psycopg2 UPDATE statements plus a Storage REST
+-- API upload script -- this file is the durable record, not a re-runnable
+-- script.
+-- =============================================================================
