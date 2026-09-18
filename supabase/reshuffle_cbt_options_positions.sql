@@ -1,0 +1,41 @@
+-- =============================================================================
+-- Reshuffle CBT option order database-wide (fix answer-position bias)
+-- =============================================================================
+-- The user noticed while sitting real papers that the correct answer was
+-- almost always A or B, making questions guessable without knowing the
+-- material -- a well-known bias in LLM-generated multiple-choice content
+-- (the correct option tends to get written first).
+--
+-- Measured before the fix, across the WHOLE cbt_questions table (8,765
+-- rows, every subject, not just ones built this session):
+--   A: 55.9%   B: 24.2%   C: 12.3%   D: 7.6%
+-- Some subjects were far worse in isolation, e.g. GST312 at
+--   A: 79.2%   B: 19.3%   C: 1.4%   D: 0%
+--
+-- Fix: for every row, the options array was randomly permuted and
+-- correct_index recomputed to track the same correct option text to its
+-- new position -- question wording, option text, explanations, and topics
+-- were never touched, only the ORDER of an already-correct option set.
+--
+-- Applied as a single bulk `UPDATE ... FROM (VALUES ...)` per 1000-row
+-- page (psycopg2 execute_values) rather than one UPDATE per row -- an
+-- earlier attempt using row-by-row executemany() was abandoned mid-run for
+-- being far too slow over the pooler connection (thousands of sequential
+-- round trips); the bulk VALUES-join form completed instantly by
+-- comparison. Also note: a server-side (named) cursor for the initial
+-- SELECT hung indefinitely against Supabase's transaction-mode pooler --
+-- switched to a plain fetchall(), which worked immediately. Both are worth
+-- remembering for any future full-table bulk update on this database.
+--
+-- Result, verified immediately after (all 8,765 rows, every subject):
+--   A: 24.2%   B: 25.2%   C: 25.2%   D: 25.4%
+-- Spot-checked 8 random questions across multiple subjects afterward --
+-- every explanation still correctly matches the option now sitting at
+-- correct_index, confirming the shuffle preserved correctness while only
+-- reordering positions.
+--
+-- Applied live via a direct psycopg2 script -- this file is the durable
+-- record, not a re-runnable script (re-running would simply reshuffle
+-- again harmlessly, since it always reads the current correct answer
+-- before permuting, but there is no need to).
+-- =============================================================================
