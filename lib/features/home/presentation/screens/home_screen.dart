@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -6,6 +8,7 @@ import '../../../../core/models/news_item.dart';
 import '../../../../core/models/student_profile.dart';
 import '../../../../core/routing/app_router.dart';
 import '../../../../core/services/content_repository.dart';
+import '../../../../core/services/referral_repository.dart';
 import '../../../../core/services/study_repository.dart';
 import '../../../../core/state/session_controller.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -42,6 +45,7 @@ class _HomeScreenState extends State<HomeScreen>
   void initState() {
     super.initState();
     _future = _load();
+    unawaited(const ReferralRepository().applyPendingLinkCode());
   }
 
   Future<_DashboardData> _load() async {

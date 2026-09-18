@@ -67,7 +67,7 @@ class _PaywallSheet extends StatelessWidget {
           _PlanCard(
             title: 'This paper only',
             body: '${subject.name} · unlimited attempts, this session',
-            price: '₦300',
+            price: '₦350',
             highlighted: false,
             onTap: () => Navigator.of(context).pop(CbtPlan.singlePaper),
           ),
@@ -77,7 +77,7 @@ class _PaywallSheet extends StatelessWidget {
             body:
                 'Pick your department, level and semester, then choose up '
                 'to 23 units of papers to unlock',
-            price: '₦1,200',
+            price: '₦2,300',
             highlighted: true,
             badge: 'BEST VALUE',
             onTap: () => Navigator.of(context).pop(CbtPlan.coursePack),

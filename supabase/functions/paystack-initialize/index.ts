@@ -3,8 +3,10 @@ import { createClient } from 'jsr:@supabase/supabase-js@2';
 // Called by the signed-in student's device to start a checkout. Pricing is
 // computed here, never trusted from the client — otherwise a tampered
 // request could ask Paystack to charge one naira for full access.
-const SINGLE_PAPER_KOBO = 30000; // NGN 300
-const COURSE_PACK_KOBO = 120000; // NGN 1,200 flat, regardless of how many papers
+// Priced so that after Paystack's ~1.5% fee and the 10% referral commission
+// the owner still keeps about NGN 2,000 per pack / NGN 300 per paper.
+const SINGLE_PAPER_KOBO = 35000; // NGN 350
+const COURSE_PACK_KOBO = 230000; // NGN 2,300 flat, regardless of how many papers
 
 const SINGLE_PAPER_ACCESS_DAYS = 200;
 const COURSE_PACK_ACCESS_DAYS = 130;

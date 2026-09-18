@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'core/config/app_config.dart';
 import 'core/routing/app_router.dart';
 import 'core/services/local_store.dart';
+import 'core/services/referral_repository.dart';
 import 'core/services/supabase_service.dart';
 import 'core/state/session_controller.dart';
 import 'core/theme/app_theme.dart';
@@ -20,6 +21,10 @@ Future<void> main() async {
 
   // On-device store first: it is what keeps Eduvora usable on a weak network.
   await LocalStore.init();
+
+  // A friend's invite link (`?ref=CODE`) is remembered here so it survives
+  // sign-up and is applied once they are signed in.
+  await ReferralRepository.captureLinkCode();
 
   // Then the backend, which degrades gracefully into Campus Mode.
   await SupabaseService.initialise();

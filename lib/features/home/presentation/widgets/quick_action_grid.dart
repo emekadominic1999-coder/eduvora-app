@@ -76,6 +76,12 @@ class QuickActionGrid extends StatelessWidget {
       colour: Color(0xFF0D9488),
       route: AppRouter.assistant,
     ),
+    _Action(
+      label: 'Refer &\nearn',
+      icon: Icons.card_giftcard_rounded,
+      colour: Color(0xFF16A34A),
+      route: AppRouter.referral,
+    ),
   ];
 
   void _go(BuildContext context, String route) {

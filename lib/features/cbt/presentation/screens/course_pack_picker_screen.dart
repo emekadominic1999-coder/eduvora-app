@@ -145,7 +145,7 @@ class _CoursePackPickerScreenState extends State<CoursePackPickerScreen> {
                     'Pick your department, level and semester, then choose '
                     'which papers to unlock — up to ${CoursePackPickerScreen.maxUnits} '
                     'units, the same cap as real course registration. One flat '
-                    '₦1,200 either way.',
+                    '₦2,300 either way.',
                     style: Theme.of(
                       context,
                     ).textTheme.bodySmall?.copyWith(height: 1.5),
@@ -242,7 +242,7 @@ class _CoursePackPickerScreenState extends State<CoursePackPickerScreen> {
                   child: Text(
                     _selectedIds.isEmpty
                         ? 'Select at least one paper'
-                        : 'Continue to payment — ₦1,200',
+                        : 'Continue to payment — ₦2,300',
                   ),
                 ),
               ),
