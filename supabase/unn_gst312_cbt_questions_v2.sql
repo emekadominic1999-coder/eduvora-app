@@ -1,0 +1,44 @@
+-- =============================================================================
+-- GST 312 (Peace and Conflict Resolution II) CBT question bank -- full rebuild
+-- =============================================================================
+-- Source: user-uploaded "gsp312.pdf" -- a 217-page photographed copy of
+-- "Peace and Conflict Resolution in Contemporary Society, Volume II" (eds.
+-- Elias C. Ngwu, Chinero N. Ayogu, Francisca N. Onah).
+--
+-- Prior state: subject_id 'gst-312-peace-conflict-resolution-2' held a
+-- single placeholder row (topic = "Coming Soon"). This upload replaces it
+-- entirely with real content.
+--
+-- Extraction process: pages photographed at native resolution via pymupdf,
+-- rotated to upright per page (166 of 217 needed it), split into 6
+-- page-range chunks processed by parallel background agents. Unlike the
+-- earlier GST111/BIO151 passes, this time the "no textbook-citation
+-- filler" phrasing rule and the "redraw diagrams yourself, don't crop the
+-- photo" rule were BOTH baked into the agents' original instructions from
+-- the start (per feedback_cbt_question_phrasing memory) -- avoiding the
+-- two-pass rework those earlier subjects needed. Only one question slipped
+-- through with "According to the text" and was fixed by hand during
+-- aggregation.
+--
+-- RESULT: 698 unique multiple-choice questions across 162 topics, 0
+-- malformed, 0 duplicates, inserted with:
+--   subject_id   = 'gst-312-peace-conflict-resolution-2'
+--   subject_name = 'GST312: Peace and Conflict Resolution II'
+--   institution  = 'University of Nigeria, Nsukka'
+--   faculty = '', department = '' (is_general = true -- university-wide
+--     GST course, matching the existing GST111/GST212 pattern)
+--   level = '300 Level', semester = 'second', units = 2
+--
+-- IMAGES: 6 questions reference a genuine conceptual diagram from the
+-- conflict-analysis chapter (the conflict "wave," Onion-Doughnut Model, ABC
+-- Triangle, Conflict Mapping, Conflict Tree, Pyramid/Island Method). Each
+-- was redrawn from scratch as a clean original diagram (matplotlib) by the
+-- same agent that wrote its question -- verified visually before finalizing
+-- -- then uploaded to `cbt-question-images/gst312-redrawn/pNNN.png` and
+-- wired via image_url. Spot-checked live: all 6 resolve with HTTP 200 and
+-- correct image/png content-type.
+--
+-- Applied live via direct psycopg2 script (delete placeholder + batched
+-- execute_values insert) plus a Storage REST API upload script -- this
+-- file is the durable record, not a re-runnable script.
+-- =============================================================================
