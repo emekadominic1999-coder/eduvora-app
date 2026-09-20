@@ -73,6 +73,8 @@ class CbtRepository {
     return all;
   }
 
+  static const String _launchLevel = '100 Level';
+
   Future<List<CbtSubject>> _fetchRemoteSubjects() async {
     if (!SupabaseService.isReady) return <CbtSubject>[];
 
@@ -85,6 +87,9 @@ class CbtRepository {
         if (raw is! Map<String, dynamic>) continue;
         final String subjectId = (raw['subject_id'] ?? '') as String;
         if (subjectId.isEmpty) continue;
+        // Launch focus: first-year (100 Level) papers only. Other levels stay
+        // in the database but are not shown in the app.
+        if ((raw['level'] ?? '') != _launchLevel) continue;
         bySubject
             .putIfAbsent(subjectId, () => <Map<String, dynamic>>[])
             .add(raw);
