@@ -296,6 +296,7 @@ class _CbtHomeScreenState extends State<CbtHomeScreen> {
                         (int sum, CbtSubject s) => sum + s.questions.length,
                       ),
                     ),
+                    const _Disclaimer(),
                     SectionHeader(
                       title: _showAllPapers ? 'All papers' : 'Papers for you',
                       subtitle: _showAllPapers
@@ -439,6 +440,42 @@ class _CbtHomeScreenState extends State<CbtHomeScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Makes clear this is independent practice, not an official exam.
+class _Disclaimer extends StatelessWidget {
+  const _Disclaimer();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Padding(
+      padding: EdgeInsets.fromLTRB(
+        AppSpacing.screenPadding,
+        AppSpacing.md,
+        AppSpacing.screenPadding,
+        0,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Icon(Icons.info_outline_rounded, size: 15, color: AppColours.textFaint),
+          SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Independent practice app. Not affiliated with or endorsed by '
+              'the University of Nigeria, Nsukka or any school. These are '
+              'practice questions, not official exam papers.',
+              style: TextStyle(
+                fontSize: 11.5,
+                height: 1.4,
+                color: AppColours.textFaint,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
