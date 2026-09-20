@@ -1,0 +1,1 @@
+-- Added 9 first-year courses from UNN's 2025/2026 2nd-semester departmental CBE timetable that had no CBT entry: COS 174, MAC 142, CRE 132, GBT 102, COS 106, COS 104, MAC 106, BCH 102, MAC 114 (one 'coming soon' placeholder each, level 100, semester second, units 0). Faculty tags are best-effort from department names; titles unknown so name is code only.
