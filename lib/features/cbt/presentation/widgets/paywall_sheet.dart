@@ -101,6 +101,16 @@ class _PaywallSheet extends StatelessWidget {
               ),
             ],
           ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            'Independent practice app. Not affiliated with or endorsed by the '
+            'University of Nigeria, Nsukka or any school. Practice questions, '
+            'not official exam papers.',
+            textAlign: TextAlign.center,
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: AppColours.textFaint),
+          ),
         ],
       ),
     );
