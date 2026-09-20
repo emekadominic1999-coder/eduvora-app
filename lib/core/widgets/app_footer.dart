@@ -5,6 +5,7 @@ import '../config/app_config.dart';
 import '../data/nigerian_institutions.dart';
 import '../models/institution.dart';
 import '../theme/app_theme.dart';
+import '../routing/app_router.dart';
 import 'eduvora_logo.dart';
 
 /// The Eduvora footer.
@@ -32,8 +33,8 @@ class AppFooter extends StatelessWidget {
   ];
 
   static const List<_FooterLink> _legal = <_FooterLink>[
-    _FooterLink('Privacy policy'),
-    _FooterLink('Terms of use'),
+    _FooterLink('Privacy policy', route: AppRouter.privacy),
+    _FooterLink('Terms of use', route: AppRouter.terms),
     _FooterLink('Community guidelines'),
     _FooterLink('Contact support'),
   ];
@@ -162,9 +163,10 @@ class AppFooter extends StatelessWidget {
 }
 
 class _FooterLink {
-  const _FooterLink(this.label);
+  const _FooterLink(this.label, {this.route});
 
   final String label;
+  final String? route;
 }
 
 class _FooterColumn extends StatelessWidget {
@@ -191,12 +193,17 @@ class _FooterColumn extends StatelessWidget {
         ...links.map(
           (_FooterLink link) => Padding(
             padding: const EdgeInsets.only(bottom: 9),
-            child: Text(
-              link.label,
-              style: TextStyle(
-                fontSize: 13.5,
-                height: 1.35,
-                color: Colors.white.withValues(alpha: 0.72),
+            child: InkWell(
+              onTap: link.route == null
+                  ? null
+                  : () => Navigator.of(context).pushNamed(link.route!),
+              child: Text(
+                link.label,
+                style: TextStyle(
+                  fontSize: 13.5,
+                  height: 1.35,
+                  color: Colors.white.withValues(alpha: 0.72),
+                ),
               ),
             ),
           ),

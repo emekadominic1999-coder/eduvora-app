@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 
 import '../../../../core/routing/app_router.dart';
@@ -492,10 +493,38 @@ class _AuthScreenState extends State<AuthScreen> {
         Expanded(
           child: Padding(
             padding: const EdgeInsets.only(top: 2),
-            child: Text(
-              'I agree to the Eduvora community guidelines and to keeping this '
-              'a respectful space for fellow students.',
-              style: text.bodySmall,
+            child: Text.rich(
+              TextSpan(
+                style: text.bodySmall,
+                children: <InlineSpan>[
+                  const TextSpan(text: 'I agree to the '),
+                  TextSpan(
+                    text: 'Terms of Use',
+                    style: const TextStyle(
+                      color: AppColours.primary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    recognizer: TapGestureRecognizer()
+                      ..onTap = () =>
+                          Navigator.of(context).pushNamed(AppRouter.terms),
+                  ),
+                  const TextSpan(text: ' and '),
+                  TextSpan(
+                    text: 'Privacy Policy',
+                    style: const TextStyle(
+                      color: AppColours.primary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    recognizer: TapGestureRecognizer()
+                      ..onTap = () =>
+                          Navigator.of(context).pushNamed(AppRouter.privacy),
+                  ),
+                  const TextSpan(
+                    text: ', and to keeping this a respectful space for '
+                        'fellow students.',
+                  ),
+                ],
+              ),
             ),
           ),
         ),

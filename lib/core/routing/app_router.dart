@@ -18,6 +18,8 @@ import '../../features/news/presentation/screens/news_screen.dart';
 import '../../features/onboarding/presentation/screens/onboarding_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
 import '../../features/referral/presentation/screens/referral_screen.dart';
+import '../../features/legal/legal_content.dart';
+import '../../features/legal/presentation/screens/legal_screen.dart';
 import '../../features/videos/presentation/screens/academic_videos_screen.dart';
 
 /// Named routes and the shell-aware navigation helper.
@@ -46,6 +48,8 @@ class AppRouter {
   static const String news = '/news';
   static const String profile = '/profile';
   static const String referral = '/referral';
+  static const String terms = '/terms';
+  static const String privacy = '/privacy';
 
   /// Routes that are tabs inside [HomeShell] rather than pushed pages.
   static const Map<String, int> shellTabs = <String, int>{
@@ -101,6 +105,10 @@ class AppRouter {
         page = const ProfileScreen();
       case referral:
         page = const ReferralScreen();
+      case terms:
+        page = const LegalScreen(doc: LegalContent.terms);
+      case privacy:
+        page = const LegalScreen(doc: LegalContent.privacy);
       default:
         page = const SplashGate();
     }
