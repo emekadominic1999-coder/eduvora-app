@@ -57,6 +57,18 @@ class _CbtHomeScreenState extends State<CbtHomeScreen> {
   /// meant every paper looked relevant to every faculty while that override
   /// was on, which is exactly the bug this comment is now warning against.
   Future<List<CbtSubject>> _load() async {
+    // On some startup paths (a browser tab reloading straight back into this
+    // screen instead of the dashboard, for instance) this screen can build
+    // and call _load() before the splash gate's own bootstrap has finished
+    // restoring the profile. Reading a momentarily-null profile here doesn't
+    // show an empty list -- it silently filters "for you" down to only the
+    // general-studies papers (they pass regardless of faculty), which looks
+    // like most of the bank vanished rather than like a loading state. Wait
+    // for the real profile once rather than show that falsely short list.
+    if (sessionController.profile == null &&
+        sessionController.status == AuthStatus.unknown) {
+      await sessionController.bootstrap();
+    }
     final StudentProfile? profile = sessionController.profile;
     final List<CbtEntitlement> entitlements = await _paywall.myEntitlements();
     if (mounted) setState(() => _entitlements = entitlements);
