@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../../../core/models/cbt.dart';
 import '../../../../core/routing/app_router.dart';
+import '../../../../core/services/activity_repository.dart';
 import '../../../../core/services/cbt_progress_store.dart';
 import '../../../../core/services/chat_repository.dart';
 import '../../../../core/state/session_controller.dart';
@@ -30,9 +33,19 @@ class HomeShell extends StatefulWidget {
 class _HomeShellState extends State<HomeShell> {
   static const ChatRepository _chats = ChatRepository();
 
+  static const ActivityRepository _activity = ActivityRepository();
+  Timer? _heartbeat;
+
   @override
   void initState() {
     super.initState();
+    // "This student has the app open" -- feeds the owner-only Live users
+    // screen. Immediately, then every few minutes while the app stays open.
+    unawaited(_activity.touch());
+    _heartbeat = Timer.periodic(
+      const Duration(minutes: 3),
+      (_) => unawaited(_activity.touch()),
+    );
     AppRouter.shellTab.value = widget.initialTab;
     WidgetsBinding.instance.addPostFrameCallback((_) => _resumeCbtIfAny());
   }
@@ -58,6 +71,12 @@ class _HomeShellState extends State<HomeShell> {
     await Navigator.of(context).push<bool>(
       MaterialPageRoute<bool>(builder: (_) => CbtExamScreen(subject: subject)),
     );
+  }
+
+  @override
+  void dispose() {
+    _heartbeat?.cancel();
+    super.dispose();
   }
 
   void _onTap(int index) {

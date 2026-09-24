@@ -6,6 +6,7 @@ import '../../../../core/data/academic_structure.dart';
 import '../../../../core/models/student_profile.dart';
 import '../../../../core/models/study_material.dart';
 import '../../../../core/routing/app_router.dart';
+import '../../../../core/services/activity_repository.dart';
 import '../../../../core/services/content_repository.dart';
 import '../../../../core/services/study_repository.dart';
 import '../../../../core/state/session_controller.dart';
@@ -603,6 +604,19 @@ class _ProfileScreenState extends State<ProfileScreen>
               onTap: _openGithub,
             ),
             const Divider(height: 1, indent: 16, endIndent: 16),
+            if (ActivityRepository.isOwnerEmail(
+              sessionController.profile?.email,
+            )) ...<Widget>[
+              ListTile(
+                leading: const Icon(Icons.insights_rounded, size: 20),
+                title: const Text('Live users'),
+                subtitle: const Text('Owner only · who is using Eduvora now'),
+                trailing: const Icon(Icons.chevron_right_rounded, size: 20),
+                onTap: () =>
+                    Navigator.of(context).pushNamed(AppRouter.liveUsers),
+              ),
+              const Divider(height: 1, indent: 16, endIndent: 16),
+            ],
             ListTile(
               leading: const Icon(Icons.description_outlined, size: 20),
               title: const Text('Terms of Use'),
