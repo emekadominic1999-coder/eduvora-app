@@ -38,6 +38,15 @@ class ActivityRepository {
   static bool isOwnerEmail(String? email) =>
       email != null && _ownerEmails.contains(email.trim().toLowerCase());
 
+  /// Whether the account that is actually signed in is the owner's. Reads the
+  /// email from the login session (the same one the database checks), not the
+  /// profile row -- a profile created through Google sign-in can carry an
+  /// empty email, which hid the owner's entry point.
+  static bool get currentUserIsOwner {
+    if (!SupabaseService.isReady) return false;
+    return isOwnerEmail(SupabaseService.auth.currentUser?.email);
+  }
+
   /// Marks the signed-in student as seen just now. Never throws: a missed
   /// heartbeat must not disturb the student.
   Future<void> touch() async {

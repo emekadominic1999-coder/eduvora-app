@@ -604,9 +604,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               onTap: _openGithub,
             ),
             const Divider(height: 1, indent: 16, endIndent: 16),
-            if (ActivityRepository.isOwnerEmail(
-              sessionController.profile?.email,
-            )) ...<Widget>[
+            if (ActivityRepository.currentUserIsOwner) ...<Widget>[
               ListTile(
                 leading: const Icon(Icons.insights_rounded, size: 20),
                 title: const Text('Live users'),
