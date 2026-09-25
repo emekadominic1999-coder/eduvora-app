@@ -1,34 +1,51 @@
+import 'package:flutter/foundation.dart';
+
 /// Ad unit ids for the AdMob banner and rewarded video.
 ///
-/// The defaults below are Google's own TEST ids: they show clearly labelled
-/// test ads and earn nothing. Before publishing, create the app in AdMob and
-/// build with the real ids:
+/// Debug runs always use Google's TEST ids (clearly labelled test ads, no
+/// earnings) so nobody ever taps live ads while developing — that can get an
+/// AdMob account suspended. Release builds use the real ids below. An id left
+/// empty falls back to the test id until it is supplied.
 ///
-/// ```
-/// flutter build appbundle --release \
-///   --dart-define=ADMOB_BANNER_ANDROID=ca-app-pub-XXXX/YYYY \
-///   --dart-define=ADMOB_REWARDED_ANDROID=ca-app-pub-XXXX/ZZZZ
-/// ```
+/// Either can be overridden at build time:
+/// `--dart-define=ADMOB_BANNER_ANDROID=ca-app-pub-XXXX/YYYY`
 ///
 /// The AdMob *App id* (ca-app-pub-XXXX~NNNN) is not passed here — it lives in
 /// `android/app/src/main/AndroidManifest.xml` and `ios/Runner/Info.plist`.
 class AdConfig {
   const AdConfig._();
 
-  static const String bannerAndroid = String.fromEnvironment(
+  // Google's official test ids.
+  static const String _testBannerAndroid =
+      'ca-app-pub-3940256099942544/6300978111';
+  static const String _testRewardedAndroid =
+      'ca-app-pub-3940256099942544/5224354917';
+  static const String _testBannerIos = 'ca-app-pub-3940256099942544/2934735716';
+  static const String _testRewardedIos =
+      'ca-app-pub-3940256099942544/1712485313';
+
+  // Real ids from the "Eduvora University Learn" app in AdMob.
+  static const String _liveBannerAndroid = String.fromEnvironment(
     'ADMOB_BANNER_ANDROID',
-    defaultValue: 'ca-app-pub-3940256099942544/6300978111',
+    defaultValue: 'ca-app-pub-9619956975441424/1484458666',
   );
-  static const String rewardedAndroid = String.fromEnvironment(
+  static const String _liveRewardedAndroid = String.fromEnvironment(
     'ADMOB_REWARDED_ANDROID',
-    defaultValue: 'ca-app-pub-3940256099942544/5224354917',
-  );
-  static const String bannerIos = String.fromEnvironment(
+  ); // not supplied yet
+  static const String _liveBannerIos = String.fromEnvironment(
     'ADMOB_BANNER_IOS',
-    defaultValue: 'ca-app-pub-3940256099942544/2934735716',
   );
-  static const String rewardedIos = String.fromEnvironment(
+  static const String _liveRewardedIos = String.fromEnvironment(
     'ADMOB_REWARDED_IOS',
-    defaultValue: 'ca-app-pub-3940256099942544/1712485313',
   );
+
+  static String _pick(String live, String test) =>
+      kReleaseMode && live.isNotEmpty ? live : test;
+
+  static String get bannerAndroid =>
+      _pick(_liveBannerAndroid, _testBannerAndroid);
+  static String get rewardedAndroid =>
+      _pick(_liveRewardedAndroid, _testRewardedAndroid);
+  static String get bannerIos => _pick(_liveBannerIos, _testBannerIos);
+  static String get rewardedIos => _pick(_liveRewardedIos, _testRewardedIos);
 }
