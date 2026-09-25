@@ -37,10 +37,11 @@ class _MaterialsScreenState extends State<MaterialsScreen>
     _future = _load();
   }
 
-  Future<List<StudyMaterial>> _load() {
+  Future<List<StudyMaterial>> _load() async {
+    await sessionController.ensureLoaded();
     final StudentProfile? profile = sessionController.profile;
     if (profile == null) {
-      return Future<List<StudyMaterial>>.value(<StudyMaterial>[]);
+      return <StudyMaterial>[];
     }
     return _content.materials(profile);
   }

@@ -65,10 +65,7 @@ class _CbtHomeScreenState extends State<CbtHomeScreen> {
     // general-studies papers (they pass regardless of faculty), which looks
     // like most of the bank vanished rather than like a loading state. Wait
     // for the real profile once rather than show that falsely short list.
-    if (sessionController.profile == null &&
-        sessionController.status == AuthStatus.unknown) {
-      await sessionController.bootstrap();
-    }
+    await sessionController.ensureLoaded();
     final StudentProfile? profile = sessionController.profile;
     final List<CbtEntitlement> entitlements = await _paywall.myEntitlements();
     if (mounted) setState(() => _entitlements = entitlements);

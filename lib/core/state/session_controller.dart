@@ -98,6 +98,26 @@ class SessionController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Makes sure the profile is available before a screen loads its data.
+  /// After the app has been minimised or a tab restored, a screen can be
+  /// rebuilt before [bootstrap] has finished, and would otherwise show an
+  /// empty state.
+  Future<void> ensureLoaded() async {
+    if (_profile != null) return;
+    if (_bootstrapping != null) {
+      await _bootstrapping;
+      return;
+    }
+    _bootstrapping = bootstrap();
+    try {
+      await _bootstrapping;
+    } finally {
+      _bootstrapping = null;
+    }
+  }
+
+  Future<void>? _bootstrapping;
+
   // ------------------------------------------------------- email & password
 
   Future<void> signUpWithEmail({

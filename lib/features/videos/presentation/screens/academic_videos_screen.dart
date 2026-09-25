@@ -36,10 +36,11 @@ class _AcademicVideosScreenState extends State<AcademicVideosScreen> {
     _future = _load();
   }
 
-  Future<List<AcademicVideo>> _load() {
+  Future<List<AcademicVideo>> _load() async {
+    await sessionController.ensureLoaded();
     final StudentProfile? profile = sessionController.profile;
     if (profile == null) {
-      return Future<List<AcademicVideo>>.value(<AcademicVideo>[]);
+      return <AcademicVideo>[];
     }
     return _content.videos(profile);
   }

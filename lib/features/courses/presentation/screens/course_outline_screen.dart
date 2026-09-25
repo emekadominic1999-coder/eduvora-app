@@ -30,6 +30,7 @@ class _CourseOutlineScreenState extends State<CourseOutlineScreen> {
   }
 
   Future<_OutlineData> _load() async {
+    await sessionController.ensureLoaded();
     final StudentProfile? profile = sessionController.profile;
     if (profile == null) {
       return const _OutlineData(mine: <CourseOutline>[], others: 0);

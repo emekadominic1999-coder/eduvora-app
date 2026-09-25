@@ -27,9 +27,10 @@ class _ClassListsScreenState extends State<ClassListsScreen> {
     _future = _load();
   }
 
-  Future<List<ClassList>> _load() {
+  Future<List<ClassList>> _load() async {
+    await sessionController.ensureLoaded();
     final StudentProfile? profile = sessionController.profile;
-    if (profile == null) return Future<List<ClassList>>.value(<ClassList>[]);
+    if (profile == null) return <ClassList>[];
     return _repo.myClassLists(profile);
   }
 

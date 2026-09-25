@@ -53,10 +53,14 @@ class _VideoPlanScreenState extends State<VideoPlanScreen> {
       LocalStore.instance.readMap(StoreKeys.videoPlanChecked) ??
           <String, dynamic>{},
     );
+    _future = _loadOutlines();
+  }
+
+  Future<List<CourseOutline>> _loadOutlines() async {
+    await sessionController.ensureLoaded();
     final StudentProfile? profile = sessionController.profile;
-    _future = profile == null
-        ? Future<List<CourseOutline>>.value(<CourseOutline>[])
-        : _repo.allOutlines(profile.institutionName);
+    if (profile == null) return <CourseOutline>[];
+    return _repo.allOutlines(profile.institutionName);
   }
 
   bool _isChecked(String key) => _checked[key] == true;

@@ -30,9 +30,10 @@ class _GroupsScreenState extends State<GroupsScreen> {
     _future = _load();
   }
 
-  Future<List<StudyGroup>> _load() {
+  Future<List<StudyGroup>> _load() async {
+    await sessionController.ensureLoaded();
     final StudentProfile? profile = sessionController.profile;
-    if (profile == null) return Future<List<StudyGroup>>.value(<StudyGroup>[]);
+    if (profile == null) return <StudyGroup>[];
     return _repo.myGroups(profile);
   }
 

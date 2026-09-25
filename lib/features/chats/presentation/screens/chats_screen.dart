@@ -29,6 +29,16 @@ class _ChatsScreenState extends State<ChatsScreen>
   @override
   bool get wantKeepAlive => true;
 
+  @override
+  void initState() {
+    super.initState();
+    if (sessionController.profile == null) {
+      sessionController.ensureLoaded().then((_) {
+        if (mounted) setState(() {});
+      });
+    }
+  }
+
   Future<void> _open(Conversation conversation) async {
     await _repo.markRead(conversation.id);
     if (!mounted) return;

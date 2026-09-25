@@ -45,6 +45,7 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Future<_DashboardData> _load() async {
+    await sessionController.ensureLoaded();
     final StudentProfile? profile = sessionController.profile;
     if (profile == null) {
       return const _DashboardData(
