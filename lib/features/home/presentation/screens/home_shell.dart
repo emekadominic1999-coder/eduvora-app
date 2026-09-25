@@ -2,10 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../../../core/ads/ads.dart';
 import '../../../../core/models/cbt.dart';
 import '../../../../core/routing/app_router.dart';
 import '../../../../core/services/activity_repository.dart';
 import '../../../../core/services/cbt_progress_store.dart';
+import '../../../../core/services/paywall_repository.dart';
 import '../../../../core/services/chat_repository.dart';
 import '../../../../core/state/session_controller.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -36,9 +38,19 @@ class _HomeShellState extends State<HomeShell> {
   static const ActivityRepository _activity = ActivityRepository();
   Timer? _heartbeat;
 
+  /// Students who have paid for any CBT access never see the banner.
+  bool _paid = false;
+
   @override
   void initState() {
     super.initState();
+    if (AdService.supported) {
+      unawaited(
+        const PaywallRepository().myEntitlements().then((entitlements) {
+          if (mounted) setState(() => _paid = entitlements.isNotEmpty);
+        }),
+      );
+    }
     // "This student has the app open" -- feeds the owner-only Live users
     // screen. Immediately, then every few minutes while the app stays open.
     unawaited(_activity.touch());
@@ -106,10 +118,16 @@ class _HomeShellState extends State<HomeShell> {
                 ProfileScreen(embedded: true),
               ],
             ),
-            bottomNavigationBar: _NavBar(
-              index: index,
-              onTap: _onTap,
-              unread: _unreadBadge(),
+            bottomNavigationBar: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                if (AdService.supported && !_paid)
+                  const ColoredBox(
+                    color: AppColours.surface,
+                    child: Center(child: AdBanner()),
+                  ),
+                _NavBar(index: index, onTap: _onTap, unread: _unreadBadge()),
+              ],
             ),
           ),
         );

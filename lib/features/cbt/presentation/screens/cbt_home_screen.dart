@@ -11,6 +11,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/common.dart';
 import '../../../tutors/presentation/screens/tutor_directory_screen.dart';
 import '../widgets/exam_setup_sheet.dart';
+import '../../../../core/ads/ads.dart';
 import '../widgets/paywall_sheet.dart';
 import 'cbt_exam_screen.dart';
 import 'cbt_payment_screen.dart';
@@ -191,10 +192,16 @@ class _CbtHomeScreenState extends State<CbtHomeScreen> {
       // leaving the student to work out they must tap the paper again.
     }
 
-    final CbtPlan? plan = await showPaywallSheet(context, subject);
-    if (plan == null || !mounted) return false;
+    final PaywallChoice? choice = await showPaywallSheet(
+      context,
+      subject,
+      allowAd: AdService.supported,
+    );
+    if (choice == null || !mounted) return false;
 
-    if (plan == CbtPlan.coursePack) {
+    if (choice == PaywallChoice.watchAd) return _watchAdToUnlock();
+
+    if (choice == PaywallChoice.coursePack) {
       final List<CbtSubject> all = await _cbt.all();
       if (!mounted) return false;
       final CoursePackSelection? selection = await showCoursePackPicker(
@@ -224,6 +231,34 @@ class _CbtHomeScreenState extends State<CbtHomeScreen> {
 
     await _loadEntitlements();
     return true;
+  }
+
+  /// The student chose to watch a short video instead of paying. Opens the
+  /// paper for this one sitting once the video has been watched to the end.
+  Future<bool> _watchAdToUnlock() async {
+    final RewardResult result = await AdService.showRewarded();
+    if (!mounted) return false;
+    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+    switch (result) {
+      case RewardResult.earned:
+        return true;
+      case RewardResult.dismissed:
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text('Watch the whole video to open the paper.'),
+          ),
+        );
+        return false;
+      case RewardResult.unavailable:
+        // No ad could be loaded (offline or nothing to show): never lock a
+        // student out because of that.
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text('No video is available right now, so this one is on us.'),
+          ),
+        );
+        return true;
+    }
   }
 
   Future<bool> _confirmFreeTrial(CbtSubject subject) async {

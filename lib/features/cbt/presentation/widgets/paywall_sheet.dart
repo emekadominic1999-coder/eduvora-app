@@ -1,25 +1,34 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/models/cbt.dart';
-import '../../../../core/models/cbt_entitlement.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/common.dart';
 
-/// Offers the two ways to unlock CBT access, once a locked paper (or a spent
-/// free trial) has been tapped. Returns the chosen [CbtPlan], or null if the
-/// student backed out.
-Future<CbtPlan?> showPaywallSheet(BuildContext context, CbtSubject subject) {
-  return showModalBottomSheet<CbtPlan>(
+/// What the student picked on the paywall.
+enum PaywallChoice { watchAd, singlePaper, coursePack }
+
+/// Offers the ways to unlock CBT access, once a locked paper (or a spent
+/// free trial) has been tapped. Returns the chosen [PaywallChoice], or null
+/// if the student backed out. [allowAd] adds the optional "watch a short
+/// video" choice (only on the Android/iOS apps).
+Future<PaywallChoice?> showPaywallSheet(
+  BuildContext context,
+  CbtSubject subject, {
+  bool allowAd = false,
+}) {
+  return showModalBottomSheet<PaywallChoice>(
     context: context,
     isScrollControlled: true,
-    builder: (BuildContext context) => _PaywallSheet(subject: subject),
+    builder: (BuildContext context) =>
+        _PaywallSheet(subject: subject, allowAd: allowAd),
   );
 }
 
 class _PaywallSheet extends StatelessWidget {
-  const _PaywallSheet({required this.subject});
+  const _PaywallSheet({required this.subject, required this.allowAd});
 
   final CbtSubject subject;
+  final bool allowAd;
 
   @override
   Widget build(BuildContext context) {
@@ -64,23 +73,37 @@ class _PaywallSheet extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.xl),
 
+          if (allowAd) ...<Widget>[
+            _PlanCard(
+              title: 'Watch a short video',
+              body:
+                  'Your choice, about 30 seconds. Opens ${subject.name} for '
+                  'one sitting.',
+              price: 'Free',
+              highlighted: false,
+              onTap: () => Navigator.of(context).pop(PaywallChoice.watchAd),
+            ),
+            const SizedBox(height: AppSpacing.md),
+          ],
           _PlanCard(
             title: 'This paper only',
-            body: '${subject.name} · unlimited attempts, this session',
+            body: allowAd
+                ? '${subject.name} · unlimited attempts, no ads'
+                : '${subject.name} · unlimited attempts, this session',
             price: '₦350',
             highlighted: false,
-            onTap: () => Navigator.of(context).pop(CbtPlan.singlePaper),
+            onTap: () => Navigator.of(context).pop(PaywallChoice.singlePaper),
           ),
           const SizedBox(height: AppSpacing.md),
           _PlanCard(
             title: 'Build a course pack',
             body:
                 'Pick your department, level and semester, then choose up '
-                'to 23 units of papers to unlock',
+                'to 23 units of papers to unlock${allowAd ? ', no ads' : ''}',
             price: '₦2,300',
             highlighted: true,
             badge: 'BEST VALUE',
-            onTap: () => Navigator.of(context).pop(CbtPlan.coursePack),
+            onTap: () => Navigator.of(context).pop(PaywallChoice.coursePack),
           ),
 
           const SizedBox(height: AppSpacing.lg),

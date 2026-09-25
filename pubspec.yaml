@@ -48,6 +48,7 @@ dependencies:
 
   # Emoji picker for the study-group composer.
   emoji_picker_flutter: ^4.5.3
+  google_mobile_ads: ^9.1.0
 
 dev_dependencies:
   flutter_test:
