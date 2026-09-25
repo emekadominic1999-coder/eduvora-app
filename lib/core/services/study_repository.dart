@@ -53,29 +53,22 @@ class StudyRepository {
     );
   }
 
-  /// Cumulative GPA across every saved semester.
-  double cumulativeGpa() {
-    final List<SemesterRecord> all = semesters();
-    final int units = all.fold(
-      0,
-      (int sum, SemesterRecord s) => sum + s.totalUnits,
-    );
-    if (units == 0) return 0;
-    final int points = all.fold(
-      0,
-      (int sum, SemesterRecord s) => sum + s.totalQualityPoints,
-    );
-    return points / units;
-  }
-
-  int totalUnitsPassed() => semesters().fold(
-    0,
-    (int sum, SemesterRecord s) =>
-        sum +
-        s.courses
-            .where((CourseEntry c) => c.grade != Grade.f)
-            .fold(0, (int u, CourseEntry c) => u + c.creditUnits),
+  GpaSettings gpaSettings() => GpaSettings.fromJson(
+    LocalStore.instance.readMap(StoreKeys.gpaSettings),
   );
+
+  Future<void> saveGpaSettings(GpaSettings settings) =>
+      LocalStore.instance.writeMap(StoreKeys.gpaSettings, settings.toJson());
+
+  /// The cumulative position across every saved semester, honouring the
+  /// student's resit rule and any earlier CGPA they entered.
+  CumulativeResult cumulative({SemesterRecord? extra}) =>
+      GpaEngine.cumulative(semesters(), gpaSettings(), extra: extra);
+
+  /// Cumulative GPA across every saved semester.
+  double cumulativeGpa() => cumulative().cgpa;
+
+  int totalUnitsPassed() => cumulative().unitsPassed;
 
   Future<void> _mirrorSemester(SemesterRecord record) async {
     if (!SupabaseService.isReady) return;

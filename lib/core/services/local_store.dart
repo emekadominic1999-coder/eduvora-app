@@ -115,6 +115,7 @@ class StoreKeys {
   static const String messages = 'eduvora.messages';
   static const String aiHistory = 'eduvora.ai_history';
   static const String gpaSemesters = 'eduvora.gpa_semesters';
+  static const String gpaSettings = 'eduvora.gpa_settings';
   static const String cbtAttempts = 'eduvora.cbt_attempts';
   static const String bookmarkedNews = 'eduvora.bookmarked_news';
   static const String courseOutlines = 'eduvora.course_outlines';
