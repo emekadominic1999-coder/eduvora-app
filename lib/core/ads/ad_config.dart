@@ -31,7 +31,8 @@ class AdConfig {
   );
   static const String _liveRewardedAndroid = String.fromEnvironment(
     'ADMOB_REWARDED_ANDROID',
-  ); // not supplied yet
+    defaultValue: 'ca-app-pub-9619956975441424/9909743590',
+  );
   static const String _liveBannerIos = String.fromEnvironment(
     'ADMOB_BANNER_IOS',
   );
