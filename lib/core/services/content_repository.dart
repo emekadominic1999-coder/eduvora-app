@@ -229,7 +229,16 @@ class ContentRepository {
     if (!SupabaseService.isReady) {
       throw StateError('Posting needs the Eduvora backend to be connected.');
     }
-    final String path = 'noticeboard/${_uuid.v4()}-$fileName';
+    // The storage policy for this bucket requires the upload's first path
+    // segment to be the uploader's own auth id (see schema.sql's "students
+    // upload to their own folder") -- a plain 'noticeboard/...' path fails
+    // that check silently, which is exactly what was rejecting every
+    // picture. The owner's own id satisfies it just as a student's does.
+    final String? uid = SupabaseService.currentUser?.id;
+    if (uid == null) {
+      throw StateError('Not signed in.');
+    }
+    final String path = '$uid/noticeboard-${_uuid.v4()}-$fileName';
     await SupabaseService.client.storage
         .from(AppConfig.materialsBucket)
         .uploadBinary(path, bytes);
