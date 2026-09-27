@@ -7,6 +7,7 @@ import '../../../../core/models/cbt.dart';
 import '../../../../core/routing/app_router.dart';
 import '../../../../core/services/activity_repository.dart';
 import '../../../../core/services/cbt_progress_store.dart';
+import '../../../../core/services/local_store.dart';
 import '../../../../core/services/paywall_repository.dart';
 import '../../../../core/services/chat_repository.dart';
 import '../../../../core/state/session_controller.dart';
@@ -58,8 +59,41 @@ class _HomeShellState extends State<HomeShell> {
       const Duration(minutes: 3),
       (_) => unawaited(_activity.touch()),
     );
-    AppRouter.shellTab.value = widget.initialTab;
+    // A locked phone can let the browser (or the OS, on a low-end Android
+    // device) reclaim a backgrounded tab and reload the app from scratch --
+    // for instance right after opening a shared material, which leaves the
+    // app in a background tab while the file opens in a new one. Without
+    // this, that reload always lands back on Home (tab 0) rather than
+    // wherever the student actually was, which reads as "the app took me
+    // back to the beginning". Restore the last tab they were on instead,
+    // unless this shell was deliberately opened to a specific tab (sign-in,
+    // finishing onboarding).
+    AppRouter.shellTab.value = widget.initialTab != 0
+        ? widget.initialTab
+        : _lastSavedTab();
+    // Save every subsequent tab change too, however it happens -- a direct
+    // tap, or a jump from Ada / a deep link via [AppRouter.go].
+    AppRouter.shellTab.addListener(_saveCurrentTab);
     WidgetsBinding.instance.addPostFrameCallback((_) => _resumeCbtIfAny());
+  }
+
+  void _saveCurrentTab() {
+    unawaited(
+      LocalStore.instance.writeString(
+        StoreKeys.lastShellTab,
+        '${AppRouter.shellTab.value}',
+      ),
+    );
+  }
+
+  // Home, Materials, Community, Chats, Profile -- keep in step with the
+  // IndexedStack below and AppRouter.shellTabs.
+  static const int _tabCount = 5;
+
+  int _lastSavedTab() {
+    final int saved =
+        int.tryParse(LocalStore.instance.readString(StoreKeys.lastShellTab) ?? '') ?? 0;
+    return saved >= 0 && saved < _tabCount ? saved : 0;
   }
 
   /// Walks the student straight back into a CBT paper that was interrupted
@@ -88,6 +122,7 @@ class _HomeShellState extends State<HomeShell> {
   @override
   void dispose() {
     _heartbeat?.cancel();
+    AppRouter.shellTab.removeListener(_saveCurrentTab);
     super.dispose();
   }
 

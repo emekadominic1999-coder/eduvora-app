@@ -9,6 +9,7 @@ import '../../../../core/routing/app_router.dart';
 import '../../../../core/services/content_repository.dart';
 import '../../../../core/services/referral_repository.dart';
 import '../../../../core/services/study_repository.dart';
+import '../../../../core/state/profile_refresh_mixin.dart';
 import '../../../../core/state/session_controller.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/common.dart';
@@ -28,7 +29,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen>
-    with AutomaticKeepAliveClientMixin {
+    with AutomaticKeepAliveClientMixin, ProfileRefreshMixin<HomeScreen> {
   static const ContentRepository _content = ContentRepository();
   static const StudyRepository _study = StudyRepository();
 
@@ -42,7 +43,17 @@ class _HomeScreenState extends State<HomeScreen>
     super.initState();
     _future = _load();
     unawaited(const ReferralRepository().applyPendingLinkCode());
+    initProfileRefresh();
   }
+
+  @override
+  void dispose() {
+    disposeProfileRefresh();
+    super.dispose();
+  }
+
+  @override
+  void onProfileChanged() => setState(() => _future = _load());
 
   Future<_DashboardData> _load() async {
     await sessionController.ensureLoaded();

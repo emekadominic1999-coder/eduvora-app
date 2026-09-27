@@ -1,4 +1,3 @@
-import 'package:eduvora/core/models/gpa.dart';
 import 'package:eduvora/core/models/institution.dart';
 import 'package:eduvora/core/services/local_store.dart';
 import 'package:eduvora/core/state/session_controller.dart';
@@ -312,19 +311,24 @@ void main() {
       await tester.pumpWidget(_wrap(const GpaCalculatorScreen()));
       await tester.pumpAndSettle();
 
-      // The default row is 3 units at grade A, so 15/3 = 5.00.
+      // The default row has no grade chosen yet, so it is left out of the
+      // totals entirely: GPA reads 0.00 until a grade (or a score) is given.
+      expect(find.text('0.00'), findsWidgets);
+
+      // Typing a score fills in the grade automatically. 70 is an A (5
+      // points), and any number of units at 5 points gives a GPA of 5.00.
+      final Finder scoreField = find.byWidgetPredicate(
+        (Widget w) => w is TextField && w.decoration?.labelText == 'Score',
+      );
+      expect(scoreField, findsOneWidget);
+      await tester.enterText(scoreField, '70');
+      await tester.pumpAndSettle();
+
       expect(find.text('5.00'), findsWidgets);
       expect(find.text('First Class'), findsWidgets);
 
-      // Drop the grade to a C: 3 units × 3 points = 9/3 = 3.00.
-      final Finder gradePicker =
-          find.byType(DropdownButtonFormField<Grade>).first;
-      await tester.ensureVisible(gradePicker);
-      await tester.pumpAndSettle();
-      await tester.tap(gradePicker, warnIfMissed: false);
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.text('C (3)').last);
+      // 55 is a C (3 points): same units at 3 points gives 3.00.
+      await tester.enterText(scoreField, '55');
       await tester.pumpAndSettle();
 
       expect(find.text('3.00'), findsWidgets);
@@ -337,16 +341,20 @@ void main() {
       await tester.pumpWidget(_wrap(const GpaCalculatorScreen()));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byTooltip('Grading scale'));
+      await tester.tap(find.byTooltip('Grading scale and rules'));
       await tester.pumpAndSettle();
 
       expect(find.text('The 5-point scale'), findsOneWidget);
       expect(
-        find.text('GPA = Σ (credit units × grade value) ⁄ Σ credit units'),
+        find.text(
+          'TNU = total units registered\n'
+          'TCP = total credit points (units × grade point)\n'
+          'GPA = TCP ÷ TNU',
+        ),
         findsOneWidget,
       );
-      expect(find.text('Excellent'), findsOneWidget);
-      expect(find.text('Fail'), findsOneWidget);
+      expect(find.textContaining('Excellent'), findsOneWidget);
+      expect(find.textContaining('Fail'), findsOneWidget);
     });
   });
 
@@ -370,7 +378,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 800));
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('5-point scale'), findsWidgets);
+      expect(find.textContaining('TCP ÷ TNU'), findsWidgets);
       expect(find.text('Open the GP calculator'), findsOneWidget);
     });
 

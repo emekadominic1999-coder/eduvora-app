@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/models/student_profile.dart';
 import '../../../../core/models/study_material.dart';
 import '../../../../core/services/content_repository.dart';
+import '../../../../core/state/profile_refresh_mixin.dart';
 import '../../../../core/state/session_controller.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/common.dart';
@@ -21,7 +22,7 @@ class MaterialsScreen extends StatefulWidget {
 }
 
 class _MaterialsScreenState extends State<MaterialsScreen>
-    with AutomaticKeepAliveClientMixin {
+    with AutomaticKeepAliveClientMixin, ProfileRefreshMixin<MaterialsScreen> {
   static const ContentRepository _content = ContentRepository();
 
   late Future<List<StudyMaterial>> _future;
@@ -35,7 +36,17 @@ class _MaterialsScreenState extends State<MaterialsScreen>
   void initState() {
     super.initState();
     _future = _load();
+    initProfileRefresh();
   }
+
+  @override
+  void dispose() {
+    disposeProfileRefresh();
+    super.dispose();
+  }
+
+  @override
+  void onProfileChanged() => setState(() => _future = _load());
 
   Future<List<StudyMaterial>> _load() async {
     await sessionController.ensureLoaded();

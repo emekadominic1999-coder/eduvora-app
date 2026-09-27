@@ -118,6 +118,18 @@ class SessionController extends ChangeNotifier {
 
   Future<void>? _bootstrapping;
 
+  /// Test-only hooks so screen-level tests (e.g. [ProfileRefreshMixin]'s
+  /// tests) can drive profile changes without a real backend or on-device
+  /// storage. Never call these outside a test.
+  @visibleForTesting
+  void setProfileForTest(StudentProfile profile) {
+    _profile = profile;
+    notifyListeners();
+  }
+
+  @visibleForTesting
+  void notifyListenersForTest() => notifyListeners();
+
   // ------------------------------------------------------- email & password
 
   Future<void> signUpWithEmail({
