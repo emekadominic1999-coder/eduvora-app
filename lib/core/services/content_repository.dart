@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 
 import '../config/app_config.dart';
-import '../data/seed_content.dart';
 import '../models/academic_video.dart';
 import '../models/news_item.dart';
 import '../models/student_profile.dart';
@@ -16,6 +15,9 @@ import 'supabase_service.dart';
 /// library fills any gap so a student never lands on an empty screen.
 class ContentRepository {
   const ContentRepository();
+
+  /// Department value for a file that every department of a faculty can see.
+  static const String allDepartments = 'All departments';
 
   static const Uuid _uuid = Uuid();
 
@@ -77,17 +79,9 @@ class ContentRepository {
         .readList(StoreKeys.materials)
         .map(StudyMaterial.fromJson)
         .toList();
-    final List<StudyMaterial> seeded = SeedContent.materialsFor(
-      faculty: profile.faculty,
-      department: profile.department,
-      level: profile.level,
-      institution: profile.institutionName,
-    );
-
     return _merge<StudyMaterial>(<List<StudyMaterial>>[
       local,
       remote,
-      seeded,
     ], (StudyMaterial m) => m.id)..sort(
       (StudyMaterial a, StudyMaterial b) => (b.createdAt ?? DateTime(2000))
           .compareTo(a.createdAt ?? DateTime(2000)),
@@ -97,15 +91,24 @@ class ContentRepository {
   Future<List<StudyMaterial>> _remoteMaterials(StudentProfile profile) async {
     if (!SupabaseService.isReady) return <StudyMaterial>[];
     try {
+      // Files shared with the student's own department, plus files shared
+      // with every department of their faculty.
+      final String dept = profile.department.replaceAll('"', '');
       final List<dynamic> rows = await SupabaseService.client
           .from('materials')
           .select()
-          .eq('department', profile.department)
+          .or('department.eq."$dept",department.eq."$allDepartments"')
           .order('created_at', ascending: false)
           .limit(200);
       return rows
           .whereType<Map<String, dynamic>>()
           .map(StudyMaterial.fromJson)
+          .where(
+            (StudyMaterial m) =>
+                m.department == profile.department ||
+                (m.department == allDepartments &&
+                    m.faculty == profile.faculty),
+          )
           .toList();
     } catch (error) {
       debugPrint('[Eduvora] material fetch failed: $error');

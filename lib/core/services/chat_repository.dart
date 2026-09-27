@@ -6,9 +6,8 @@ import 'local_store.dart';
 
 /// Conversations, messages and the pinned assistant thread.
 ///
-/// Threads are seeded from the student's own department and level so the app
-/// feels populated from the first launch, then persisted locally as the
-/// student takes part.
+/// Only the Ada assistant thread is built in; every other conversation is one
+/// the student has genuinely taken part in.
 class ChatRepository {
   const ChatRepository();
 
@@ -19,6 +18,7 @@ class ChatRepository {
     final List<Conversation> stored = LocalStore.instance
         .readList(StoreKeys.conversations)
         .map(Conversation.fromJson)
+        .where((Conversation c) => !_retiredDemoThreads.contains(c.id))
         .toList();
 
     final Map<String, Conversation> byId = <String, Conversation>{};
@@ -37,15 +37,9 @@ class ChatRepository {
     return all;
   }
 
+  /// The only built-in thread is Ada, the Eduvora assistant. Everything else
+  /// a student sees in Chats is real: their own conversations.
   List<Conversation> _seedConversations(StudentProfile profile) {
-    final DateTime now = DateTime.now();
-    final String department = profile.department.isNotEmpty
-        ? profile.department
-        : 'Your department';
-    final String level = profile.level.isNotEmpty
-        ? profile.level
-        : 'Your level';
-
     return <Conversation>[
       Conversation(
         id: assistantThreadId,
@@ -53,149 +47,27 @@ class ChatRepository {
         subtitle: 'Always here to help you find your way',
         lastMessage:
             'Hello — I am Ada. Ask me anything about Eduvora, or just say hello.',
-        lastActivity: now,
+        lastActivity: DateTime.now(),
         isAssistant: true,
-      ),
-      Conversation(
-        id: 'group-department',
-        title: '$department · $level',
-        subtitle: 'Course study group',
-        lastMessage:
-            'Has anyone got the tutorial questions from last week’s class?',
-        lastActivity: now.subtract(const Duration(minutes: 24)),
-        isGroup: true,
-        unread: 3,
-        members: 148,
-      ),
-      Conversation(
-        id: 'group-exam-prep',
-        title: 'Exam Prep Circle',
-        subtitle: 'Revision partners across your faculty',
-        lastMessage: 'Meeting at 6pm as usual. Bring your past questions.',
-        lastActivity: now.subtract(const Duration(hours: 2)),
-        isGroup: true,
-        unread: 1,
-        members: 62,
-      ),
-      Conversation(
-        id: 'peer-adaeze',
-        title: 'Adaeze Nwankwo',
-        subtitle: 'Course representative',
-        lastMessage: 'I have uploaded the handout to the materials library.',
-        lastActivity: now.subtract(const Duration(hours: 5)),
-      ),
-      Conversation(
-        id: 'peer-ibrahim',
-        title: 'Ibrahim Suleiman',
-        subtitle: 'Study partner',
-        lastMessage: 'Thanks for the notes — they were very clear.',
-        lastActivity: now.subtract(const Duration(days: 1, hours: 3)),
       ),
     ];
   }
 
+  /// Ids of the sample chats an earlier version pre-loaded. They may still be
+  /// saved on a device, so they are ignored wherever they turn up.
+  static const Set<String> _retiredDemoThreads = <String>{
+    'group-department',
+    'group-exam-prep',
+    'peer-adaeze',
+    'peer-ibrahim',
+  };
+
   List<ChatMessage> messages(String conversationId) {
-    final List<ChatMessage> stored = LocalStore.instance
+    if (_retiredDemoThreads.contains(conversationId)) return <ChatMessage>[];
+    return LocalStore.instance
         .readList('${StoreKeys.messages}.$conversationId')
         .map(ChatMessage.fromJson)
         .toList();
-    if (stored.isNotEmpty) return stored;
-    return _seedMessages(conversationId);
-  }
-
-  List<ChatMessage> _seedMessages(String conversationId) {
-    final DateTime now = DateTime.now();
-
-    List<List<Object>> raw;
-    switch (conversationId) {
-      case 'group-department':
-        raw = <List<Object>>[
-          <Object>[
-            MessageAuthor.peer,
-            'Chinedu',
-            'Has anyone got the tutorial questions from last week’s class?',
-            180,
-          ],
-          <Object>[
-            MessageAuthor.peer,
-            'Aisha',
-            'Yes — I have uploaded them to the materials library under the '
-                'course code.',
-            140,
-          ],
-          <Object>[
-            MessageAuthor.peer,
-            'Tobi',
-            'Found them, thank you. Question 4 is the tricky one.',
-            96,
-          ],
-          <Object>[
-            MessageAuthor.peer,
-            'Aisha',
-            'Work it from the free-body diagram first, then substitute. It '
-                'falls out neatly.',
-            24,
-          ],
-        ];
-      case 'group-exam-prep':
-        raw = <List<Object>>[
-          <Object>[
-            MessageAuthor.peer,
-            'Grace',
-            'Meeting at 6pm as usual. Bring your past questions.',
-            120,
-          ],
-          <Object>[
-            MessageAuthor.peer,
-            'Samuel',
-            'I will be there. Shall we start with the 2022 paper?',
-            110,
-          ],
-        ];
-      case 'peer-adaeze':
-        raw = <List<Object>>[
-          <Object>[
-            MessageAuthor.peer,
-            'Adaeze',
-            'Good afternoon — did you get the departmental announcement?',
-            420,
-          ],
-          <Object>[
-            MessageAuthor.student,
-            'You',
-            'Not yet. What was it about?',
-            400,
-          ],
-          <Object>[
-            MessageAuthor.peer,
-            'Adaeze',
-            'I have uploaded the handout to the materials library.',
-            300,
-          ],
-        ];
-      case 'peer-ibrahim':
-        raw = <List<Object>>[
-          <Object>[
-            MessageAuthor.peer,
-            'Ibrahim',
-            'Thanks for the notes — they were very clear.',
-            1620,
-          ],
-        ];
-      default:
-        raw = <List<Object>>[];
-    }
-
-    return List<ChatMessage>.generate(raw.length, (int i) {
-      return ChatMessage(
-        id: '$conversationId-seed-$i',
-        conversationId: conversationId,
-        author: raw[i][0] as MessageAuthor,
-        senderName: raw[i][1] as String,
-        body: raw[i][2] as String,
-        sentAt: now.subtract(Duration(minutes: raw[i][3] as int)),
-      );
-    });
   }
 
   Future<ChatMessage> send({

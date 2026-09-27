@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 
-import '../data/seed_content.dart';
 import '../models/community.dart';
 import '../models/student_profile.dart';
 import 'local_store.dart';
@@ -40,7 +39,6 @@ class CommunityRepository {
     for (final CommunityPost p in <CommunityPost>[
       ...local,
       ...remote,
-      ...SeedContent.communityPosts(),
     ]) {
       byId.putIfAbsent(p.id, () => p);
     }
@@ -147,7 +145,6 @@ class CommunityRepository {
 
     final Map<String, CommunityComment> byId = <String, CommunityComment>{};
     for (final CommunityComment c in <CommunityComment>[
-      ...SeedContent.commentsFor(postId),
       ...remote,
       ...local,
     ]) {
