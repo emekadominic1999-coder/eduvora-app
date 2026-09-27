@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../../core/models/news_item.dart';
 import '../../../../core/services/content_repository.dart';
+import '../../../../core/services/local_store.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/common.dart';
 
@@ -43,7 +46,65 @@ class _PostNewsScreenState extends State<PostNewsScreen> {
   void initState() {
     super.initState();
     _future = _content.news();
+    final bool restored = _restoreDraft();
+    // Compiling a real post often means going back and forth to a browser
+    // or WhatsApp to copy the next detail, and switching away for that can
+    // let a mobile browser (or a low-end phone's OS) reclaim this tab and
+    // reload the whole app from scratch. Saving every keystroke means the
+    // draft is still there when that happens, instead of everything typed
+    // so far quietly vanishing.
+    _title.addListener(_saveDraft);
+    _summary.addListener(_saveDraft);
+    _source.addListener(_saveDraft);
+    _link.addListener(_saveDraft);
+    if (restored) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          showEduvoraSnack(
+            context,
+            'Picked up where you left off.',
+            icon: Icons.history_rounded,
+          );
+        }
+      });
+    }
   }
+
+  /// Returns true when there was an unfinished draft worth telling the
+  /// owner about (not just an empty one from a previous, already-posted
+  /// update).
+  bool _restoreDraft() {
+    final Map<String, dynamic>? draft = LocalStore.instance.readMap(
+      StoreKeys.postNewsDraft,
+    );
+    if (draft == null) return false;
+    _title.text = (draft['title'] as String?) ?? '';
+    _summary.text = (draft['summary'] as String?) ?? '';
+    _source.text = (draft['source'] as String?) ?? 'Eduvora';
+    _link.text = (draft['link'] as String?) ?? '';
+    _category = NewsCategory.fromName(draft['category'] as String?);
+    _deadline = DateTime.tryParse((draft['deadline'] as String?) ?? '');
+    _featured = draft['featured'] == true;
+    return _title.text.trim().isNotEmpty || _summary.text.trim().isNotEmpty;
+  }
+
+  void _saveDraft() {
+    unawaited(
+      LocalStore.instance.writeMap(StoreKeys.postNewsDraft, <String, dynamic>{
+        'title': _title.text,
+        'summary': _summary.text,
+        'source': _source.text,
+        'link': _link.text,
+        'category': _category.name,
+        'deadline': _deadline?.toIso8601String(),
+        'featured': _featured,
+      }),
+    );
+  }
+
+  Future<void> _clearDraft() => LocalStore.instance.remove(
+    StoreKeys.postNewsDraft,
+  );
 
   @override
   void dispose() {
@@ -62,7 +123,10 @@ class _PostNewsScreenState extends State<PostNewsScreen> {
       firstDate: now,
       lastDate: now.add(const Duration(days: 365 * 2)),
     );
-    if (picked != null) setState(() => _deadline = picked);
+    if (picked != null) {
+      setState(() => _deadline = picked);
+      _saveDraft();
+    }
   }
 
   Future<void> _post() async {
@@ -110,6 +174,7 @@ class _PostNewsScreenState extends State<PostNewsScreen> {
         _featured = false;
         _future = _content.news();
       });
+      await _clearDraft();
     } catch (error) {
       if (mounted) {
         showEduvoraSnack(
@@ -210,8 +275,10 @@ class _PostNewsScreenState extends State<PostNewsScreen> {
                             ),
                           )
                           .toList(),
-                      onChanged: (NewsCategory? c) =>
-                          setState(() => _category = c ?? _category),
+                      onChanged: (NewsCategory? c) {
+                        setState(() => _category = c ?? _category);
+                        _saveDraft();
+                      },
                     ),
                     const SizedBox(height: AppSpacing.md),
                     TextFormField(
@@ -278,14 +345,20 @@ class _PostNewsScreenState extends State<PostNewsScreen> {
                       Align(
                         alignment: Alignment.centerRight,
                         child: TextButton(
-                          onPressed: () => setState(() => _deadline = null),
+                          onPressed: () {
+                            setState(() => _deadline = null);
+                            _saveDraft();
+                          },
                           child: const Text('Clear deadline'),
                         ),
                       ),
                     SwitchListTile(
                       contentPadding: EdgeInsets.zero,
                       value: _featured,
-                      onChanged: (bool v) => setState(() => _featured = v),
+                      onChanged: (bool v) {
+                        setState(() => _featured = v);
+                        _saveDraft();
+                      },
                       title: const Text(
                         'Feature at the top of the Noticeboard',
                         style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600),
