@@ -1,13 +1,29 @@
 import 'dart:async';
+import 'dart:typed_data';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../../../core/models/community.dart';
 import '../../../../core/models/news_item.dart';
+import '../../../../core/services/community_repository.dart';
 import '../../../../core/services/content_repository.dart';
 import '../../../../core/services/local_store.dart';
+import '../../../../core/state/session_controller.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/common.dart';
+
+/// Where a category's post lands in the Community channels.
+extension on NewsCategory {
+  CommunityTopic get communityTopic => switch (this) {
+    NewsCategory.scholarship => CommunityTopic.scholarships,
+    NewsCategory.admission ||
+    NewsCategory.academic => CommunityTopic.academics,
+    NewsCategory.opportunity => CommunityTopic.careers,
+    NewsCategory.competition => CommunityTopic.general,
+  };
+}
 
 /// Owner-only: post a scholarship, admission notice, opportunity or academic
 /// notice straight into the Noticeboard, and manage what is already there.
@@ -25,6 +41,7 @@ class PostNewsScreen extends StatefulWidget {
 
 class _PostNewsScreenState extends State<PostNewsScreen> {
   static const ContentRepository _content = ContentRepository();
+  static const CommunityRepository _community = CommunityRepository();
   static const Uuid _uuid = Uuid();
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
@@ -39,6 +56,7 @@ class _PostNewsScreenState extends State<PostNewsScreen> {
   DateTime? _deadline;
   bool _featured = false;
   bool _posting = false;
+  PlatformFile? _image;
 
   late Future<List<NewsItem>> _future;
 
@@ -129,42 +147,139 @@ class _PostNewsScreenState extends State<PostNewsScreen> {
     }
   }
 
+  Future<void> _pickImage() async {
+    final FilePickerResult? result = await FilePicker.platform.pickFiles(
+      withData: true,
+      type: FileType.image,
+    );
+    final List<PlatformFile> files = result?.files ?? const <PlatformFile>[];
+    if (files.isNotEmpty) setState(() => _image = files.first);
+  }
+
+  Widget _imagePicker() {
+    final Uint8List? bytes = _image?.bytes;
+    if (bytes == null) {
+      return OutlinedButton.icon(
+        onPressed: _pickImage,
+        icon: const Icon(Icons.image_outlined, size: 18),
+        label: const Text('Add a picture (optional)'),
+      );
+    }
+    return Stack(
+      children: <Widget>[
+        ClipRRect(
+          borderRadius: AppRadii.sm,
+          child: Image.memory(
+            bytes,
+            width: double.infinity,
+            height: 160,
+            fit: BoxFit.cover,
+          ),
+        ),
+        Positioned(
+          top: 6,
+          right: 6,
+          child: Material(
+            color: Colors.black.withValues(alpha: 0.55),
+            shape: const CircleBorder(),
+            child: IconButton(
+              onPressed: () => setState(() => _image = null),
+              icon: const Icon(Icons.close_rounded, size: 18),
+              color: Colors.white,
+              tooltip: 'Remove picture',
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Future<void> _post() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
+    final String link = _link.text.trim();
+    if (link.isNotEmpty &&
+        !(link.startsWith('http://') || link.startsWith('https://'))) {
+      showEduvoraSnack(
+        context,
+        'The link needs to start with http:// or https://',
+        isError: true,
+      );
+      return;
+    }
+
     setState(() => _posting = true);
     try {
-      final String link = _link.text.trim();
-      if (link.isNotEmpty &&
-          !(link.startsWith('http://') || link.startsWith('https://'))) {
-        showEduvoraSnack(
-          context,
-          'The link needs to start with http:// or https://',
-          isError: true,
-        );
-        return;
+      String imageUrl = '';
+      final PlatformFile? image = _image;
+      if (image != null && image.bytes != null) {
+        try {
+          imageUrl = await _content.uploadNoticeImage(
+            image.bytes!,
+            image.name,
+          );
+        } catch (error) {
+          if (mounted) {
+            showEduvoraSnack(
+              context,
+              'The picture did not upload, so this went up as text only.',
+              isError: true,
+            );
+          }
+        }
       }
+
+      final String category = _category.label;
+      final String title = _title.text.trim();
+      final String summary = _summary.text.trim();
 
       await _content.createNews(
         NewsItem(
           id: _uuid.v4(),
-          title: _title.text.trim(),
-          summary: _summary.text.trim(),
+          title: title,
+          summary: summary,
           category: _category,
           source: _source.text.trim().isEmpty ? 'Eduvora' : _source.text.trim(),
           publishedAt: DateTime.now(),
           link: link,
           deadline: _deadline,
           isFeatured: _featured,
+          imageUrl: imageUrl,
         ),
       );
+      if (!mounted) return;
+
+      // Cross-post to Community too, pinned to the top, so students see it
+      // there without the owner doing anything extra.
+      String communityWarning = '';
+      try {
+        final StringBuffer body = StringBuffer('📢 $title\n\n$summary');
+        if (link.isNotEmpty) body.write('\n\nApply: $link');
+        if (_deadline != null) {
+          body.write(
+            '\n\nCloses: ${_deadline!.day}/${_deadline!.month}/${_deadline!.year}',
+          );
+        }
+        await _community.createAnnouncement(
+          authorName: sessionController.profile?.fullName.isNotEmpty == true
+              ? sessionController.profile!.fullName
+              : 'Eduvora',
+          body: body.toString(),
+          topic: _category.communityTopic,
+          imageUrl: imageUrl,
+        );
+      } catch (error) {
+        communityWarning = ' It did not reach Community, though — check your '
+            'connection and try posting again if that matters for this one.';
+      }
       if (!mounted) return;
 
       showEduvoraSnack(
         context,
         'Posted. Students will see it in the Noticeboard, under '
-        '${_category.label}.',
+        '$category, and pinned at the top of Community.$communityWarning',
         icon: Icons.campaign_rounded,
+        isError: communityWarning.isNotEmpty,
       );
       _title.clear();
       _summary.clear();
@@ -172,6 +287,7 @@ class _PostNewsScreenState extends State<PostNewsScreen> {
       setState(() {
         _deadline = null;
         _featured = false;
+        _image = null;
         _future = _content.news();
       });
       await _clearDraft();
@@ -323,6 +439,8 @@ class _PostNewsScreenState extends State<PostNewsScreen> {
                       ),
                     ),
                     const SizedBox(height: AppSpacing.md),
+                    _imagePicker(),
+                    const SizedBox(height: AppSpacing.md),
                     ListTile(
                       contentPadding: EdgeInsets.zero,
                       leading: const Icon(
@@ -428,21 +546,37 @@ class _PostNewsScreenState extends State<PostNewsScreen> {
                                 shadows: AppShadows.subtle,
                                 child: Row(
                                   children: <Widget>[
-                                    Container(
-                                      width: 34,
-                                      height: 34,
-                                      alignment: Alignment.center,
-                                      decoration: BoxDecoration(
-                                        color: item.category.colour
-                                            .withValues(alpha: 0.12),
-                                        borderRadius: AppRadii.sm,
-                                      ),
-                                      child: Icon(
-                                        item.category.icon,
-                                        size: 17,
-                                        color: item.category.colour,
-                                      ),
-                                    ),
+                                    item.hasImage
+                                        ? ClipRRect(
+                                            borderRadius: AppRadii.sm,
+                                            child: Image.network(
+                                              item.imageUrl,
+                                              width: 34,
+                                              height: 34,
+                                              fit: BoxFit.cover,
+                                              errorBuilder:
+                                                  (_, _, _) => Icon(
+                                                    item.category.icon,
+                                                    size: 17,
+                                                    color: item.category.colour,
+                                                  ),
+                                            ),
+                                          )
+                                        : Container(
+                                            width: 34,
+                                            height: 34,
+                                            alignment: Alignment.center,
+                                            decoration: BoxDecoration(
+                                              color: item.category.colour
+                                                  .withValues(alpha: 0.12),
+                                              borderRadius: AppRadii.sm,
+                                            ),
+                                            child: Icon(
+                                              item.category.icon,
+                                              size: 17,
+                                              color: item.category.colour,
+                                            ),
+                                          ),
                                     const SizedBox(width: AppSpacing.md),
                                     Expanded(
                                       child: Column(

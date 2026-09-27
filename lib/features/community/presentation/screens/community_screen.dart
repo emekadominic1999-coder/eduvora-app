@@ -254,13 +254,49 @@ class PostCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
+          if (post.isAnnouncement) ...<Widget>[
+            const Row(
+              children: <Widget>[
+                Icon(
+                  Icons.push_pin_rounded,
+                  size: 13,
+                  color: AppColours.accent,
+                ),
+                SizedBox(width: 4),
+                Text(
+                  'Pinned announcement',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: AppColours.accent,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.sm),
+          ],
           Row(
             children: <Widget>[
-              InitialsAvatar(
-                initials: _initials(post.authorName),
-                size: 40,
-                colour: post.topic.colour,
-              ),
+              post.isAnnouncement
+                  ? Container(
+                      width: 40,
+                      height: 40,
+                      alignment: Alignment.center,
+                      decoration: const BoxDecoration(
+                        color: AppColours.accentSoft,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.campaign_rounded,
+                        size: 20,
+                        color: AppColours.accent,
+                      ),
+                    )
+                  : InitialsAvatar(
+                      initials: _initials(post.authorName),
+                      size: 40,
+                      colour: post.topic.colour,
+                    ),
               const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Column(
@@ -311,6 +347,19 @@ class PostCard extends StatelessWidget {
               color: AppColours.text,
             ),
           ),
+          if (post.hasImage) ...<Widget>[
+            const SizedBox(height: AppSpacing.md),
+            ClipRRect(
+              borderRadius: AppRadii.sm,
+              child: Image.network(
+                post.imageUrl,
+                width: double.infinity,
+                height: expanded ? null : 180,
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) => const SizedBox.shrink(),
+              ),
+            ),
+          ],
           const SizedBox(height: AppSpacing.md),
           const Divider(height: 1),
           const SizedBox(height: AppSpacing.sm),

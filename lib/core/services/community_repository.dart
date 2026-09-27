@@ -44,10 +44,12 @@ class CommunityRepository {
     }
 
     final List<CommunityPost> all = byId.values.toList()
-      ..sort(
-        (CommunityPost a, CommunityPost b) =>
-            b.createdAt.compareTo(a.createdAt),
-      );
+      ..sort((CommunityPost a, CommunityPost b) {
+        if (a.isAnnouncement != b.isAnnouncement) {
+          return a.isAnnouncement ? -1 : 1;
+        }
+        return b.createdAt.compareTo(a.createdAt);
+      });
 
     if (topic == null) return all;
     return all.where((CommunityPost p) => p.topic == topic).toList();
@@ -85,6 +87,45 @@ class CommunityRepository {
     )..insert(0, post.toJson());
     await LocalStore.instance.writeList(StoreKeys.communityPosts, cached);
     return post;
+  }
+
+  /// Cross-posts a Noticeboard update into Community, pinned to the top.
+  ///
+  /// Only ever called from [PostNewsScreen], and the database itself is what
+  /// actually enforces `is_announcement`: the insert policy on
+  /// `community_posts` (see `supabase/OWNER_NEWS_POSTING.sql`) rejects a
+  /// true value from anyone but the owner's own signed-in account, so this
+  /// is never a way for a student to pin their own post.
+  ///
+  /// Unlike [createPost], this surfaces a failure rather than swallowing it
+  /// — the owner needs to know if the cross-post did not go through, since
+  /// nothing else will tell them.
+  Future<void> createAnnouncement({
+    required String authorName,
+    required String body,
+    required CommunityTopic topic,
+    String imageUrl = '',
+  }) async {
+    if (!SupabaseService.isReady) {
+      throw StateError(
+        'Posting to Community needs the Eduvora backend to be connected.',
+      );
+    }
+    final String? userId = SupabaseService.currentUser?.id;
+    if (userId == null) {
+      throw StateError('Not signed in.');
+    }
+    final CommunityPost post = CommunityPost(
+      id: _uuid.v4(),
+      authorId: userId,
+      authorName: authorName,
+      body: body.trim(),
+      topic: topic,
+      createdAt: DateTime.now(),
+      isAnnouncement: true,
+      imageUrl: imageUrl,
+    );
+    await SupabaseService.client.from('community_posts').insert(post.toJson());
   }
 
   Set<String> likedPostIds() => LocalStore.instance

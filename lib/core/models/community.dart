@@ -43,6 +43,8 @@ class CommunityPost {
     this.commentCount = 0,
     this.institution = '',
     this.department = '',
+    this.isAnnouncement = false,
+    this.imageUrl = '',
   });
 
   final String id;
@@ -57,6 +59,14 @@ class CommunityPost {
   final String institution;
   final String department;
 
+  /// True for a notice cross-posted from the Noticeboard by the app owner
+  /// (see PostNewsScreen) rather than written by a student. Pinned to the
+  /// top of the feed and shown with a small badge.
+  final bool isAnnouncement;
+  final String imageUrl;
+
+  bool get hasImage => imageUrl.isNotEmpty;
+
   CommunityPost copyWith({int? likes, int? commentCount}) => CommunityPost(
     id: id,
     authorId: authorId,
@@ -69,6 +79,8 @@ class CommunityPost {
     commentCount: commentCount ?? this.commentCount,
     institution: institution,
     department: department,
+    isAnnouncement: isAnnouncement,
+    imageUrl: imageUrl,
   );
 
   Map<String, dynamic> toJson() => <String, dynamic>{
@@ -83,6 +95,8 @@ class CommunityPost {
     'comment_count': commentCount,
     'institution': institution,
     'department': department,
+    'is_announcement': isAnnouncement,
+    'image_url': imageUrl,
   };
 
   factory CommunityPost.fromJson(Map<String, dynamic> json) => CommunityPost(
@@ -99,6 +113,8 @@ class CommunityPost {
     commentCount: (json['comment_count'] as num?)?.toInt() ?? 0,
     institution: (json['institution'] ?? '') as String,
     department: (json['department'] ?? '') as String,
+    isAnnouncement: json['is_announcement'] == true,
+    imageUrl: (json['image_url'] ?? '') as String,
   );
 }
 

@@ -222,6 +222,22 @@ class ContentRepository {
   /// `supabase/OWNER_NEWS_POSTING.sql`), so this is never a client-side-only
   /// gate. A student account would get a permissions error back from
   /// Supabase, not a silently-accepted post.
+  /// Uploads a picture for a Noticeboard post (a flyer, a screenshot of the
+  /// announcement) and returns its public URL. A picture is what turns a
+  /// plain paragraph into something that reads like a real notice.
+  Future<String> uploadNoticeImage(Uint8List bytes, String fileName) async {
+    if (!SupabaseService.isReady) {
+      throw StateError('Posting needs the Eduvora backend to be connected.');
+    }
+    final String path = 'noticeboard/${_uuid.v4()}-$fileName';
+    await SupabaseService.client.storage
+        .from(AppConfig.materialsBucket)
+        .uploadBinary(path, bytes);
+    return SupabaseService.client.storage
+        .from(AppConfig.materialsBucket)
+        .getPublicUrl(path);
+  }
+
   Future<void> createNews(NewsItem item) async {
     if (!SupabaseService.isReady) {
       throw StateError('Posting needs the Eduvora backend to be connected.');

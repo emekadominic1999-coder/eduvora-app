@@ -39,6 +39,7 @@ class NewsItem {
     this.link = '',
     this.deadline,
     this.isFeatured = false,
+    this.imageUrl = '',
   });
 
   final String id;
@@ -51,6 +52,9 @@ class NewsItem {
   final String link;
   final DateTime? deadline;
   final bool isFeatured;
+  final String imageUrl;
+
+  bool get hasImage => imageUrl.isNotEmpty;
 
   bool get hasDeadline => deadline != null;
 
@@ -97,6 +101,7 @@ class NewsItem {
     'link': link,
     'deadline': deadline?.toIso8601String(),
     'is_featured': isFeatured,
+    'image_url': imageUrl,
   };
 
   factory NewsItem.fromJson(Map<String, dynamic> json) => NewsItem(
@@ -112,5 +117,6 @@ class NewsItem {
     link: (json['link'] ?? '') as String,
     deadline: DateTime.tryParse((json['deadline'] ?? '') as String),
     isFeatured: (json['is_featured'] ?? false) as bool,
+    imageUrl: (json['image_url'] ?? '') as String,
   );
 }

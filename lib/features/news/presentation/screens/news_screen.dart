@@ -317,6 +317,18 @@ class _NewsCard extends StatelessWidget {
                     ),
                   ),
                 ],
+                if (item.hasImage) ...<Widget>[
+                  const SizedBox(height: AppSpacing.lg),
+                  ClipRRect(
+                    borderRadius: AppRadii.md,
+                    child: Image.network(
+                      item.imageUrl,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: AppSpacing.xl),
                 Text(
                   item.body.isEmpty ? item.summary : item.body,
@@ -461,6 +473,19 @@ class _NewsCard extends StatelessWidget {
               color: AppColours.text,
             ),
           ),
+          if (item.hasImage) ...<Widget>[
+            const SizedBox(height: AppSpacing.sm),
+            ClipRRect(
+              borderRadius: AppRadii.sm,
+              child: Image.network(
+                item.imageUrl,
+                width: double.infinity,
+                height: 140,
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) => const SizedBox.shrink(),
+              ),
+            ),
+          ],
           const SizedBox(height: 6),
           Text(
             item.summary,
