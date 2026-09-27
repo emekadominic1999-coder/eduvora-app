@@ -56,14 +56,14 @@ class EduvoraAi {
   static const String greeting =
       'Hello, I am Ada — your Eduvora companion. 💙\n\nI can show you around the '
       'app, help you find materials for your department, explain how the CBT '
-      'papers and GP calculator work, or simply keep you company while you '
-      'revise. What would you like to do first?';
+      'papers and GP calculator work, point you to a tutor, or simply keep you '
+      'company while you revise. What would you like to do first?';
 
   static const List<String> starterPrompts = <String>[
     'How do I find materials for my department?',
     'How does the GP calculator work?',
     'Show me the CBT practice papers',
-    'Where can I see scholarship news?',
+    'How do I earn from referrals?',
     'I am feeling overwhelmed',
   ];
 
@@ -519,6 +519,119 @@ class EduvoraAi {
       ),
     ),
 
+    // ---------------------------------------------------- CBT unlock & ads
+    _Intent(
+      keywords: <String>[
+        'unlock',
+        'locked',
+        'why is this locked',
+        'pay for cbt',
+        'how much is cbt',
+        'course pack',
+        'single paper',
+        'watch a video',
+        'watch an ad',
+        'watch video',
+        'free trial',
+        'ads',
+        'advert',
+        'adverts',
+        'banner',
+        'remove ads',
+      ],
+      build: (StudentProfile? p) => AiReply(
+        message:
+            'A locked CBT paper first gives you a short free trial of a few '
+            'questions, no payment needed.\n\nOnce that is used, you get a '
+            'choice: pay ₦350 to unlock that one paper, or ₦2,300 to build a '
+            'course pack of up to 23 units across your department, level and '
+            'semester. Payment is by transfer, USSD or card through '
+            'Paystack, and access is tied to the device you paid on.\n\n'
+            'On the Android app, there is also a free option: watch a short '
+            'video to open that paper for one sitting, no payment needed. '
+            'It is entirely your choice — nobody is forced to watch anything, '
+            'and closing the video early just leaves the paper locked.\n\n'
+            'A small banner also shows near the bottom of the screen for '
+            'students who have not paid for anything yet; it disappears '
+            'during an exam, and for anyone who has unlocked at least one '
+            'paper.',
+        route: '/cbt',
+        routeLabel: 'Open CBT Practice',
+        suggestions: <String>[
+          'Show me the CBT practice papers',
+          'How do I earn from referrals?',
+        ],
+      ),
+    ),
+
+    // -------------------------------------------------------------- referral
+    _Intent(
+      keywords: <String>[
+        'refer',
+        'referral',
+        'invite a friend',
+        'invite friends',
+        'referral code',
+        'refer and earn',
+        'refer & earn',
+        'earn money',
+        'commission',
+        'withdraw',
+        'withdrawal',
+      ],
+      build: (StudentProfile? p) => AiReply(
+        message:
+            'Refer & earn is on your profile.\n\nYou get your own referral '
+            'code and link to share. When someone signs up with it and later '
+            'pays for a CBT paper or a course pack, you earn 10% of that '
+            'purchase as a real commission — not just on their first '
+            'purchase, on every one they make.\n\nYour balance builds up in '
+            'the app, and you can request a withdrawal once it reaches '
+            '₦1,000. Payouts are made by hand to the account you provide, so '
+            'they can take a few days rather than being instant.\n\nJust '
+            'share honestly: referring yourself, fake accounts or spam are '
+            'not allowed, and can get commissions cancelled.',
+        route: '/referral',
+        routeLabel: 'Open Refer & earn',
+        suggestions: <String>[
+          'How do I unlock a CBT paper?',
+          'Show me the CBT practice papers',
+        ],
+      ),
+    ),
+
+    // ---------------------------------------------------------------- tutors
+    _Intent(
+      keywords: <String>[
+        'tutor',
+        'tutors',
+        'find a tutor',
+        'book a tutor',
+        'hire a tutor',
+        'become a tutor',
+        'private lesson',
+        'one on one',
+        'one-on-one',
+      ],
+      build: (StudentProfile? p) => AiReply(
+        message:
+            'You can find a tutor from CBT Practice — there is a tutors '
+            'option there, and if you score under 50% on a paper you will '
+            'also see a gentle nudge towards a tutor for that exact subject.\n\n'
+            'Browse tutors by subject, see their profile and past sessions, '
+            'and book a paid session directly in the app.\n\nIf you would '
+            'rather teach than be taught, look for "Become a tutor" from the '
+            'same area to apply — a real person reviews each application '
+            'before you can take students.',
+        route: '/cbt',
+        routeLabel: 'Open CBT Practice',
+        suggestions: <String>[
+          'Show me the CBT practice papers',
+          'How does the GP calculator work?',
+        ],
+      ),
+    ),
+
     // ---------------------------------------------------------------- GPA
     _Intent(
       keywords: <String>[
@@ -536,20 +649,27 @@ class EduvoraAi {
       build: (StudentProfile? p) => AiReply(
         message:
             'The GP calculator is on your home dashboard.\n\nAdd each course '
-            'with its credit units and the grade you earned, and Eduvora '
-            'applies the standard 5-point scale — A is 5, B is 4, C is 3, D is '
-            '2, E is 1 and F is 0.\n\nYour GPA is the total of (credit units × '
-            'grade value) divided by the total credit units. Save a semester '
-            'and it joins your running CGPA, with your degree classification '
-            'and a small trend chart so you can see the direction of travel.\n\n'
-            'You can also use it to plan ahead: enter the grades you are '
-            'aiming for next semester and see what they would do to your '
-            'cumulative figure before you sit a single paper.',
+            'with its credit units, then either type the score you got '
+            '(0 to 100) and let Eduvora work out the grade, or pick the grade '
+            'yourself. There is also a "From my outline" button that loads '
+            'your registered courses for a semester so only the grades are '
+            'left to fill in.\n\nYour GPA is TCP ÷ TNU — total credit points '
+            'divided by total units, on the standard scale where A is 5, B is '
+            '4, C is 3, D is 2, E is 1 and F is 0. Save a semester and it '
+            'joins your running CGPA, with your degree classification and a '
+            'trend chart.\n\nAlready have a CGPA from before you started using '
+            'Eduvora? Enter it, with your total units, under "Results before '
+            'this app", and every new semester builds on top of it '
+            'correctly.\n\nIf you fail a course, add it again with its new '
+            'grade in the semester you resit it — Eduvora spots the resit and '
+            'lists any course still outstanding as a carryover. And the '
+            '"Set a target" section tells you the GPA you need next semester '
+            'to reach First Class, Second Upper and so on.',
         route: '/gpa',
         routeLabel: 'Open the GP calculator',
         suggestions: <String>[
           'What CGPA is a Second Class Upper?',
-          'How do I improve my CGPA?',
+          'What happens to my CGPA if I fail a course?',
         ],
       ),
     ),
@@ -562,19 +682,26 @@ class EduvoraAi {
         'what cgpa do i need',
         'improve my cgpa',
         'improve my gpa',
+        'fail a course',
+        'failed a course',
+        'carryover',
+        'carry over',
+        'resit',
       ],
       build: (StudentProfile? p) => AiReply(
         message:
             'On the common Nigerian 5-point scale the bands are: First Class '
             'from 4.50, Second Class Upper from 3.50, Second Class Lower from '
-            '2.40, Third Class from 1.50, and Pass below that.\n\nTo lift a '
-            'cumulative figure, the arithmetic is quietly encouraging: heavy '
-            'credit-unit courses move it most. Put your best effort into the '
-            'three- and four-unit courses, and clear any outstanding '
-            'carry-overs early, because a zero sits in the denominator '
-            'indefinitely.\n\nOpen the GP calculator and try entering your '
-            'target grades for next semester — seeing the projected number '
-            'tends to make the plan feel possible.',
+            '2.40, Third Class from 1.50, and Pass from 1.00.\n\nAn F carries '
+            'zero quality points, but its units still count towards your '
+            'total, so an unresolved carryover holds your average down for as '
+            'long as it stays open. Clearing it is usually the single biggest '
+            'thing you can do for your CGPA.\n\nTo lift a cumulative figure, '
+            'the arithmetic favours heavy credit-unit courses, so put your '
+            'best effort into the three- and four-unit ones.\n\nOpen the GP '
+            'calculator, add a resit with its new grade in the semester you '
+            'sit it, and use "Set a target" to see the GPA you would need '
+            'next semester for a given class of degree.',
         route: '/gpa',
         routeLabel: 'Plan with the GP calculator',
         suggestions: <String>[
