@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/models/news_item.dart';
+import '../../../../core/routing/app_router.dart';
+import '../../../../core/services/activity_repository.dart';
 import '../../../../core/services/content_repository.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/common.dart';
@@ -42,6 +44,11 @@ class _NewsScreenState extends State<NewsScreen> {
     setState(() => _bookmarks = _content.bookmarkedNewsIds());
   }
 
+  Future<void> _openPostNews() async {
+    await Navigator.of(context).pushNamed(AppRouter.postNews);
+    if (mounted) await _refresh();
+  }
+
   List<NewsItem> _apply(List<NewsItem> source) {
     return source.where((NewsItem n) {
       if (_category != null && n.category != _category) return false;
@@ -77,6 +84,15 @@ class _NewsScreenState extends State<NewsScreen> {
           child: Container(height: 1, color: AppColours.border),
         ),
       ),
+      floatingActionButton: ActivityRepository.currentUserIsOwner
+          ? FloatingActionButton.extended(
+              onPressed: _openPostNews,
+              backgroundColor: AppColours.accent,
+              foregroundColor: Colors.white,
+              icon: const Icon(Icons.campaign_rounded),
+              label: const Text('Post an update'),
+            )
+          : null,
       body: Column(
         children: <Widget>[
           const SizedBox(height: AppSpacing.md),

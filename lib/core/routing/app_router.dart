@@ -15,6 +15,7 @@ import '../../features/landing/presentation/screens/landing_screen.dart';
 import '../../features/materials/presentation/screens/materials_screen.dart';
 import '../../features/materials/presentation/screens/upload_material_screen.dart';
 import '../../features/news/presentation/screens/news_screen.dart';
+import '../../features/news/presentation/screens/post_news_screen.dart';
 import '../../features/onboarding/presentation/screens/onboarding_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
 import '../../features/referral/presentation/screens/referral_screen.dart';
@@ -52,6 +53,7 @@ class AppRouter {
   static const String terms = '/terms';
   static const String privacy = '/privacy';
   static const String liveUsers = '/live-users';
+  static const String postNews = '/post-news';
 
   /// Routes that are tabs inside [HomeShell] rather than pushed pages.
   static const Map<String, int> shellTabs = <String, int>{
@@ -113,6 +115,8 @@ class AppRouter {
         page = const LegalScreen(doc: LegalContent.privacy);
       case liveUsers:
         page = const LiveUsersScreen();
+      case postNews:
+        page = const PostNewsScreen();
       default:
         page = const SplashGate();
     }

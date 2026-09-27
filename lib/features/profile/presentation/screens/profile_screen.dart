@@ -614,6 +614,17 @@ class _ProfileScreenState extends State<ProfileScreen>
                     Navigator.of(context).pushNamed(AppRouter.liveUsers),
               ),
               const Divider(height: 1, indent: 16, endIndent: 16),
+              ListTile(
+                leading: const Icon(Icons.campaign_rounded, size: 20),
+                title: const Text('Post an update'),
+                subtitle: const Text(
+                  'Owner only · scholarships, admissions, notices',
+                ),
+                trailing: const Icon(Icons.chevron_right_rounded, size: 20),
+                onTap: () =>
+                    Navigator.of(context).pushNamed(AppRouter.postNews),
+              ),
+              const Divider(height: 1, indent: 16, endIndent: 16),
             ],
             ListTile(
               leading: const Icon(Icons.description_outlined, size: 20),

@@ -214,6 +214,28 @@ class ContentRepository {
       .where((String id) => id.isNotEmpty)
       .toSet();
 
+  /// Publishes a notice straight to the Noticeboard, sorted automatically by
+  /// [NewsItem.category] the moment students open it.
+  ///
+  /// Only the owner's account can actually succeed here — the database's own
+  /// row-level security checks the signed-in email itself (see
+  /// `supabase/OWNER_NEWS_POSTING.sql`), so this is never a client-side-only
+  /// gate. A student account would get a permissions error back from
+  /// Supabase, not a silently-accepted post.
+  Future<void> createNews(NewsItem item) async {
+    if (!SupabaseService.isReady) {
+      throw StateError('Posting needs the Eduvora backend to be connected.');
+    }
+    await SupabaseService.client.from('news').insert(item.toJson());
+  }
+
+  /// Removes a notice the owner posted (an expired scholarship, a typo to
+  /// retract). Same server-side owner check as [createNews].
+  Future<void> deleteNews(String id) async {
+    if (!SupabaseService.isReady) return;
+    await SupabaseService.client.from('news').delete().eq('id', id);
+  }
+
   Future<void> toggleNewsBookmark(String id) async {
     final Set<String> current = bookmarkedNewsIds();
     if (!current.remove(id)) current.add(id);
