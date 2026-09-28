@@ -46,3 +46,4 @@ app.*.map.json
 
 # Supabase CLI local project link cache
 supabase/.temp/
+.vercel
