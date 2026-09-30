@@ -219,14 +219,21 @@ class _PostNewsScreenState extends State<PostNewsScreen> {
             image.name,
           );
         } catch (error) {
+          debugPrint('Notice picture upload failed: $error');
           if (mounted) {
             showEduvoraSnack(
               context,
-              'The picture did not upload, so this went up as text only.',
+              'The picture did not upload ($error), so this went up as text only.',
               isError: true,
             );
           }
         }
+      } else if (image != null && mounted) {
+        showEduvoraSnack(
+          context,
+          'The picture could not be read from your device, so this went up as text only.',
+          isError: true,
+        );
       }
 
       final String category = _category.label;
