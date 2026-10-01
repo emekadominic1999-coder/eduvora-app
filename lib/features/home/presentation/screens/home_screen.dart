@@ -584,69 +584,87 @@ class _NewsStrip extends StatelessWidget {
       child: Column(
         children: items.map((NewsItem item) {
           return Padding(
-            padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+            padding: const EdgeInsets.only(bottom: AppSpacing.md),
             child: EduvoraCard(
               padding: const EdgeInsets.all(AppSpacing.md),
               shadows: AppShadows.subtle,
               onTap: () => Navigator.of(context).pushNamed(AppRouter.news),
-              child: Row(
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Container(
-                    width: 38,
-                    height: 38,
-                    decoration: BoxDecoration(
-                      color: item.category.colour.withValues(alpha: 0.12),
-                      borderRadius: AppRadii.sm,
-                    ),
-                    child: Icon(
-                      item.category.icon,
-                      size: 18,
-                      color: item.category.colour,
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Text(
-                          item.title,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 13.5,
-                            height: 1.35,
-                            fontWeight: FontWeight.w600,
-                            color: AppColours.text,
-                          ),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Container(
+                        width: 38,
+                        height: 38,
+                        decoration: BoxDecoration(
+                          color: item.category.colour.withValues(alpha: 0.12),
+                          borderRadius: AppRadii.sm,
                         ),
-                        const SizedBox(height: 5),
-                        Row(
+                        child: Icon(
+                          item.category.icon,
+                          size: 18,
+                          color: item.category.colour,
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.md),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: <Widget>[
-                            Pill(
-                              label: item.category.label,
-                              colour: item.category.colour,
-                              dense: true,
-                            ),
-                            if (item.hasDeadline) ...<Widget>[
-                              const SizedBox(width: 6),
-                              Text(
-                                item.deadlineLabel,
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  color: (item.daysLeft ?? 99) <= 7
-                                      ? AppColours.danger
-                                      : AppColours.textMuted,
-                                ),
+                            Text(
+                              item.title,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 13.5,
+                                height: 1.35,
+                                fontWeight: FontWeight.w600,
+                                color: AppColours.text,
                               ),
-                            ],
+                            ),
+                            const SizedBox(height: 5),
+                            Row(
+                              children: <Widget>[
+                                Pill(
+                                  label: item.category.label,
+                                  colour: item.category.colour,
+                                  dense: true,
+                                ),
+                                if (item.hasDeadline) ...<Widget>[
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    item.deadlineLabel,
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: (item.daysLeft ?? 99) <= 7
+                                          ? AppColours.danger
+                                          : AppColours.textMuted,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
                           ],
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
+                  if (item.hasImage) ...<Widget>[
+                    const SizedBox(height: AppSpacing.sm),
+                    ClipRRect(
+                      borderRadius: AppRadii.sm,
+                      child: Image.network(
+                        item.imageUrl,
+                        width: double.infinity,
+                        height: 150,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
