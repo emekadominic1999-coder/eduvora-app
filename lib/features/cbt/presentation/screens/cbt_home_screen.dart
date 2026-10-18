@@ -55,9 +55,9 @@ class _CbtHomeScreenState extends State<CbtHomeScreen> {
     final String fragment = Uri.base.fragment;
     final int queryStart = fragment.indexOf('?');
     if (queryStart == -1) return;
-    final String subjectId = Uri.splitQueryString(
-      fragment.substring(queryStart + 1),
-    )['unlock'] ?? '';
+    final String subjectId =
+        Uri.splitQueryString(fragment.substring(queryStart + 1))['unlock'] ??
+        '';
     if (subjectId.isEmpty) return;
 
     _future.then((List<CbtSubject> subjects) {
@@ -207,9 +207,7 @@ class _CbtHomeScreenState extends State<CbtHomeScreen> {
     // their login so a friend can sit the paper they didn't pay for.
     final CbtEntitlement? entitlement = _entitlementFor(subject.id);
     if (entitlement != null) {
-      final DeviceCheckResult check = await _paywall.verifyDevice(
-        entitlement,
-      );
+      final DeviceCheckResult check = await _paywall.verifyDevice(entitlement);
       if (!mounted) return;
       if (check == DeviceCheckResult.blockedOtherDevice) {
         await _showDeviceBlockedDialog();
@@ -254,7 +252,8 @@ class _CbtHomeScreenState extends State<CbtHomeScreen> {
 
       await _paywall.markFreeTrialUsed(subject.id);
       if (!mounted) return false;
-      final int count = loaded.questionCount < PaywallRepository.freeTrialQuestionCount
+      final int count =
+          loaded.questionCount < PaywallRepository.freeTrialQuestionCount
           ? loaded.questionCount
           : PaywallRepository.freeTrialQuestionCount;
       final bool? completed = await Navigator.of(context).push<bool>(
@@ -517,102 +516,97 @@ class _CbtHomeScreenState extends State<CbtHomeScreen> {
         color: AppColours.primary,
         child: FutureBuilder<List<CbtSubject>>(
           future: _future,
-          builder:
-              (BuildContext context, AsyncSnapshot<List<CbtSubject>> snapshot) {
-                final List<CbtSubject> papers = snapshot.data ?? <CbtSubject>[];
-                final bool loading =
-                    snapshot.connectionState == ConnectionState.waiting;
+          builder: (BuildContext context, AsyncSnapshot<List<CbtSubject>> snapshot) {
+            final List<CbtSubject> papers = snapshot.data ?? <CbtSubject>[];
+            final bool loading =
+                snapshot.connectionState == ConnectionState.waiting;
 
-                return ListView(
-                  padding: const EdgeInsets.only(bottom: AppSpacing.xxl),
-                  children: <Widget>[
-                    _summary(
-                      attempts.length,
-                      average,
-                      papers.fold(
-                        0,
-                        (int sum, CbtSubject s) => sum + s.questionCount,
-                      ),
+            return ListView(
+              padding: const EdgeInsets.only(bottom: AppSpacing.xxl),
+              children: <Widget>[
+                _summary(
+                  attempts.length,
+                  average,
+                  papers.fold(
+                    0,
+                    (int sum, CbtSubject s) => sum + s.questionCount,
+                  ),
+                ),
+                const _Disclaimer(),
+                SectionHeader(
+                  title: _showAllPapers ? 'All papers' : 'Papers for you',
+                  subtitle: _showAllPapers
+                      ? 'Every paper in the Eduvora bank'
+                      : 'Matched to ${profile?.faculty.isNotEmpty == true ? profile!.faculty : 'your faculty'}',
+                  actionLabel: _showAllPapers ? 'Show mine' : 'Show all',
+                  onAction: _toggleShowAll,
+                ),
+                if (loading && papers.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: AppSpacing.xxl),
+                    child: Center(child: CircularProgressIndicator()),
+                  )
+                else if (papers.isEmpty)
+                  EmptyState(
+                    icon: Icons.quiz_outlined,
+                    title: 'No papers yet',
+                    message: _showAllPapers
+                        ? 'Real past questions will appear here once '
+                              'they are added.'
+                        : 'Nothing has been added for '
+                              '${profile?.faculty.isNotEmpty == true ? profile!.faculty : 'your faculty'} '
+                              'yet — tap "Show all" to see every paper in '
+                              'the bank.',
+                    compact: true,
+                  )
+                else
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.screenPadding,
                     ),
-                    const _Disclaimer(),
-                    SectionHeader(
-                      title: _showAllPapers ? 'All papers' : 'Papers for you',
-                      subtitle: _showAllPapers
-                          ? 'Every paper in the Eduvora bank'
-                          : 'Matched to ${profile?.faculty.isNotEmpty == true ? profile!.faculty : 'your faculty'}',
-                      actionLabel: _showAllPapers ? 'Show mine' : 'Show all',
-                      onAction: _toggleShowAll,
+                    child: Column(
+                      children: papers.map((CbtSubject s) {
+                        final CbtAttempt? best = _study.bestAttemptFor(s.id);
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                          child: _PaperCard(
+                            subject: s,
+                            best: best,
+                            unlocked: _paywall.hasAccess(s, _entitlements),
+                            trialAvailable: !_paywall.hasUsedFreeTrial(s.id),
+                            onStart: () => _start(s),
+                          ),
+                        );
+                      }).toList(),
                     ),
-                    if (loading && papers.isEmpty)
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: AppSpacing.xxl),
-                        child: Center(child: CircularProgressIndicator()),
-                      )
-                    else if (papers.isEmpty)
-                      EmptyState(
-                        icon: Icons.quiz_outlined,
-                        title: 'No papers yet',
-                        message: _showAllPapers
-                            ? 'Real past questions will appear here once '
-                                  'they are added.'
-                            : 'Nothing has been added for '
-                                  '${profile?.faculty.isNotEmpty == true ? profile!.faculty : 'your faculty'} '
-                                  'yet — tap "Show all" to see every paper in '
-                                  'the bank.',
-                        compact: true,
-                      )
-                    else
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.screenPadding,
-                        ),
-                        child: Column(
-                          children: papers.map((CbtSubject s) {
-                            final CbtAttempt? best = _study.bestAttemptFor(
-                              s.id,
-                            );
-                            return Padding(
+                  ),
+                if (attempts.isNotEmpty) ...<Widget>[
+                  const SectionHeader(
+                    title: 'Your record',
+                    subtitle: 'Every paper you have sat, most recent first',
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.screenPadding,
+                    ),
+                    child: Column(
+                      children: attempts
+                          .take(12)
+                          .map(
+                            (CbtAttempt a) => Padding(
                               padding: const EdgeInsets.only(
-                                bottom: AppSpacing.md,
+                                bottom: AppSpacing.sm,
                               ),
-                              child: _PaperCard(
-                                subject: s,
-                                best: best,
-                                unlocked: _paywall.hasAccess(s, _entitlements),
-                                trialAvailable: !_paywall.hasUsedFreeTrial(s.id),
-                                onStart: () => _start(s),
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                      ),
-                    if (attempts.isNotEmpty) ...<Widget>[
-                      const SectionHeader(
-                        title: 'Your record',
-                        subtitle: 'Every paper you have sat, most recent first',
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.screenPadding,
-                        ),
-                        child: Column(
-                          children: attempts
-                              .take(12)
-                              .map(
-                                (CbtAttempt a) => Padding(
-                                  padding: const EdgeInsets.only(
-                                    bottom: AppSpacing.sm,
-                                  ),
-                                  child: _AttemptRow(attempt: a),
-                                ),
-                              )
-                              .toList(),
-                        ),
-                      ),
-                    ],
-                  ],
-                );
-              },
+                              child: _AttemptRow(attempt: a),
+                            ),
+                          )
+                          .toList(),
+                    ),
+                  ),
+                ],
+              ],
+            );
+          },
         ),
       ),
     );
@@ -699,7 +693,11 @@ class _Disclaimer extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Icon(Icons.info_outline_rounded, size: 15, color: AppColours.textFaint),
+          Icon(
+            Icons.info_outline_rounded,
+            size: 15,
+            color: AppColours.textFaint,
+          ),
           SizedBox(width: 8),
           Expanded(
             child: Text(
@@ -860,8 +858,7 @@ class _PaperCard extends StatelessWidget {
               if (best != null) ...<Widget>[
                 const SizedBox(width: 6),
                 Pill(
-                  label:
-                      'Best ${best!.marksAwarded}/${CbtAttempt.totalMarks}',
+                  label: 'Best ${best!.marksAwarded}/${CbtAttempt.totalMarks}',
                   icon: Icons.emoji_events_rounded,
                   colour: AppColours.success,
                   dense: true,
@@ -880,9 +877,7 @@ class _PaperCard extends StatelessWidget {
               ],
               const Spacer(),
               Icon(
-                unlocked
-                    ? Icons.play_circle_fill_rounded
-                    : Icons.lock_rounded,
+                unlocked ? Icons.play_circle_fill_rounded : Icons.lock_rounded,
                 color: unlocked ? AppColours.primary : AppColours.accent,
                 size: unlocked ? 26 : 22,
               ),

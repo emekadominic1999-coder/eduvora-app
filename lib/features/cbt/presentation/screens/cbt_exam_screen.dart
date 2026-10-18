@@ -9,6 +9,7 @@ import '../../../../core/services/study_repository.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/common.dart';
 import '../../../../core/widgets/math_text.dart';
+import '../widgets/exam_calculator.dart';
 import 'cbt_result_screen.dart';
 
 /// The exam itself: a countdown, one question at a time, a jump grid and
@@ -67,9 +68,7 @@ class _CbtExamScreenState extends State<CbtExamScreen> {
     final Map<String, dynamic>? saved = _readSavedProgress();
     if (saved != null) {
       _questions = (saved['questions'] as List<dynamic>)
-          .map(
-            (dynamic e) => CbtQuestion.fromJson(e as Map<String, dynamic>),
-          )
+          .map((dynamic e) => CbtQuestion.fromJson(e as Map<String, dynamic>))
           .toList();
       _answers.addAll(
         (saved['answers'] as Map<String, dynamic>).map(
@@ -135,17 +134,18 @@ class _CbtExamScreenState extends State<CbtExamScreen> {
   /// (see [_leaveIfConfirmed]).
   Future<void> _saveProgress() async {
     if (!LocalStore.isReady || _submitted) return;
-    await LocalStore.instance.writeMap(StoreKeys.cbtInProgress, <String, dynamic>{
-      'subjectId': widget.subject.id,
-      'subjectName': widget.subject.name,
-      'questions': _questions.map((CbtQuestion q) => q.toJson()).toList(),
-      'answers': _answers,
-      'flagged': _flagged.toList(),
-      'index': _index,
-      'remaining': _remaining,
-      'totalSeconds': _totalSeconds,
-      'savedAt': DateTime.now().toIso8601String(),
-    });
+    await LocalStore.instance
+        .writeMap(StoreKeys.cbtInProgress, <String, dynamic>{
+          'subjectId': widget.subject.id,
+          'subjectName': widget.subject.name,
+          'questions': _questions.map((CbtQuestion q) => q.toJson()).toList(),
+          'answers': _answers,
+          'flagged': _flagged.toList(),
+          'index': _index,
+          'remaining': _remaining,
+          'totalSeconds': _totalSeconds,
+          'savedAt': DateTime.now().toIso8601String(),
+        });
   }
 
   Future<void> _clearSavedProgress() async {
@@ -335,6 +335,11 @@ class _CbtExamScreenState extends State<CbtExamScreen> {
             overflow: TextOverflow.ellipsis,
           ),
           actions: <Widget>[
+            IconButton(
+              tooltip: 'Calculator',
+              icon: const Icon(Icons.calculate_outlined),
+              onPressed: () => showExamCalculator(context),
+            ),
             Container(
               margin: const EdgeInsets.symmetric(
                 vertical: 12,

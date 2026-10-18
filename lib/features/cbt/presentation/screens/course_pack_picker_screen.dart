@@ -48,8 +48,7 @@ class CoursePackPickerScreen extends StatefulWidget {
   static const int maxUnits = 23;
 
   @override
-  State<CoursePackPickerScreen> createState() =>
-      _CoursePackPickerScreenState();
+  State<CoursePackPickerScreen> createState() => _CoursePackPickerScreenState();
 }
 
 class _CoursePackPickerScreenState extends State<CoursePackPickerScreen> {

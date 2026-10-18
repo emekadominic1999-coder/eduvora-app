@@ -177,7 +177,10 @@ class _CbtPaymentScreenState extends State<CbtPaymentScreen> {
       case _Stage.success:
         return _Success(planTitle: _planTitle);
       case _Stage.failed:
-        return _Failed(message: _error ?? 'Something went wrong.', onRetry: _start);
+        return _Failed(
+          message: _error ?? 'Something went wrong.',
+          onRetry: _start,
+        );
     }
   }
 }

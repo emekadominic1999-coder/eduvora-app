@@ -49,14 +49,15 @@ class _ExamSetupSheetState extends State<_ExamSetupSheet> {
   int get _customPoolSize {
     final String? topic = _selectedTopic;
     if (topic == null) return _total;
-    return widget.subject.questions.where((CbtQuestion q) => q.topic == topic).length;
+    return widget.subject.questions
+        .where((CbtQuestion q) => q.topic == topic)
+        .length;
   }
 
   /// How many questions a standard sitting actually draws — the fixed
   /// count, unless the paper itself holds fewer than that. Standard mode
   /// always spans the whole paper, ignoring any topic chosen for custom.
-  int get _standardCount =>
-      _total < CbtExamConfig.standardQuestionCount
+  int get _standardCount => _total < CbtExamConfig.standardQuestionCount
       ? _total
       : CbtExamConfig.standardQuestionCount;
 
@@ -80,7 +81,9 @@ class _ExamSetupSheetState extends State<_ExamSetupSheet> {
 
   int _countFor(String? topic) => topic == null
       ? widget.subject.questionCount
-      : widget.subject.questions.where((CbtQuestion q) => q.topic == topic).length;
+      : widget.subject.questions
+            .where((CbtQuestion q) => q.topic == topic)
+            .length;
 
   void _start() {
     final CbtExamConfig config = _custom
@@ -474,7 +477,9 @@ class _InlineTopicPicker extends StatelessWidget {
     final List<String> filtered = query.trim().isEmpty
         ? topics
         : topics
-              .where((String t) => t.toLowerCase().contains(query.toLowerCase()))
+              .where(
+                (String t) => t.toLowerCase().contains(query.toLowerCase()),
+              )
               .toList();
 
     return Column(
@@ -548,10 +553,7 @@ class _TopicTile extends StatelessWidget {
               size: 20,
               color: AppColours.primary,
             )
-          : Text(
-              '$count',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
+          : Text('$count', style: Theme.of(context).textTheme.bodySmall),
     );
   }
 }

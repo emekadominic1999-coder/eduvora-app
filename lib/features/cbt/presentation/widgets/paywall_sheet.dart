@@ -94,8 +94,7 @@ class _PaywallSheet extends StatelessWidget {
                   : '${subject.name} · unlimited attempts, this session',
               price: '₦350',
               highlighted: false,
-              onTap: () =>
-                  Navigator.of(context).pop(PaywallChoice.singlePaper),
+              onTap: () => Navigator.of(context).pop(PaywallChoice.singlePaper),
             ),
             const SizedBox(height: AppSpacing.md),
             _PlanCard(
@@ -106,8 +105,7 @@ class _PaywallSheet extends StatelessWidget {
               price: '₦2,300',
               highlighted: true,
               badge: 'BEST VALUE',
-              onTap: () =>
-                  Navigator.of(context).pop(PaywallChoice.coursePack),
+              onTap: () => Navigator.of(context).pop(PaywallChoice.coursePack),
             ),
             const SizedBox(height: AppSpacing.lg),
             Row(
@@ -121,9 +119,9 @@ class _PaywallSheet extends StatelessWidget {
                 const SizedBox(width: 6),
                 Text(
                   'Pay by transfer, USSD or card · secured by Paystack',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColours.textFaint,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: AppColours.textFaint),
                 ),
               ],
             ),
@@ -200,10 +198,7 @@ class _PlanCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    Text(
-                      title,
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
+                    Text(title, style: Theme.of(context).textTheme.titleMedium),
                     const SizedBox(height: 3),
                     Text(
                       body,

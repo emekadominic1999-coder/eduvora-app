@@ -106,9 +106,7 @@ class CbtResultScreen extends StatelessWidget {
       final RewardResult result = await AdService.showRewarded();
       if (result == RewardResult.dismissed) {
         messenger.showSnackBar(
-          const SnackBar(
-            content: Text('Watch the whole video to try again.'),
-          ),
+          const SnackBar(content: Text('Watch the whole video to try again.')),
         );
         return;
       }
@@ -435,8 +433,7 @@ class _TutorNudge extends StatelessWidget {
         shadows: AppShadows.subtle,
         onTap: () => Navigator.of(context).push(
           MaterialPageRoute<void>(
-            builder: (_) =>
-                TutorDirectoryScreen(initialSubjectId: subject.id),
+            builder: (_) => TutorDirectoryScreen(initialSubjectId: subject.id),
           ),
         ),
         child: Row(
