@@ -1,0 +1,7 @@
+{
+  "317eeb92-30a5-4afa-9cc3-49c6cdaa122a": "Evaluate $\\log_2 8$.",
+  "32fde296-a24c-4145-af7a-66b45c5f47af": "The change-of-base formula expresses $\\log_b x$ in terms of natural logarithms as:",
+  "5b16d6c0-7835-4484-b2b2-e5da2d645b0b": "Find the equation of the line normal to the curve $y = \\dfrac{1}{x}$ at the point $\\left(2, \\dfrac{1}{2}\\right)$.",
+  "6ba47b9c-42c7-4e3e-87ae-5fc53d1255cc": "The tangent line to $y = \\sqrt{x}$ at $x = 4$ is used to estimate $\\sqrt{4.1}$. What estimate does it give?",
+  "8bc64094-bae1-4be7-8ecf-e71b50e9ba14": "If $x = \\cos t$ and $y = \\sin t$, find $\\dfrac{dy}{dx}$ in terms of $t$."
+}
