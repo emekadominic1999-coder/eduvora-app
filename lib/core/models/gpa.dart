@@ -52,12 +52,17 @@ class CourseEntry {
     required this.creditUnits,
     this.grade,
     this.score,
+    this.carryover = false,
   });
 
   final String id;
   final String code;
   final int creditUnits;
   final Grade? grade;
+
+  /// The student marked this as a carryover: a course failed before and now
+  /// being retaken.
+  final bool carryover;
 
   /// The percentage the student typed, when they entered a score.
   final int? score;
@@ -77,12 +82,14 @@ class CourseEntry {
     bool clearGrade = false,
     int? score,
     bool clearScore = false,
+    bool? carryover,
   }) => CourseEntry(
     id: id,
     code: code ?? this.code,
     creditUnits: creditUnits ?? this.creditUnits,
     grade: clearGrade ? null : (grade ?? this.grade),
     score: clearScore ? null : (score ?? this.score),
+    carryover: carryover ?? this.carryover,
   );
 
   Map<String, dynamic> toJson() => <String, dynamic>{
@@ -91,6 +98,7 @@ class CourseEntry {
     'credit_units': creditUnits,
     'grade': grade?.letter,
     if (score != null) 'score': score,
+    if (carryover) 'carryover': true,
   };
 
   factory CourseEntry.fromJson(Map<String, dynamic> json) => CourseEntry(
@@ -99,6 +107,7 @@ class CourseEntry {
     creditUnits: (json['credit_units'] as num?)?.toInt() ?? 0,
     grade: Grade.tryLetter(json['grade'] as String?),
     score: (json['score'] as num?)?.toInt(),
+    carryover: json['carryover'] == true,
   );
 }
 
@@ -270,6 +279,26 @@ class GpaEngine {
         points += c.qualityPoints;
         if (c.grade != Grade.f) passed += c.creditUnits;
       }
+    }
+
+    // A carryover passed now, whose old F is part of the results entered
+    // before this app: when the school drops the F, take its units out of the
+    // starting total (an F carried 0 points, so only the units change).
+    if (settings.replaceRetakenFails && settings.hasPrevious) {
+      int dropped = 0;
+      final Set<String> seenKeys = <String>{};
+      for (final SemesterRecord sem in all) {
+        for (final CourseEntry c in sem.courses) {
+          if (!c.isGraded || c.key.isEmpty) continue;
+          final bool earlierF = seenKeys.contains('F:${c.key}');
+          if (c.grade == Grade.f) seenKeys.add('F:${c.key}');
+          if (c.carryover && c.grade != Grade.f && !earlierF) {
+            dropped += c.creditUnits;
+          }
+        }
+      }
+      final int cut = dropped > settings.previousUnits ? settings.previousUnits : dropped;
+      units -= cut;
     }
 
     final List<String> carry = <String>[];

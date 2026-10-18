@@ -116,6 +116,7 @@ class StoreKeys {
   static const String aiHistory = 'eduvora.ai_history';
   static const String gpaSemesters = 'eduvora.gpa_semesters';
   static const String gpaSettings = 'eduvora.gpa_settings';
+  static const String gpaDraft = 'eduvora.gpa_draft';
   static const String cbtAttempts = 'eduvora.cbt_attempts';
   static const String bookmarkedNews = 'eduvora.bookmarked_news';
   static const String courseOutlines = 'eduvora.course_outlines';
@@ -129,4 +130,5 @@ class StoreKeys {
   static const String cbtFreeTrialUsed = 'eduvora.cbt_free_trial_used';
   static const String cbtInProgress = 'eduvora.cbt_in_progress';
   static const String deviceId = 'eduvora.device_id';
+  static const String blockedUsers = 'eduvora.blocked_users';
 }

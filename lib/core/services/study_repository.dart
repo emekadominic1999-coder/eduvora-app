@@ -53,6 +53,16 @@ class StudyRepository {
     );
   }
 
+  /// The semester the student was in the middle of entering, so leaving the
+  /// calculator never loses their work.
+  Map<String, dynamic>? gpaDraft() =>
+      LocalStore.instance.readMap(StoreKeys.gpaDraft);
+
+  Future<void> saveGpaDraft(Map<String, dynamic> draft) =>
+      LocalStore.instance.writeMap(StoreKeys.gpaDraft, draft);
+
+  Future<void> clearGpaDraft() => LocalStore.instance.remove(StoreKeys.gpaDraft);
+
   GpaSettings gpaSettings() => GpaSettings.fromJson(
     LocalStore.instance.readMap(StoreKeys.gpaSettings),
   );

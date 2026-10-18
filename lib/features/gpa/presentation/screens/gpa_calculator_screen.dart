@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:uuid/uuid.dart';
@@ -13,11 +15,13 @@ import '../widgets/cgpa_trend_chart.dart';
 
 /// Semester GPA and cumulative CGPA on the Nigerian 5-point scale.
 ///
+/// Two tabs: **Calculate** (add courses, tap grades, watch the GPA update)
+/// and **My results** (every saved semester, the CGPA and the trend). The
+/// semester being entered is saved automatically as a draft, so leaving and
+/// coming back never loses it.
+///
 /// GPA = TCP ⁄ TNU, where TCP is the total credit points (credit units ×
-/// grade point, summed) and TNU the total number of units registered. Failed
-/// courses count with 0 points, and a resit is recorded in the semester it is
-/// taken, so both attempts stay in the record unless the student's school
-/// replaces the F (a switch below).
+/// grade point, summed) and TNU the total number of units registered.
 class GpaCalculatorScreen extends StatefulWidget {
   const GpaCalculatorScreen({super.key});
 
@@ -25,10 +29,12 @@ class GpaCalculatorScreen extends StatefulWidget {
   State<GpaCalculatorScreen> createState() => _GpaCalculatorScreenState();
 }
 
-class _GpaCalculatorScreenState extends State<GpaCalculatorScreen> {
+class _GpaCalculatorScreenState extends State<GpaCalculatorScreen>
+    with SingleTickerProviderStateMixin {
   static const StudyRepository _study = StudyRepository();
   static const Uuid _uuid = Uuid();
 
+  late final TabController _tabs;
   final List<CourseEntry> _courses = <CourseEntry>[];
   final TextEditingController _label = TextEditingController();
   final TextEditingController _prevCgpa = TextEditingController();
@@ -38,23 +44,34 @@ class _GpaCalculatorScreenState extends State<GpaCalculatorScreen> {
   List<SemesterRecord> _saved = <SemesterRecord>[];
   GpaSettings _settings = const GpaSettings();
   String? _editingId;
+  DateTime? _editingSavedAt;
   double _target = 4.5;
+
+  /// Bumped whenever the course list is replaced wholesale, so the rows
+  /// rebuild their text fields from the new entries.
+  int _rev = 0;
 
   @override
   void initState() {
     super.initState();
+    _tabs = TabController(length: 2, vsync: this)
+      ..addListener(() {
+        if (mounted) setState(() {});
+      });
     _saved = _study.semesters();
     _settings = _study.gpaSettings();
     if (_settings.hasPrevious) {
       _prevCgpa.text = _settings.previousCgpa.toStringAsFixed(2);
       _prevUnits.text = '${_settings.previousUnits}';
     }
-    _label.text = 'Semester ${_saved.length + 1}';
-    _addCourse();
+    _restoreDraft();
+    if (_courses.isEmpty) _courses.add(_blank());
+    if (_label.text.trim().isEmpty) _label.text = _defaultLabel();
   }
 
   @override
   void dispose() {
+    _tabs.dispose();
     _label.dispose();
     _prevCgpa.dispose();
     _prevUnits.dispose();
@@ -62,20 +79,82 @@ class _GpaCalculatorScreenState extends State<GpaCalculatorScreen> {
     super.dispose();
   }
 
-  CourseEntry _blank() => CourseEntry(id: _uuid.v4(), code: '', creditUnits: 2);
+  String _defaultLabel() => 'Semester ${_saved.length + 1}';
 
-  void _addCourse() => setState(() => _courses.add(_blank()));
+  CourseEntry _blank() => CourseEntry(id: _uuid.v4(), code: '', creditUnits: 3);
+
+  // -------------------------------------------------------------- the draft
+
+  void _restoreDraft() {
+    final Map<String, dynamic>? draft = _study.gpaDraft();
+    if (draft == null) return;
+    final String? editing = draft['editing_id'] as String?;
+    final bool stillThere =
+        editing != null && _saved.any((SemesterRecord s) => s.id == editing);
+    _editingId = stillThere ? editing : null;
+    _editingSavedAt = stillThere
+        ? DateTime.tryParse((draft['editing_saved_at'] ?? '') as String)
+        : null;
+    _label.text = (draft['label'] ?? '') as String;
+    final List<dynamic> raw = draft['courses'] as List<dynamic>? ?? <dynamic>[];
+    _courses.addAll(
+      raw.whereType<Map<dynamic, dynamic>>().map(
+        (Map<dynamic, dynamic> e) =>
+            CourseEntry.fromJson(Map<String, dynamic>.from(e)),
+      ),
+    );
+  }
+
+  void _persistDraft() {
+    unawaited(
+      _study.saveGpaDraft(<String, dynamic>{
+        'label': _label.text,
+        'editing_id': _editingId,
+        'editing_saved_at': _editingSavedAt?.toIso8601String(),
+        'courses': _courses.map((CourseEntry c) => c.toJson()).toList(),
+      }),
+    );
+  }
+
+  bool get _draftHasContent => _courses.any(
+    (CourseEntry c) => c.code.trim().isNotEmpty || c.isGraded,
+  );
+
+  // ----------------------------------------------------------------- courses
+
+  void _addCourse() {
+    setState(() => _courses.add(_blank()));
+    _persistDraft();
+  }
 
   void _removeCourse(String id) {
     setState(() => _courses.removeWhere((CourseEntry c) => c.id == id));
+    _persistDraft();
   }
 
   void _update(String id, CourseEntry updated) {
     final int index = _courses.indexWhere((CourseEntry c) => c.id == id);
-    if (index >= 0) setState(() => _courses[index] = updated);
+    if (index < 0) return;
+    setState(() => _courses[index] = updated);
+    _persistDraft();
   }
 
-  // ------------------------------------------------------------- numbers
+  /// Throws the current entry away and starts a clean semester.
+  void _startNew() {
+    setState(() {
+      _editingId = null;
+      _editingSavedAt = null;
+      _courses
+        ..clear()
+        ..add(_blank());
+      _label.text = _defaultLabel();
+      _rev++;
+    });
+    _persistDraft();
+    _tabs.animateTo(0);
+  }
+
+  // ----------------------------------------------------------------- numbers
 
   List<CourseEntry> get _graded =>
       _courses.where((CourseEntry c) => c.isGraded && c.creditUnits > 0).toList();
@@ -86,17 +165,13 @@ class _GpaCalculatorScreenState extends State<GpaCalculatorScreen> {
   int get _totalPoints =>
       _graded.fold(0, (int sum, CourseEntry c) => sum + c.qualityPoints);
 
-  int get _unitsPassed => _graded
-      .where((CourseEntry c) => c.grade != Grade.f)
-      .fold(0, (int sum, CourseEntry c) => sum + c.creditUnits);
-
   double get _gpa => _totalUnits == 0 ? 0 : _totalPoints / _totalUnits;
 
   SemesterRecord _draft() => SemesterRecord(
     id: _editingId ?? 'draft',
     label: _label.text,
     courses: _graded,
-    savedAt: DateTime.now(),
+    savedAt: _editingSavedAt ?? DateTime.now(),
   );
 
   List<SemesterRecord> get _others =>
@@ -117,7 +192,7 @@ class _GpaCalculatorScreenState extends State<GpaCalculatorScreen> {
     return out;
   }
 
-  // ------------------------------------------------------------ actions
+  // ----------------------------------------------------------------- actions
 
   Future<void> _save() async {
     final List<CourseEntry> filled = _courses
@@ -126,7 +201,7 @@ class _GpaCalculatorScreenState extends State<GpaCalculatorScreen> {
     if (filled.any((CourseEntry c) => !c.isGraded)) {
       showEduvoraSnack(
         context,
-        'Choose a grade (or type a score) for every course first.',
+        'Tap a grade (or type a score) for every course first.',
         isError: true,
       );
       return;
@@ -145,43 +220,76 @@ class _GpaCalculatorScreenState extends State<GpaCalculatorScreen> {
 
     final SemesterRecord record = SemesterRecord(
       id: _editingId ?? _uuid.v4(),
-      label: _label.text.trim().isEmpty
-          ? 'Semester ${_saved.length + 1}'
-          : _label.text.trim(),
+      label: _label.text.trim().isEmpty ? _defaultLabel() : _label.text.trim(),
       courses: valid,
-      savedAt: DateTime.now(),
+      // Keep the original date when editing, so the semester stays in the
+      // same place in the CGPA order.
+      savedAt: _editingSavedAt ?? DateTime.now(),
     );
 
     await _study.saveSemester(record);
+    await _study.clearGpaDraft();
     if (!mounted) return;
 
     setState(() {
       _saved = _study.semesters();
       _editingId = null;
+      _editingSavedAt = null;
       _courses
         ..clear()
         ..add(_blank());
-      _label.text = 'Semester ${_saved.length + 1}';
+      _label.text = _defaultLabel();
+      _rev++;
     });
 
     showEduvoraSnack(
       context,
-      'Saved. Your CGPA is now ${_study.cumulativeGpa().toStringAsFixed(2)}.',
+      'Saved to My results. Your CGPA is now '
+      '${_study.cumulativeGpa().toStringAsFixed(2)}.',
       icon: Icons.save_rounded,
     );
+    _tabs.animateTo(1);
   }
 
-  void _loadForEdit(SemesterRecord record) {
+  Future<void> _loadForEdit(SemesterRecord record) async {
+    final bool replacing = _editingId != record.id && _draftHasContent;
+    if (replacing) {
+      final bool? go = await showDialog<bool>(
+        context: context,
+        builder: (BuildContext context) => AlertDialog(
+          title: const Text('Replace what you are typing?'),
+          content: const Text(
+            'You have a semester you have not saved yet. Opening this one '
+            'will replace it.',
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Keep mine'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Open it'),
+            ),
+          ],
+        ),
+      );
+      if (!(go ?? false) || !mounted) return;
+    }
     setState(() {
       _editingId = record.id;
+      _editingSavedAt = record.savedAt;
       _label.text = record.label;
       _courses
         ..clear()
         ..addAll(record.courses);
+      _rev++;
     });
+    _persistDraft();
+    _tabs.animateTo(0);
     showEduvoraSnack(
       context,
-      'Editing "${record.label}". Save to update it.',
+      'Editing "${record.label}". Change anything, then tap Update.',
       icon: Icons.edit_rounded,
     );
   }
@@ -212,10 +320,15 @@ class _GpaCalculatorScreenState extends State<GpaCalculatorScreen> {
 
     await _study.deleteSemester(record.id);
     if (!mounted) return;
+    final bool wasEditing = _editingId == record.id;
     setState(() {
       _saved = _study.semesters();
-      if (_editingId == record.id) _editingId = null;
+      if (wasEditing) {
+        _editingId = null;
+        _editingSavedAt = null;
+      }
     });
+    if (wasEditing) _persistDraft();
   }
 
   Future<void> _saveSettings(GpaSettings next) async {
@@ -240,7 +353,7 @@ class _GpaCalculatorScreenState extends State<GpaCalculatorScreen> {
     final Semester? semester = await showDialog<Semester>(
       context: context,
       builder: (BuildContext context) => SimpleDialog(
-        title: const Text('Import which semester?'),
+        title: const Text('Add courses from which semester?'),
         children: <Widget>[
           for (final Semester s in Semester.values)
             SimpleDialogOption(
@@ -256,7 +369,7 @@ class _GpaCalculatorScreenState extends State<GpaCalculatorScreen> {
     final profile = sessionController.profile;
     if (profile == null) {
       if (mounted) {
-        showEduvoraSnack(context, 'Sign in to import your courses.', isError: true);
+        showEduvoraSnack(context, 'Sign in to add your courses.', isError: true);
       }
       return;
     }
@@ -294,23 +407,21 @@ class _GpaCalculatorScreenState extends State<GpaCalculatorScreen> {
           ),
         );
       }
+      _rev++;
     });
+    _persistDraft();
     showEduvoraSnack(
       context,
-      '${pick.length} courses added. Now choose your grade for each.',
+      '${pick.length} courses added. Now tap your grade for each.',
       icon: Icons.download_done_rounded,
     );
   }
 
-  // ---------------------------------------------------------------- UI
+  // ---------------------------------------------------------------------- UI
 
   @override
   Widget build(BuildContext context) {
-    final CumulativeResult now = _projected;
-    final CumulativeResult savedOnly = GpaEngine.cumulative(_saved, _settings);
-    final bool hasHistory = _saved.isNotEmpty || _settings.hasPrevious;
-    final Set<String> failedBefore = _failedBefore;
-
+    final bool onCalculate = _tabs.index == 0;
     return Scaffold(
       backgroundColor: AppColours.background,
       appBar: AppBar(
@@ -323,278 +434,758 @@ class _GpaCalculatorScreenState extends State<GpaCalculatorScreen> {
           ),
           const SizedBox(width: 4),
         ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(height: 1, color: AppColours.border),
-        ),
-      ),
-      body: ListView(
-        padding: const EdgeInsets.only(bottom: 100),
-        children: <Widget>[
-          _resultCard(now, hasHistory),
-          if (now.carryovers.isNotEmpty) _carryoverCard(now.carryovers),
-          if (_saved.length >= 2) ...<Widget>[
-            const SectionHeader(
-              title: 'Your trend',
-              subtitle: 'GPA by semester, with your CGPA line',
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.screenPadding,
-              ),
-              child: EduvoraCard(
-                shadows: AppShadows.subtle,
-                child: CgpaTrendChart(
-                  semesters: _saved,
-                  cgpa: savedOnly.cgpa,
-                ),
-              ),
+        bottom: TabBar(
+          controller: _tabs,
+          labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+          tabs: <Widget>[
+            const Tab(text: 'Calculate'),
+            Tab(
+              text: _saved.isEmpty
+                  ? 'My results'
+                  : 'My results (${_saved.length})',
             ),
           ],
-          SectionHeader(
-            title: _editingId == null ? 'This semester' : 'Editing semester',
-            subtitle: 'Enter each course, its units and your grade or score',
-            actionLabel: 'Add course',
-            onAction: _addCourse,
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.screenPadding,
-            ),
-            child: Column(
+        ),
+      ),
+      body: TabBarView(
+        controller: _tabs,
+        children: <Widget>[_calculateTab(), _resultsTab()],
+      ),
+      bottomNavigationBar: onCalculate ? _calculateBar() : null,
+    );
+  }
+
+  // ------------------------------------------------------------ Calculate tab
+
+  Widget _calculateTab() {
+    final CumulativeResult now = _projected;
+    final Set<String> failedBefore = _failedBefore;
+    final bool anyCarryover = _courses.any((CourseEntry c) => c.carryover);
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.screenPadding,
+        AppSpacing.md,
+        AppSpacing.screenPadding,
+        AppSpacing.xxl,
+      ),
+      children: <Widget>[
+        _howToCard(),
+        if (_editingId != null) ...<Widget>[
+          const SizedBox(height: AppSpacing.md),
+          EduvoraCard(
+            colour: AppColours.primaryTint,
+            border: Border.all(color: AppColours.primary),
+            padding: const EdgeInsets.all(AppSpacing.md),
+            shadows: const <BoxShadow>[],
+            child: Row(
               children: <Widget>[
-                TextField(
-                  controller: _label,
-                  decoration: const InputDecoration(
-                    labelText: 'Semester name',
-                    hintText: 'e.g. 200L First Semester',
-                    prefixIcon: Icon(Icons.label_outline_rounded, size: 20),
+                const Icon(Icons.edit_rounded, color: AppColours.primary, size: 19),
+                const SizedBox(width: AppSpacing.sm),
+                const Expanded(
+                  child: Text(
+                    'You are editing a saved semester. Tap Update to keep '
+                    'your changes.',
+                    style: TextStyle(fontSize: 12.5, height: 1.4),
                   ),
                 ),
-                const SizedBox(height: AppSpacing.md),
-                ..._courses.map(
-                  (CourseEntry c) => Padding(
-                    padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                    child: _CourseRow(
-                      key: ValueKey<String>(c.id),
-                      entry: c,
-                      isResit: failedBefore.contains(c.key),
-                      canRemove: _courses.length > 1,
-                      onChanged: (CourseEntry updated) =>
-                          _update(c.id, updated),
-                      onRemove: () => _removeCourse(c.id),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                Row(
-                  children: <Widget>[
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: _addCourse,
-                        icon: const Icon(Icons.add_rounded, size: 19),
-                        label: const Text('Add course'),
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.sm),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: _importFromOutline,
-                        icon: const Icon(Icons.download_rounded, size: 19),
-                        label: const Text('From my outline'),
-                      ),
-                    ),
-                  ],
-                ),
+                TextButton(onPressed: _startNew, child: const Text('Cancel')),
               ],
             ),
           ),
-          const SectionHeader(
-            title: 'Results before this app',
-            subtitle: 'Already have a CGPA from earlier sessions? Start from it',
+        ],
+        const SizedBox(height: AppSpacing.lg),
+        TextField(
+          controller: _label,
+          onChanged: (_) => _persistDraft(),
+          decoration: const InputDecoration(
+            labelText: 'Which semester is this?',
+            hintText: 'e.g. 200L First Semester',
+            prefixIcon: Icon(Icons.label_outline_rounded, size: 20),
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.screenPadding,
-            ),
-            child: EduvoraCard(
-              shadows: AppShadows.subtle,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Row(
-                    children: <Widget>[
-                      Expanded(
-                        child: TextField(
-                          controller: _prevCgpa,
-                          keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true,
-                          ),
-                          inputFormatters: <TextInputFormatter>[
-                            FilteringTextInputFormatter.allow(
-                              RegExp(r'[0-9.]'),
-                            ),
-                          ],
-                          onChanged: (_) => _onPreviousChanged(),
-                          decoration: const InputDecoration(
-                            labelText: 'Previous CGPA',
-                            hintText: 'e.g. 3.85',
-                            isDense: true,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.md),
-                      Expanded(
-                        child: TextField(
-                          controller: _prevUnits,
-                          keyboardType: TextInputType.number,
-                          inputFormatters: <TextInputFormatter>[
-                            FilteringTextInputFormatter.digitsOnly,
-                          ],
-                          onChanged: (_) => _onPreviousChanged(),
-                          decoration: const InputDecoration(
-                            labelText: 'Total units so far',
-                            hintText: 'e.g. 96',
-                            isDense: true,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  Text(
-                    'Found on your last result slip as CGPA and TNU (total '
-                    'number of units). Leave blank if you are entering every '
-                    'semester here.',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                  const Divider(height: AppSpacing.xl),
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    value: _settings.replaceRetakenFails,
-                    onChanged: (bool v) =>
-                        _saveSettings(_settings.copyWith(replaceRetakenFails: v)),
-                    title: const Text(
-                      'My school drops an F once I pass the resit',
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-                    ),
-                    subtitle: const Text(
-                      'Off is the usual rule: every attempt stays in your '
-                      'record, so the F and the resit both count. Turn on only '
-                      'if your result slips show the F removed.',
-                      style: TextStyle(fontSize: 12, height: 1.4),
-                    ),
-                  ),
-                ],
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        Row(
+          children: <Widget>[
+            const Expanded(
+              child: Text(
+                'Your courses',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: AppColours.text,
+                ),
               ),
             ),
-          ),
-          const SectionHeader(
-            title: 'Set a target',
-            subtitle: 'What GPA do you need next semester?',
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.screenPadding,
-            ),
-            child: _plannerCard(now),
-          ),
-          if (_saved.isNotEmpty) ...<Widget>[
-            const SectionHeader(
-              title: 'Saved semesters',
-              subtitle: 'Tap to edit, use the bin to remove',
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.screenPadding,
+            if (_draftHasContent)
+              TextButton.icon(
+                onPressed: _startNew,
+                icon: const Icon(Icons.refresh_rounded, size: 17),
+                label: const Text('Start over'),
               ),
-              child: Column(
-                children: _saved
-                    .map(
-                      (SemesterRecord s) => Padding(
-                        padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                        child: _SavedSemesterRow(
-                          record: s,
-                          isEditing: _editingId == s.id,
-                          onTap: () => _loadForEdit(s),
-                          onDelete: () => _delete(s),
-                        ),
-                      ),
-                    )
-                    .toList(),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        for (int i = 0; i < _courses.length; i++)
+          Padding(
+            padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+            child: _CourseRow(
+              key: ValueKey<String>('${_courses[i].id}-$_rev'),
+              number: i + 1,
+              entry: _courses[i],
+              isResit: failedBefore.contains(_courses[i].key),
+              canRemove: _courses.length > 1,
+              onChanged: (CourseEntry updated) => _update(_courses[i].id, updated),
+              onRemove: () => _removeCourse(_courses[i].id),
+            ),
+          ),
+        Row(
+          children: <Widget>[
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: _addCourse,
+                icon: const Icon(Icons.add_rounded, size: 19),
+                label: const Text('Add a course'),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: _importFromOutline,
+                icon: const Icon(Icons.download_rounded, size: 19),
+                label: const Text('From my outline'),
               ),
             ),
           ],
-        ],
-      ),
-      bottomNavigationBar: Container(
-        padding: const EdgeInsets.fromLTRB(
-          AppSpacing.screenPadding,
-          AppSpacing.md,
-          AppSpacing.screenPadding,
-          AppSpacing.lg,
         ),
-        decoration: const BoxDecoration(
-          color: AppColours.surface,
-          border: Border(top: BorderSide(color: AppColours.border)),
-        ),
-        child: SafeArea(
-          top: false,
-          child: FilledButton.icon(
-            onPressed: _save,
-            icon: const Icon(Icons.save_rounded, size: 19),
-            label: Text(
-              _editingId == null ? 'Save this semester' : 'Update semester',
+        if (anyCarryover || _settings.replaceRetakenFails) ...<Widget>[
+          const SizedBox(height: AppSpacing.md),
+          EduvoraCard(
+            shadows: AppShadows.subtle,
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg,
+              vertical: AppSpacing.sm,
+            ),
+            child: SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              value: _settings.replaceRetakenFails,
+              onChanged: (bool v) =>
+                  _saveSettings(_settings.copyWith(replaceRetakenFails: v)),
+              title: const Text(
+                'My school removes the old F once I pass',
+                style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600),
+              ),
+              subtitle: const Text(
+                'Off: the F and the new grade both count (the usual rule). '
+                'On: the old F is taken out once you pass the course again. '
+                'Check your result slip if you are not sure.',
+                style: TextStyle(fontSize: 12, height: 1.4),
+              ),
             ),
           ),
+        ],
+        const SizedBox(height: AppSpacing.lg),
+        _workingCard(now),
+        const SizedBox(height: AppSpacing.md),
+        _previousResultsCard(),
+        const SizedBox(height: AppSpacing.md),
+        Center(
+          child: Text(
+            'Everything you type here is saved automatically.',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _howToCard() {
+    Widget step(int n, String text) => Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Container(
+            width: 24,
+            height: 24,
+            alignment: Alignment.center,
+            decoration: const BoxDecoration(
+              color: AppColours.primary,
+              shape: BoxShape.circle,
+            ),
+            child: Text(
+              '$n',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12.5,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(
+                fontSize: 13.5,
+                height: 1.45,
+                color: AppColours.text,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    return EduvoraCard(
+      colour: AppColours.primaryTint,
+      shadows: const <BoxShadow>[],
+      padding: EdgeInsets.zero,
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          initiallyExpanded: _saved.isEmpty && !_draftHasContent,
+          tilePadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+          childrenPadding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            0,
+            AppSpacing.lg,
+            AppSpacing.sm,
+          ),
+          expandedCrossAxisAlignment: CrossAxisAlignment.start,
+          leading: const Icon(Icons.lightbulb_outline_rounded, color: AppColours.primary),
+          title: const Text(
+            'How to use this',
+            style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w800),
+          ),
+          subtitle: const Text('Three easy steps', style: TextStyle(fontSize: 12)),
+          children: <Widget>[
+            step(
+              1,
+              'Add a course for every subject you took this semester. Type '
+              'its code, like PHY 102.',
+            ),
+            step(
+              2,
+              'Set its units with + and − (it is the number next to the '
+              'course on your outline, usually 1 to 4). Then tap the grade '
+              'you got. If you only know your score, type it in and the '
+              'grade is filled for you.',
+            ),
+            step(
+              3,
+              'Your GPA shows at the bottom of the screen. Tap Save and it '
+              'goes into My results, where you can open it again any time.',
+            ),
+            const Divider(),
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 6),
+              child: Text(
+                'Failed a course before and retaking it? Tick "Carryover" on '
+                'that course.',
+                style: TextStyle(fontSize: 13, height: 1.45),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _carryoverCard(List<String> carryovers) {
-    return Padding(
+  /// Shows the sums behind the GPA, so it never feels like a black box.
+  Widget _workingCard(CumulativeResult now) {
+    final List<CourseEntry> graded = _graded;
+    final bool hasHistory = _others.isNotEmpty || _settings.hasPrevious;
+    return EduvoraCard(
+      shadows: AppShadows.subtle,
+      padding: EdgeInsets.zero,
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          tilePadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+          childrenPadding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            0,
+            AppSpacing.lg,
+            AppSpacing.lg,
+          ),
+          expandedCrossAxisAlignment: CrossAxisAlignment.start,
+          title: const Text(
+            'See how this GPA is worked out',
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+          ),
+          subtitle: const Text(
+            'Units × grade point, added up',
+            style: TextStyle(fontSize: 12),
+          ),
+          children: <Widget>[
+            if (graded.isEmpty)
+              const Text(
+                'Tap a grade on at least one course and the working appears '
+                'here.',
+                style: TextStyle(fontSize: 13, height: 1.45),
+              )
+            else ...<Widget>[
+              for (final CourseEntry c in graded)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: Text(
+                          c.code.trim().isEmpty ? 'Course' : c.code.trim().toUpperCase(),
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        '${c.creditUnits} units × ${c.grade!.letter} (${c.grade!.point})',
+                        style: const TextStyle(
+                          fontSize: 12.5,
+                          color: AppColours.textMuted,
+                        ),
+                      ),
+                      SizedBox(
+                        width: 64,
+                        child: Text(
+                          '= ${c.qualityPoints}',
+                          textAlign: TextAlign.right,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              const Divider(),
+              Text(
+                'Total points $_totalPoints ÷ total units $_totalUnits = '
+                '${_gpa.toStringAsFixed(2)}',
+                style: const TextStyle(
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w800,
+                  color: AppColours.primary,
+                ),
+              ),
+              if (hasHistory) ...<Widget>[
+                const SizedBox(height: 6),
+                Text(
+                  'With your earlier semesters, CGPA = ${now.points} ÷ '
+                  '${now.units} = ${now.cgpa.toStringAsFixed(2)}',
+                  style: const TextStyle(
+                    fontSize: 12.5,
+                    height: 1.45,
+                    color: AppColours.textMuted,
+                  ),
+                ),
+              ],
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _previousResultsCard() {
+    return EduvoraCard(
+      shadows: AppShadows.subtle,
+      padding: EdgeInsets.zero,
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          initiallyExpanded: _settings.hasPrevious,
+          tilePadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+          childrenPadding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            0,
+            AppSpacing.lg,
+            AppSpacing.lg,
+          ),
+          expandedCrossAxisAlignment: CrossAxisAlignment.start,
+          title: const Text(
+            'I already have results from before',
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+          ),
+          subtitle: const Text(
+            'Start from the CGPA on your last result slip',
+            style: TextStyle(fontSize: 12),
+          ),
+          children: <Widget>[
+            Row(
+              children: <Widget>[
+                Expanded(
+                  child: TextField(
+                    controller: _prevCgpa,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    inputFormatters: <TextInputFormatter>[
+                      FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                    ],
+                    onChanged: (_) => _onPreviousChanged(),
+                    decoration: const InputDecoration(
+                      labelText: 'CGPA on my last slip',
+                      hintText: 'e.g. 3.85',
+                      isDense: true,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: TextField(
+                    controller: _prevUnits,
+                    keyboardType: TextInputType.number,
+                    inputFormatters: <TextInputFormatter>[
+                      FilteringTextInputFormatter.digitsOnly,
+                    ],
+                    onChanged: (_) => _onPreviousChanged(),
+                    decoration: const InputDecoration(
+                      labelText: 'Total units (TNU)',
+                      hintText: 'e.g. 96',
+                      isDense: true,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              'Both numbers are on your last result slip. Leave them blank '
+              'if you are adding every semester here. If an old F is inside '
+              'that CGPA and you are retaking the course, tick "Carryover" '
+              'on it above.',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// The bar that stays at the bottom while calculating: the answer, always
+  /// in view, and the Save button.
+  Widget _calculateBar() {
+    final CumulativeResult now = _projected;
+    final bool any = _totalUnits > 0;
+    Widget stat(String label, String value, String note) => Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 11.5,
+              fontWeight: FontWeight.w600,
+              color: AppColours.textMuted,
+            ),
+          ),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 26,
+              height: 1.15,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.8,
+              color: AppColours.primary,
+            ),
+          ),
+          Text(
+            note,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 11.5, color: AppColours.textMuted),
+          ),
+        ],
+      ),
+    );
+
+    return Container(
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.screenPadding,
         AppSpacing.md,
         AppSpacing.screenPadding,
-        0,
+        AppSpacing.md,
       ),
-      child: EduvoraCard(
-        colour: AppColours.accentSoft,
-        border: Border.all(color: AppColours.accent),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+      decoration: const BoxDecoration(
+        color: AppColours.surface,
+        border: Border(top: BorderSide(color: AppColours.border)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            const Icon(Icons.flag_rounded, color: AppColours.accent, size: 20),
-            const SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    '${carryovers.length} carryover${carryovers.length == 1 ? '' : 's'} to clear',
-                    style: const TextStyle(
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w700,
-                      color: AppColours.text,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    '${carryovers.join(', ')}. Add each one again in the '
-                    'semester you resit it, with its new grade.',
-                    style: const TextStyle(
-                      fontSize: 12.5,
-                      height: 1.45,
-                      color: AppColours.textMuted,
-                    ),
-                  ),
-                ],
+            Row(
+              children: <Widget>[
+                stat(
+                  'This semester GPA',
+                  any ? _gpa.toStringAsFixed(2) : '–',
+                  any ? Classification.of(_gpa) : 'Tap a grade to start',
+                ),
+                Container(width: 1, height: 52, color: AppColours.border),
+                const SizedBox(width: AppSpacing.lg),
+                stat(
+                  'Your CGPA',
+                  now.units > 0 ? now.cgpa.toStringAsFixed(2) : '–',
+                  now.units > 0 ? Classification.of(now.cgpa) : 'Not yet',
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: _save,
+                icon: const Icon(Icons.save_rounded, size: 19),
+                label: Text(
+                  _editingId == null ? 'Save this semester' : 'Update semester',
+                ),
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  // --------------------------------------------------------- My results tab
+
+  Widget _resultsTab() {
+    final CumulativeResult total = GpaEngine.cumulative(_saved, _settings);
+    final bool empty = _saved.isEmpty && !_settings.hasPrevious;
+
+    if (empty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.xl),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              const Icon(
+                Icons.history_edu_rounded,
+                size: 52,
+                color: AppColours.textFaint,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              const Text(
+                'Nothing saved yet',
+                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              const Text(
+                'Work out a semester on the Calculate tab and tap Save. It '
+                'will be kept here, with your CGPA, so you can come back to '
+                'it any time.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 13.5,
+                  height: 1.5,
+                  color: AppColours.textMuted,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              FilledButton(
+                onPressed: () => _tabs.animateTo(0),
+                child: const Text('Calculate a semester'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final List<SemesterRecord> newestFirst = _saved.reversed.toList();
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.screenPadding,
+        AppSpacing.lg,
+        AppSpacing.screenPadding,
+        AppSpacing.xxl,
+      ),
+      children: <Widget>[
+        _cgpaCard(total),
+        if (total.carryovers.isNotEmpty) ...<Widget>[
+          const SizedBox(height: AppSpacing.md),
+          _carryoverCard(total.carryovers),
+        ],
+        if (_saved.length >= 2) ...<Widget>[
+          const SizedBox(height: AppSpacing.lg),
+          const Text(
+            'Your progress',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          EduvoraCard(
+            shadows: AppShadows.subtle,
+            child: CgpaTrendChart(semesters: _saved, cgpa: total.cgpa),
+          ),
+        ],
+        const SizedBox(height: AppSpacing.lg),
+        const Text(
+          'Your semesters',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          'Tap a semester to see its courses',
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        for (final SemesterRecord s in newestFirst)
+          Padding(
+            padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+            child: _SavedSemesterTile(
+              record: s,
+              isEditing: _editingId == s.id,
+              onEdit: () => _loadForEdit(s),
+              onDelete: () => _delete(s),
+            ),
+          ),
+        if (_settings.hasPrevious)
+          EduvoraCard(
+            shadows: AppShadows.subtle,
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: Row(
+              children: <Widget>[
+                const Icon(Icons.history_rounded, color: AppColours.textMuted),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Text(
+                    'Results from before the app: CGPA '
+                    '${_settings.previousCgpa.toStringAsFixed(2)} over '
+                    '${_settings.previousUnits} units',
+                    style: const TextStyle(fontSize: 12.5, height: 1.4),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        const SizedBox(height: AppSpacing.md),
+        OutlinedButton.icon(
+          onPressed: _startNew,
+          icon: const Icon(Icons.add_rounded, size: 19),
+          label: const Text('Add another semester'),
+        ),
+        if (total.units > 0) ...<Widget>[
+          const SizedBox(height: AppSpacing.lg),
+          _plannerCard(total),
+        ],
+      ],
+    );
+  }
+
+  Widget _cgpaCard(CumulativeResult total) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.xl),
+      decoration: BoxDecoration(
+        gradient: AppColours.brandGradient,
+        borderRadius: AppRadii.lg,
+        boxShadow: AppShadows.card,
+      ),
+      child: Column(
+        children: <Widget>[
+          Text(
+            'Your CGPA',
+            style: TextStyle(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w600,
+              color: Colors.white.withValues(alpha: 0.78),
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            total.cgpa.toStringAsFixed(2),
+            style: const TextStyle(
+              fontSize: 48,
+              height: 1.1,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -1.6,
+              color: Colors.white,
+            ),
+          ),
+          Text(
+            Classification.of(total.cgpa),
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: AppColours.accent,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: AppSpacing.sm,
+            ),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.12),
+              borderRadius: AppRadii.sm,
+            ),
+            child: Text(
+              '${_saved.length} semester${_saved.length == 1 ? '' : 's'} saved · '
+              '${total.units} units counted · ${total.unitsPassed} passed',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            Classification.encouragementFor(total.cgpa),
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 12.5,
+              height: 1.5,
+              color: Colors.white.withValues(alpha: 0.82),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _carryoverCard(List<String> carryovers) {
+    return EduvoraCard(
+      colour: AppColours.accentSoft,
+      border: Border.all(color: AppColours.accent),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          const Icon(Icons.flag_rounded, color: AppColours.accent, size: 20),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  '${carryovers.length} carryover${carryovers.length == 1 ? '' : 's'} still to clear',
+                  style: const TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w700,
+                    color: AppColours.text,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  '${carryovers.join(', ')}. When you retake one, add it again '
+                  'in that semester with its new grade and tick "Carryover".',
+                  style: const TextStyle(
+                    fontSize: 12.5,
+                    height: 1.45,
+                    color: AppColours.textMuted,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -609,9 +1200,7 @@ class _GpaCalculatorScreenState extends State<GpaCalculatorScreen> {
     );
     String message;
     Color colour = AppColours.textMuted;
-    if (now.units == 0) {
-      message = 'Add some graded courses first, then see what you need.';
-    } else if (needed == null) {
+    if (needed == null) {
       message = 'Enter the number of units you will register next semester.';
     } else if (needed <= 0) {
       message =
@@ -636,6 +1225,11 @@ class _GpaCalculatorScreenState extends State<GpaCalculatorScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
+          const Text(
+            'What GPA do I need next semester?',
+            style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: AppSpacing.md),
           Wrap(
             spacing: AppSpacing.sm,
             runSpacing: AppSpacing.sm,
@@ -653,7 +1247,7 @@ class _GpaCalculatorScreenState extends State<GpaCalculatorScreen> {
           ),
           const SizedBox(height: AppSpacing.md),
           SizedBox(
-            width: 170,
+            width: 190,
             child: TextField(
               controller: _nextUnits,
               keyboardType: TextInputType.number,
@@ -662,7 +1256,7 @@ class _GpaCalculatorScreenState extends State<GpaCalculatorScreen> {
               ],
               onChanged: (_) => setState(() {}),
               decoration: const InputDecoration(
-                labelText: 'Next semester units',
+                labelText: 'Units you will take next',
                 isDense: true,
               ),
             ),
@@ -678,149 +1272,6 @@ class _GpaCalculatorScreenState extends State<GpaCalculatorScreen> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _resultCard(CumulativeResult now, bool hasHistory) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.screenPadding,
-        AppSpacing.lg,
-        AppSpacing.screenPadding,
-        0,
-      ),
-      child: Container(
-        padding: const EdgeInsets.all(AppSpacing.xl),
-        decoration: BoxDecoration(
-          gradient: AppColours.brandGradient,
-          borderRadius: AppRadii.lg,
-          boxShadow: AppShadows.card,
-        ),
-        child: Column(
-          children: <Widget>[
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: <Widget>[
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Text(
-                        'This semester GPA',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white.withValues(alpha: 0.72),
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        _gpa.toStringAsFixed(2),
-                        style: const TextStyle(
-                          fontSize: 42,
-                          height: 1.05,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -1.6,
-                          color: Colors.white,
-                        ),
-                      ),
-                      Text(
-                        Classification.of(_gpa),
-                        style: const TextStyle(
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w700,
-                          color: AppColours.accent,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  width: 1,
-                  height: 62,
-                  color: Colors.white.withValues(alpha: 0.18),
-                ),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.only(left: AppSpacing.lg),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Text(
-                          hasHistory ? 'CGPA with this' : 'CGPA',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white.withValues(alpha: 0.72),
-                          ),
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          now.cgpa.toStringAsFixed(2),
-                          style: const TextStyle(
-                            fontSize: 30,
-                            height: 1.15,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: -1,
-                            color: Colors.white,
-                          ),
-                        ),
-                        Text(
-                          Classification.of(now.cgpa),
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Colors.white.withValues(alpha: 0.66),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            Container(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.12),
-                borderRadius: AppRadii.sm,
-              ),
-              child: Row(
-                children: <Widget>[
-                  Expanded(
-                    child: _HeaderMetric(value: '$_totalUnits', label: 'TNU'),
-                  ),
-                  Expanded(
-                    child: _HeaderMetric(value: '$_totalPoints', label: 'TCP'),
-                  ),
-                  Expanded(
-                    child: _HeaderMetric(
-                      value: '$_unitsPassed',
-                      label: 'Units passed',
-                    ),
-                  ),
-                  Expanded(
-                    child: _HeaderMetric(
-                      value: '${_graded.length}',
-                      label: 'Courses',
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            Text(
-              Classification.encouragementFor(_gpa),
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 12.5,
-                height: 1.5,
-                color: Colors.white.withValues(alpha: 0.82),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -844,14 +1295,19 @@ class _GpaCalculatorScreenState extends State<GpaCalculatorScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               Text(
-                'The 5-point scale',
+                'How GPA works',
                 style: Theme.of(context).textTheme.titleLarge,
               ),
               const SizedBox(height: AppSpacing.sm),
               Text(
-                'TNU = total units registered\n'
-                'TCP = total credit points (units × grade point)\n'
-                'GPA = TCP ÷ TNU',
+                'Each grade is worth points. Multiply those points by the '
+                'course units, add them all up, then divide by the total '
+                'units.\n\n'
+                'Example: PHY 102 (3 units, grade B) and MTH 102 (2 units, '
+                'grade A).\n'
+                '3 × 4 = 12 and 2 × 5 = 10, so total points = 22.\n'
+                'Total units = 5. GPA = 22 ÷ 5 = 4.40.\n\n'
+                'TNU = total units · TCP = total credit points · GPA = TCP ÷ TNU',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   height: 1.6,
                 ),
@@ -921,20 +1377,20 @@ class _GpaCalculatorScreenState extends State<GpaCalculatorScreen> {
               const Divider(),
               const SizedBox(height: AppSpacing.md),
               Text(
-                'If you failed a course',
+                'If you failed a course (carryover)',
                 style: Theme.of(context).textTheme.titleSmall,
               ),
               const SizedBox(height: AppSpacing.sm),
               Text(
-                '• An F counts with 0 points, and its units still count in '
-                'TNU, so it lowers that semester\'s GPA.\n'
-                '• When you resit it, enter the course again in the semester '
-                'you take it, with the new grade.\n'
+                '• An F counts with 0 points, and its units still count, so '
+                'it lowers that semester\'s GPA.\n'
+                '• When you retake it, add the course again in the semester '
+                'you take it, enter the new grade and tick "Carryover".\n'
                 '• Usually both attempts stay in your CGPA. If your school '
-                'removes the F once you pass, switch on "My school drops an F" '
-                'under Results before this app.\n'
-                '• Check your result slip: TNU and TCP there should match the '
-                'numbers here.\n'
+                'removes the old F once you pass, switch on "My school '
+                'removes the old F once I pass".\n'
+                '• Check your result slip: the units and points there should '
+                'match the numbers here.\n'
                 '• Grade bands and rules can differ slightly between schools; '
                 'your school\'s own result is the official one.',
                 style: Theme.of(
@@ -966,40 +1422,10 @@ class _GpaCalculatorScreenState extends State<GpaCalculatorScreen> {
   }
 }
 
-class _HeaderMetric extends StatelessWidget {
-  const _HeaderMetric({required this.value, required this.label});
-
-  final String value;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: <Widget>[
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w800,
-            color: Colors.white,
-          ),
-        ),
-        Text(
-          label,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 10.5,
-            color: Colors.white.withValues(alpha: 0.7),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 class _CourseRow extends StatefulWidget {
   const _CourseRow({
     super.key,
+    required this.number,
     required this.entry,
     required this.isResit,
     required this.canRemove,
@@ -1007,6 +1433,7 @@ class _CourseRow extends StatefulWidget {
     required this.onRemove,
   });
 
+  final int number;
   final CourseEntry entry;
   final bool isResit;
   final bool canRemove;
@@ -1051,6 +1478,7 @@ class _CourseRowState extends State<_CourseRow> {
   @override
   Widget build(BuildContext context) {
     final CourseEntry entry = widget.entry;
+    final Grade? grade = entry.grade;
     return EduvoraCard(
       padding: const EdgeInsets.all(AppSpacing.md),
       shadows: AppShadows.subtle,
@@ -1059,6 +1487,24 @@ class _CourseRowState extends State<_CourseRow> {
         children: <Widget>[
           Row(
             children: <Widget>[
+              Container(
+                width: 26,
+                height: 26,
+                alignment: Alignment.center,
+                decoration: const BoxDecoration(
+                  color: AppColours.primaryTint,
+                  shape: BoxShape.circle,
+                ),
+                child: Text(
+                  '${widget.number}',
+                  style: const TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w800,
+                    color: AppColours.primary,
+                  ),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: TextField(
                   controller: _code,
@@ -1084,43 +1530,57 @@ class _CourseRowState extends State<_CourseRow> {
                     size: 19,
                     color: AppColours.textFaint,
                   ),
-                  tooltip: 'Remove course',
+                  tooltip: 'Remove this course',
                 ),
             ],
           ),
-          const SizedBox(height: AppSpacing.sm),
+          const SizedBox(height: AppSpacing.md),
           Row(
             children: <Widget>[
-              Expanded(
-                flex: 3,
-                child: DropdownButtonFormField<int>(
-                  initialValue: entry.creditUnits,
-                  isExpanded: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Units',
-                    isDense: true,
-                    contentPadding: EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 10,
-                    ),
-                  ),
-                  items: List<DropdownMenuItem<int>>.generate(
-                    12,
-                    (int i) => DropdownMenuItem<int>(
-                      value: i + 1,
-                      child: Text(
-                        '${i + 1}',
-                        style: const TextStyle(fontSize: 13),
-                      ),
-                    ),
-                  ),
-                  onChanged: (int? v) =>
-                      widget.onChanged(entry.copyWith(creditUnits: v ?? 1)),
+              const Text(
+                'Units',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: AppColours.textMuted,
                 ),
               ),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                flex: 3,
+              const SizedBox(width: 6),
+              IconButton(
+                onPressed: entry.creditUnits > 1
+                    ? () => widget.onChanged(
+                        entry.copyWith(creditUnits: entry.creditUnits - 1),
+                      )
+                    : null,
+                visualDensity: VisualDensity.compact,
+                icon: const Icon(Icons.remove_circle_outline_rounded),
+                tooltip: 'Fewer units',
+              ),
+              SizedBox(
+                width: 22,
+                child: Text(
+                  '${entry.creditUnits}',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: AppColours.text,
+                  ),
+                ),
+              ),
+              IconButton(
+                onPressed: entry.creditUnits < 12
+                    ? () => widget.onChanged(
+                        entry.copyWith(creditUnits: entry.creditUnits + 1),
+                      )
+                    : null,
+                visualDensity: VisualDensity.compact,
+                icon: const Icon(Icons.add_circle_outline_rounded),
+                tooltip: 'More units',
+              ),
+              const Spacer(),
+              SizedBox(
+                width: 118,
                 child: TextField(
                   controller: _score,
                   keyboardType: TextInputType.number,
@@ -1130,109 +1590,119 @@ class _CourseRowState extends State<_CourseRow> {
                   ],
                   onChanged: _onScore,
                   decoration: const InputDecoration(
-                    labelText: 'Score',
-                    hintText: '0–100',
-                    isDense: true,
-                    contentPadding: EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 12,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                flex: 4,
-                child: DropdownButtonFormField<Grade>(
-                  key: ValueKey<Grade?>(entry.grade),
-                  initialValue: entry.grade,
-                  isExpanded: true,
-                  hint: const Text('Grade', style: TextStyle(fontSize: 13)),
-                  decoration: const InputDecoration(
-                    labelText: 'Grade',
+                    labelText: 'Score (optional)',
                     isDense: true,
                     contentPadding: EdgeInsets.symmetric(
                       horizontal: 10,
                       vertical: 10,
                     ),
                   ),
-                  items: Grade.values
-                      .map(
-                        (Grade g) => DropdownMenuItem<Grade>(
-                          value: g,
-                          child: Text(
-                            '${g.letter} (${g.point})',
-                            style: const TextStyle(fontSize: 13),
-                          ),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (Grade? v) {
-                    _score.clear();
-                    widget.onChanged(
-                      entry.copyWith(grade: v, clearScore: true),
-                    );
-                  },
                 ),
               ),
             ],
           ),
-          if (widget.isResit && entry.key.isNotEmpty)
+          const SizedBox(height: AppSpacing.sm),
+          const Text(
+            'Tap your grade',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: AppColours.textMuted,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: <Widget>[
+              for (final Grade g in Grade.values)
+                ChoiceChip(
+                  label: Text(
+                    g.letter,
+                    style: const TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                  showCheckmark: false,
+                  selected: grade == g,
+                  onSelected: (_) {
+                    _score.clear();
+                    widget.onChanged(entry.copyWith(grade: g, clearScore: true));
+                  },
+                ),
+            ],
+          ),
+          if (grade != null)
             Padding(
-              padding: const EdgeInsets.only(top: AppSpacing.sm),
-              child: Row(
-                children: <Widget>[
-                  const Icon(
-                    Icons.replay_rounded,
-                    size: 14,
-                    color: AppColours.accent,
-                  ),
-                  const SizedBox(width: 5),
-                  Expanded(
-                    child: Text(
-                      'Resit: you have an earlier F in ${entry.code.trim().toUpperCase()}',
-                      style: const TextStyle(
-                        fontSize: 11.5,
-                        color: AppColours.textMuted,
-                      ),
-                    ),
-                  ),
-                ],
+              padding: const EdgeInsets.only(top: 6),
+              child: Text(
+                '${grade.category} · ${entry.creditUnits} units × '
+                '${grade.point} = ${entry.qualityPoints} points',
+                style: const TextStyle(
+                  fontSize: 11.5,
+                  color: AppColours.textMuted,
+                ),
               ),
             ),
+          const SizedBox(height: 4),
+          CheckboxListTile(
+            value: entry.carryover,
+            onChanged: (bool? v) =>
+                widget.onChanged(entry.copyWith(carryover: v ?? false)),
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+            controlAffinity: ListTileControlAffinity.leading,
+            title: Text(
+              widget.isResit && !entry.carryover
+                  ? 'Carryover: I failed this before (tick if so)'
+                  : 'Carryover: I failed this before and am retaking it',
+              style: const TextStyle(fontSize: 12.5, height: 1.3),
+            ),
+          ),
         ],
       ),
     );
   }
 }
 
-class _SavedSemesterRow extends StatelessWidget {
-  const _SavedSemesterRow({
+/// One saved semester in My results: tap to see its courses, with Edit and
+/// Remove inside.
+class _SavedSemesterTile extends StatelessWidget {
+  const _SavedSemesterTile({
     required this.record,
     required this.isEditing,
-    required this.onTap,
+    required this.onEdit,
     required this.onDelete,
   });
 
   final SemesterRecord record;
   final bool isEditing;
-  final VoidCallback onTap;
+  final VoidCallback onEdit;
   final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
     final int fails = record.failedCount;
     return EduvoraCard(
-      onTap: onTap,
-      padding: const EdgeInsets.all(AppSpacing.md),
       shadows: AppShadows.subtle,
+      padding: EdgeInsets.zero,
       border: isEditing
           ? Border.all(color: AppColours.primary, width: 1.6)
           : null,
-      child: Row(
-        children: <Widget>[
-          Container(
-            width: 46,
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          tilePadding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md,
+            vertical: 2,
+          ),
+          childrenPadding: const EdgeInsets.fromLTRB(
+            AppSpacing.md,
+            0,
+            AppSpacing.md,
+            AppSpacing.md,
+          ),
+          expandedCrossAxisAlignment: CrossAxisAlignment.start,
+          leading: Container(
+            width: 50,
             height: 46,
             alignment: Alignment.center,
             decoration: const BoxDecoration(
@@ -1242,50 +1712,89 @@ class _SavedSemesterRow extends StatelessWidget {
             child: Text(
               record.gpa.toStringAsFixed(2),
               style: const TextStyle(
-                fontSize: 13,
+                fontSize: 14,
                 fontWeight: FontWeight.w800,
                 color: AppColours.primary,
               ),
             ),
           ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          title: Text(
+            record.label,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: AppColours.text,
+            ),
+          ),
+          subtitle: Text(
+            '${record.courses.length} courses · ${record.totalUnits} units · '
+            '${Classification.of(record.gpa)}'
+            '${fails > 0 ? ' · $fails failed' : ''}',
+            style: const TextStyle(fontSize: 11.5, color: AppColours.textMuted),
+          ),
+          children: <Widget>[
+            for (final CourseEntry c in record.courses)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: Text(
+                        '${c.code.trim().toUpperCase()}'
+                        '${c.carryover ? '  (carryover)' : ''}',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      '${c.creditUnits} units',
+                      style: const TextStyle(
+                        fontSize: 12.5,
+                        color: AppColours.textMuted,
+                      ),
+                    ),
+                    SizedBox(
+                      width: 56,
+                      child: Text(
+                        c.grade?.letter ?? '–',
+                        textAlign: TextAlign.right,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          color: c.grade == Grade.f
+                              ? AppColours.danger
+                              : AppColours.text,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            const SizedBox(height: AppSpacing.sm),
+            Row(
               children: <Widget>[
-                Text(
-                  record.label,
-                  style: const TextStyle(
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w700,
-                    color: AppColours.text,
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: onEdit,
+                    icon: const Icon(Icons.edit_rounded, size: 17),
+                    label: const Text('Open and edit'),
                   ),
                 ),
-                const SizedBox(height: 3),
-                Text(
-                  '${record.courses.length} courses · '
-                  '${record.totalUnits} units · '
-                  '${Classification.of(record.gpa)}'
-                  '${fails > 0 ? ' · $fails failed' : ''}',
-                  style: const TextStyle(
-                    fontSize: 11.5,
-                    color: AppColours.textMuted,
+                const SizedBox(width: AppSpacing.sm),
+                IconButton(
+                  onPressed: onDelete,
+                  icon: const Icon(
+                    Icons.delete_outline_rounded,
+                    color: AppColours.danger,
                   ),
+                  tooltip: 'Remove semester',
                 ),
               ],
             ),
-          ),
-          IconButton(
-            onPressed: onDelete,
-            visualDensity: VisualDensity.compact,
-            icon: const Icon(
-              Icons.delete_outline_rounded,
-              size: 19,
-              color: AppColours.textFaint,
-            ),
-            tooltip: 'Remove semester',
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

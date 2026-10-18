@@ -2,7 +2,7 @@ name: eduvora
 description: "Eduvora - the learning companion for Nigerian university students."
 publish_to: 'none'
 
-version: 1.0.0+1
+version: 1.0.0+17
 
 environment:
   sdk: ^3.12.2
@@ -20,10 +20,15 @@ dependencies:
   shared_preferences: ^2.3.3
 
   # Material and note uploads.
-  file_picker: ^8.1.4
+  file_picker: ^10.3.10
 
   # Opening scholarship links and OAuth redirects.
   url_launcher: ^6.3.1
+
+  # In-app PDF viewing for study materials (so students read them in the
+  # app instead of the file being downloaded to their device).
+  pdfx: ^2.9.1
+  http: ^1.2.2
 
   # In-app lecture playback.
   video_player: ^2.9.2
