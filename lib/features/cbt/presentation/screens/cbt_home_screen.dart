@@ -437,15 +437,18 @@ class _CbtHomeScreenState extends State<CbtHomeScreen> {
         );
         return false;
       case RewardResult.unavailable:
-        // No ad could be loaded (offline or nothing to show): never lock a
-        // student out because of that.
-        _lastUnlockWasViaAd = true;
+        // No ad could be loaded (offline or nothing to show). The paper stays
+        // locked: it is only opened by a finished video, an access code or
+        // payment, so the student is asked to try again in a moment.
         messenger.showSnackBar(
           const SnackBar(
-            content: Text('No video is available right now, so this one is on us.'),
+            content: Text(
+              'No video is available right now. Please check your '
+              'connection and try again in a moment.',
+            ),
           ),
         );
-        return true;
+        return false;
     }
   }
 

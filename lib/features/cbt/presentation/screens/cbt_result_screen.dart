@@ -116,10 +116,12 @@ class CbtResultScreen extends StatelessWidget {
         messenger.showSnackBar(
           const SnackBar(
             content: Text(
-              'No video is available right now, so this one is on us.',
+              'No video is available right now. Please check your '
+              'connection and try again in a moment.',
             ),
           ),
         );
+        return;
       }
     }
 
