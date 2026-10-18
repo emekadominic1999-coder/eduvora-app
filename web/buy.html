@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Buy CBT access - Eduvora</title>
+<meta name="theme-color" content="#2563EB">
+<link rel="icon" type="image/png" href="favicon.png">
+<style>
+:root{--bg:#fff;--fg:#1b2430;--muted:#5b6675;--line:#dbe2ea;--card:#f6f8fb;--brand:#2563EB;--brand-fg:#fff;--ok:#0b6b5f;--err:#b42318}
+@media (prefers-color-scheme:dark){:root{--bg:#12171d;--fg:#e6ebf0;--muted:#9aa6b4;--line:#2a3441;--card:#1a222c;--brand:#4b83f0;--ok:#6fd3c3;--err:#ff8f85}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;line-height:1.55}
+main{max-width:680px;margin:0 auto;padding:20px 16px 90px}
+h1{font-size:1.6rem;margin:.3em 0 .2em}
+.muted{color:var(--muted);font-size:.92rem}
+a{color:var(--brand)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:14px 0}
+input[type=text],input[type=email],input[type=search]{width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--fg);font-size:1rem}
+.list{max-height:46vh;overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--bg);margin-top:10px}
+.row{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-bottom:1px solid var(--line);cursor:pointer}
+.row:last-child{border-bottom:0}
+.row input{margin-top:4px;width:18px;height:18px}
+.row .t{font-weight:600}
+.row .s{color:var(--muted);font-size:.85rem}
+.row.off{opacity:.45;cursor:not-allowed}
+.bar{position:fixed;left:0;right:0;bottom:0;background:var(--bg);border-top:1px solid var(--line);padding:10px 16px}
+.bar .in{max-width:680px;margin:0 auto;display:flex;gap:12px;align-items:center;justify-content:space-between}
+button{font:inherit;font-weight:700;border:0;border-radius:10px;padding:12px 18px;background:var(--brand);color:var(--brand-fg);cursor:pointer}
+button[disabled]{opacity:.5;cursor:not-allowed}
+button.ghost{background:transparent;color:var(--brand);border:1px solid var(--line)}
+.code{font-size:2rem;font-weight:800;letter-spacing:.08em;text-align:center;padding:18px;border:2px dashed var(--brand);border-radius:14px;background:var(--bg);word-break:break-all;user-select:all}
+.err{color:var(--err);margin:8px 0}
+.ok{color:var(--ok)}
+ol{padding-left:20px}
+.hidden{display:none}
+</style>
+</head>
+<body>
+<main>
+<p><a href="welcome.html">&larr; Eduvora</a></p>
+
+<section id="shop">
+  <h1>Unlock CBT practice</h1>
+  <p class="muted">Pick the courses you want and pay once. You will get a one-time access code straight away. One course is &#8358;350; two or more courses (up to 23 units) are &#8358;2,300 in total.</p>
+
+  <div class="card">
+    <label for="q"><strong>1. Choose your courses</strong></label>
+    <input id="q" type="search" placeholder="Search, e.g. MTH 101" autocomplete="off">
+    <div id="list" class="list"><div class="row"><span class="muted">Loading courses...</span></div></div>
+    <p class="muted" id="units"></p>
+  </div>
+
+  <div class="card">
+    <label for="email"><strong>2. Your email</strong> <span class="muted">(Paystack sends your receipt here)</span></label>
+    <input id="email" type="email" placeholder="you@example.com" autocomplete="email">
+    <p id="err" class="err hidden"></p>
+  </div>
+
+  <p class="muted">Pay by card, bank transfer or USSD through Paystack. After payment you will see your code on this page and in your Paystack receipt reference. The code works once, on one phone.</p>
+</section>
+
+<section id="result" class="hidden">
+  <h1 id="rtitle">Confirming your payment...</h1>
+  <p id="rmsg" class="muted">Please keep this page open. Bank transfers can take a minute.</p>
+  <div id="rcode" class="code hidden"></div>
+  <div id="rhow" class="hidden">
+    <p><button id="copy" class="ghost" type="button">Copy code</button></p>
+    <ol>
+      <li>Open the <strong>Eduvora</strong> app and sign in.</li>
+      <li>Go to <strong>CBT</strong> and tap a locked paper.</li>
+      <li>Tap <strong>&ldquo;I have an access code&rdquo;</strong> and enter the code above.</li>
+    </ol>
+    <p class="muted">Screenshot this page or copy the code now. If you lose it, open this page again from the same phone, or enter your Paystack reference below.</p>
+  </div>
+  <div class="card hidden" id="again">
+    <label for="ref"><strong>Already paid?</strong> Enter your payment reference (it starts with <code>edg_</code>).</label>
+    <input id="ref" type="text" placeholder="edg_..." autocomplete="off">
+    <p><button id="find" type="button">Show my code</button></p>
+  </div>
+  <p><a href="buy.html">Buy more courses</a></p>
+</section>
+</main>
+
+<div class="bar" id="bar">
+  <div class="in">
+    <div><strong id="price">&#8358;0</strong><div class="muted" id="count">No course selected</div></div>
+    <button id="pay" type="button" disabled>Pay with Paystack</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  var API = 'https://wdsvzhxhqzblpekdmsqs.supabase.co/functions/v1/';
+  var KEY = 'sb_publishable_OXt5d1ErVRZkC8vN-bGSJw_WpX07_IK';
+  var MAX_UNITS = 23;
+  var subjects = [];
+  var picked = {};
+  var $ = function (id) { return document.getElementById(id); };
+
+  function call(fn, body) {
+    return fetch(API + fn, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', apikey: KEY },
+      body: JSON.stringify(body || {})
+    }).then(function (r) { return r.json().then(function (j) { j._status = r.status; return j; }); });
+  }
+  function money(n) { return '₦' + n.toLocaleString('en-NG'); }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function totalUnits() { return subjects.reduce(function (s, x) { return s + (picked[x.id] ? x.units : 0); }, 0); }
+  function count() { return Object.keys(picked).filter(function (k) { return picked[k]; }).length; }
+
+  function render() {
+    var q = $('q').value.trim().toLowerCase();
+    var used = totalUnits();
+    var html = '';
+    subjects.forEach(function (s) {
+      if (q && s.name.toLowerCase().indexOf(q) === -1) return;
+      var on = !!picked[s.id];
+      var off = !on && used + s.units > MAX_UNITS;
+      html += '<label class="row' + (off ? ' off' : '') + '"><input type="checkbox" data-id="' + esc(s.id) + '"' + (on ? ' checked' : '') + (off ? ' disabled' : '') + '>' +
+        '<span><span class="t">' + esc(s.name) + '</span><br><span class="s">' + s.questions + ' questions &middot; ' + s.units + ' units</span></span></label>';
+    });
+    $('list').innerHTML = html || '<div class="row"><span class="muted">No course found.</span></div>';
+    var n = count();
+    $('units').textContent = used + ' / ' + MAX_UNITS + ' units selected';
+    $('price').textContent = money(n === 0 ? 0 : (n === 1 ? 350 : 2300));
+    $('count').textContent = n === 0 ? 'No course selected' : n + (n === 1 ? ' course' : ' courses');
+    $('pay').disabled = n === 0;
+  }
+
+  function showErr(msg) { var e = $('err'); e.textContent = msg; e.classList.toggle('hidden', !msg); }
+
+  function loadCatalog() {
+    call('guest-catalog').then(function (j) {
+      subjects = (j.subjects || []).filter(function (s) { return s.units > 0; });
+      if (!subjects.length) $('list').innerHTML = '<div class="row"><span class="muted">' + esc(j.error || 'No courses available right now.') + '</span></div>';
+      else render();
+    }).catch(function () { $('list').innerHTML = '<div class="row"><span class="muted">Could not load courses. Check your network and refresh.</span></div>'; });
+  }
+
+  $('q').addEventListener('input', render);
+  $('list').addEventListener('change', function (e) {
+    var id = e.target && e.target.getAttribute('data-id');
+    if (id) { picked[id] = e.target.checked; render(); }
+  });
+  $('pay').addEventListener('click', function () {
+    showErr('');
+    var email = $('email').value.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) { showErr('Enter a valid email address.'); $('email').focus(); return; }
+    var ids = Object.keys(picked).filter(function (k) { return picked[k]; });
+    $('pay').disabled = true; $('pay').textContent = 'Opening Paystack...';
+    call('guest-checkout', { email: email, subjectIds: ids }).then(function (j) {
+      if (j.authorizationUrl) {
+        try { localStorage.setItem('eduvora_last_ref', j.reference); } catch (e) {}
+        window.location.href = j.authorizationUrl;
+      } else {
+        showErr(j.error || 'Could not start the payment. Please try again.');
+        $('pay').disabled = false; $('pay').textContent = 'Pay with Paystack';
+      }
+    }).catch(function () { showErr('Network problem. Please try again.'); $('pay').disabled = false; $('pay').textContent = 'Pay with Paystack'; });
+  });
+
+  // ---------- result mode ----------
+  function showCode(code) {
+    $('rtitle').textContent = 'Payment received';
+    $('rtitle').className = 'ok';
+    $('rmsg').textContent = 'Your one-time access code:';
+    $('rcode').textContent = code; $('rcode').classList.remove('hidden');
+    $('rhow').classList.remove('hidden');
+    $('again').classList.add('hidden');
+    $('bar').classList.add('hidden');
+  }
+  function claim(ref, attempt) {
+    call('guest-claim', { reference: ref }).then(function (j) {
+      if (j.paid && j.code) { showCode(j.code); return; }
+      if (j.error && j._status !== 200) {
+        $('rtitle').textContent = 'We could not find that payment';
+        $('rmsg').textContent = j.error; $('again').classList.remove('hidden'); return;
+      }
+      if (attempt < 25) { setTimeout(function () { claim(ref, attempt + 1); }, 3000); return; }
+      $('rtitle').textContent = 'Still waiting for the payment';
+      $('rmsg').textContent = 'If you have already paid, wait a minute and enter your reference below, or contact us at hello@eduvora.ng with your Paystack receipt.';
+      $('again').classList.remove('hidden');
+    }).catch(function () {
+      if (attempt < 25) setTimeout(function () { claim(ref, attempt + 1); }, 4000);
+    });
+  }
+  function startResult(ref) {
+    $('shop').classList.add('hidden'); $('bar').classList.add('hidden'); $('result').classList.remove('hidden');
+    $('again').classList.remove('hidden');
+    claim(ref, 0);
+  }
+  $('find').addEventListener('click', function () {
+    var ref = $('ref').value.trim();
+    if (!/^edg_[a-f0-9]{32}$/.test(ref)) { $('rmsg').textContent = 'That reference does not look right. It starts with edg_ and has 36 characters.'; return; }
+    $('rtitle').textContent = 'Checking...'; $('rcode').classList.add('hidden'); claim(ref, 0);
+  });
+  $('copy').addEventListener('click', function () {
+    var c = $('rcode').textContent;
+    if (navigator.clipboard) navigator.clipboard.writeText(c).then(function () { $('copy').textContent = 'Copied'; });
+  });
+
+  var m = /[?&]ref=(edg_[a-f0-9]{32})/.exec(location.search);
+  if (m) { startResult(m[1]); } else { loadCatalog(); }
+})();
+</script>
+</body>
+</html>

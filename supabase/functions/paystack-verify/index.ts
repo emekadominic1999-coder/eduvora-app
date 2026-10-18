@@ -1,5 +1,7 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 
+import { settleGuestOrder } from '../_shared/guest.ts';
+
 // Handles two callers on the same endpoint:
 //   1. Paystack's own webhook (charge.success), authenticated by the
 //      x-paystack-signature HMAC header — this is the source of truth.
@@ -90,8 +92,13 @@ Deno.serve(async (request: Request) => {
     .eq('reference', reference)
     .maybeSingle();
 
-  // Not a CBT purchase, so it must be a tutor session booking.
+  // Not a CBT purchase: it is either a guest checkout (a visitor buying an
+  // access code) or a tutor session booking.
   if (!payment) {
+    if (reference.startsWith('edg_')) {
+      const guest = await settleGuestOrder(client, paystackSecret, reference);
+      return json({ verified: guest.paid });
+    }
     return await settleTutorSession(client, paystackSecret, reference);
   }
 
