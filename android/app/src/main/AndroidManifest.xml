@@ -24,6 +24,18 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+            <!-- Where Google sign-in hands the student back to the app
+                 (AppConfig.oauthRedirect). Without this the browser stays
+                 on the website after choosing an account. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="com.dominicemeka.eduvora" android:host="login-callback"/>
+            </intent-filter>
+            <!-- supabase_flutter reads the callback itself; stop Flutter also
+                 treating it as a screen to open. -->
+            <meta-data android:name="flutter_deeplinking_enabled" android:value="false"/>
         </activity>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->

@@ -64,8 +64,51 @@ class AdService {
   static String get rewardedId =>
       Platform.isIOS ? AdConfig.rewardedIos : AdConfig.rewardedAndroid;
 
-  /// Loads and shows one rewarded video. The student chose to watch it, so
-  /// this is only ever called from a tap.
+  // A rewarded ad fetched ahead of time, so a tap on "watch ad" can show it
+  // instantly instead of racing a fresh network load against a timeout --
+  // the single biggest reason a student on a slow connection saw "no video
+  // is available" and got the paper for free. `_preloading` guards against
+  // two preload calls racing each other and loading (and paying for) two
+  // ads when only one will ever be shown.
+  static RewardedAd? _preloaded;
+  static bool _preloading = false;
+
+  /// Starts fetching a rewarded ad in the background, well before the
+  /// student is likely to tap "watch ad" (e.g. as soon as a locked paper's
+  /// paywall can appear). Safe to call repeatedly -- a no-op once one is
+  /// already cached or already loading.
+  static void preloadRewarded() {
+    if (!supported || _preloaded != null || _preloading) return;
+    _preloading = true;
+    unawaited(
+      init().then((_) async {
+        try {
+          if (!await ConsentInformation.instance.canRequestAds()) {
+            _preloading = false;
+            return;
+          }
+        } catch (_) {}
+        RewardedAd.load(
+          adUnitId: rewardedId,
+          request: const AdRequest(),
+          rewardedAdLoadCallback: RewardedAdLoadCallback(
+            onAdLoaded: (RewardedAd ad) {
+              _preloaded = ad;
+              _preloading = false;
+            },
+            onAdFailedToLoad: (LoadAdError error) {
+              debugPrint('[Eduvora] rewarded preload failed: $error');
+              _preloading = false;
+            },
+          ),
+        );
+      }),
+    );
+  }
+
+  /// Shows one rewarded video -- the cached one from [preloadRewarded] if
+  /// one is ready, otherwise loads fresh and waits. The student chose to
+  /// watch it, so this is only ever called from a tap.
   static Future<RewardResult> showRewarded() async {
     if (!supported) return RewardResult.unavailable;
     await init();
@@ -75,24 +118,33 @@ class AdService {
       }
     } catch (_) {}
 
-    final Completer<RewardedAd?> loaded = Completer<RewardedAd?>();
-    RewardedAd.load(
-      adUnitId: rewardedId,
-      request: const AdRequest(),
-      rewardedAdLoadCallback: RewardedAdLoadCallback(
-        onAdLoaded: (RewardedAd ad) {
-          if (!loaded.isCompleted) loaded.complete(ad);
-        },
-        onAdFailedToLoad: (LoadAdError error) {
-          debugPrint('[Eduvora] rewarded failed to load: $error');
-          if (!loaded.isCompleted) loaded.complete(null);
-        },
-      ),
-    );
-    final RewardedAd? ad = await loaded.future.timeout(
-      const Duration(seconds: 15),
-      onTimeout: () => null,
-    );
+    RewardedAd? ad = _preloaded;
+    _preloaded = null;
+
+    if (ad == null) {
+      final Completer<RewardedAd?> loaded = Completer<RewardedAd?>();
+      RewardedAd.load(
+        adUnitId: rewardedId,
+        request: const AdRequest(),
+        rewardedAdLoadCallback: RewardedAdLoadCallback(
+          onAdLoaded: (RewardedAd loadedAd) {
+            if (!loaded.isCompleted) loaded.complete(loadedAd);
+          },
+          onAdFailedToLoad: (LoadAdError error) {
+            debugPrint('[Eduvora] rewarded failed to load: $error');
+            if (!loaded.isCompleted) loaded.complete(null);
+          },
+        ),
+      );
+      ad = await loaded.future.timeout(
+        const Duration(seconds: 15),
+        onTimeout: () => null,
+      );
+    }
+    // Whether that ad came from cache or a fresh load, immediately start
+    // fetching the next one so it is ready well before it is next needed
+    // (the mid-paper toll shows one every two questions).
+    preloadRewarded();
     if (ad == null) return RewardResult.unavailable;
 
     bool earned = false;

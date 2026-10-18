@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 import '../models/community.dart';
 import '../models/student_profile.dart';
 import 'local_store.dart';
+import 'moderation_repository.dart';
 import 'supabase_service.dart';
 
 /// Posts, likes and comments in the Eduvora community.
@@ -11,6 +12,7 @@ class CommunityRepository {
   const CommunityRepository();
 
   static const Uuid _uuid = Uuid();
+  static const ModerationRepository _moderation = ModerationRepository();
 
   Future<List<CommunityPost>> posts({CommunityTopic? topic}) async {
     final List<CommunityPost> local = LocalStore.instance
@@ -43,13 +45,19 @@ class CommunityRepository {
       byId.putIfAbsent(p.id, () => p);
     }
 
-    final List<CommunityPost> all = byId.values.toList()
+    List<CommunityPost> all = byId.values.toList()
       ..sort((CommunityPost a, CommunityPost b) {
         if (a.isAnnouncement != b.isAnnouncement) {
           return a.isAnnouncement ? -1 : 1;
         }
         return b.createdAt.compareTo(a.createdAt);
       });
+
+    // A blocked student's posts never reach the feed.
+    final Set<String> blocked = await _moderation.blockedUserIds();
+    if (blocked.isNotEmpty) {
+      all = all.where((CommunityPost p) => !blocked.contains(p.authorId)).toList();
+    }
 
     if (topic == null) return all;
     return all.where((CommunityPost p) => p.topic == topic).toList();
@@ -192,10 +200,19 @@ class CommunityRepository {
       byId[c.id] = c;
     }
 
-    return byId.values.toList()..sort(
+    List<CommunityComment> all = byId.values.toList()..sort(
       (CommunityComment a, CommunityComment b) =>
           a.createdAt.compareTo(b.createdAt),
     );
+
+    // A blocked student's comments never reach the thread.
+    final Set<String> blocked = await _moderation.blockedUserIds();
+    if (blocked.isNotEmpty) {
+      all = all
+          .where((CommunityComment c) => !blocked.contains(c.authorId))
+          .toList();
+    }
+    return all;
   }
 
   Future<CommunityComment> addComment({

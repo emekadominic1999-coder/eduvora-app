@@ -82,7 +82,7 @@ class CbtSubject {
     required this.id,
     required this.name,
     required this.description,
-    required this.questions,
+    this.questions = const <CbtQuestion>[],
     this.faculties = const <String>[],
     this.minutesPerAttempt = 15,
     this.isGeneralStudies = false,
@@ -90,12 +90,66 @@ class CbtSubject {
     this.level = '',
     this.semester = '',
     this.units = 0,
-  });
+    int? questionCount,
+    List<String>? topics,
+    bool? onlyPlaceholder,
+  }) : _questionCount = questionCount,
+       _topics = topics,
+       _onlyPlaceholder = onlyPlaceholder;
 
   final String id;
   final String name;
   final String description;
+
+  /// Empty on a summary-only subject (see [hasQuestions]); the list screens
+  /// never need the questions, so they are fetched only when a paper is
+  /// started — see `CbtRepository.withQuestions`.
   final List<CbtQuestion> questions;
+
+  final int? _questionCount;
+  final List<String>? _topics;
+  final bool? _onlyPlaceholder;
+
+  /// How many questions the paper holds, whether or not they are loaded.
+  int get questionCount => _questionCount ?? questions.length;
+
+  /// Whether [questions] has been loaded for this subject.
+  bool get hasQuestions => questions.isNotEmpty;
+
+  /// Distinct non-blank topics, sorted — from the summary when the questions
+  /// are not loaded, otherwise derived from them.
+  List<String> get topics {
+    final List<String>? known = _topics;
+    final Iterable<String> source = known ?? questions.map((CbtQuestion q) => q.topic);
+    final Set<String> distinct = <String>{
+      for (final String t in source)
+        if (t.trim().isNotEmpty) t,
+    };
+    return distinct.toList()..sort();
+  }
+
+  /// True for a "Coming Soon" paper that holds only placeholder rows.
+  bool get isPlaceholder =>
+      _onlyPlaceholder ??
+      questions.every((CbtQuestion q) => q.topic == 'Coming Soon');
+
+  /// This subject with its questions filled in.
+  CbtSubject withQuestions(List<CbtQuestion> loaded) => CbtSubject(
+    id: id,
+    name: name,
+    description: description,
+    questions: loaded,
+    faculties: faculties,
+    minutesPerAttempt: minutesPerAttempt,
+    isGeneralStudies: isGeneralStudies,
+    department: department,
+    level: level,
+    semester: semester,
+    units: units,
+    questionCount: _questionCount,
+    topics: _topics,
+    onlyPlaceholder: _onlyPlaceholder,
+  );
 
   /// Faculties this paper is aimed at; empty means every student.
   final List<String> faculties;
@@ -140,7 +194,7 @@ class CbtExamConfig {
   /// drawn at random from the paper (or every question, if the paper holds
   /// fewer than that), in [standardMinutes] minutes.
   factory CbtExamConfig.standard(CbtSubject subject) => CbtExamConfig(
-    questionCount: min(standardQuestionCount, subject.questions.length),
+    questionCount: min(standardQuestionCount, subject.questionCount),
     minutes: standardMinutes,
     shuffleQuestions: true,
   );

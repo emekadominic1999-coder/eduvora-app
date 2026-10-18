@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/models/community.dart';
+import '../../../../core/models/content_report.dart';
 import '../../../../core/models/student_profile.dart';
 import '../../../../core/services/community_repository.dart';
 import '../../../../core/state/session_controller.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/common.dart';
+import '../../../../core/widgets/moderation_actions.dart';
 import 'community_screen.dart';
 
 /// A single thread with its replies.
@@ -92,6 +94,10 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                           onLike: _toggleLike,
                           onOpen: () {},
                           expanded: true,
+                          // Blocking the author of the thread being read
+                          // leaves nothing left to read, so this backs out
+                          // to the feed rather than leaving a dead screen.
+                          onBlocked: () => Navigator.of(context).maybePop(),
                         ),
                         const SizedBox(height: AppSpacing.xl),
                         Row(
@@ -121,7 +127,12 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                               padding: const EdgeInsets.only(
                                 bottom: AppSpacing.sm,
                               ),
-                              child: _CommentRow(comment: c),
+                              child: _CommentRow(
+                                comment: c,
+                                onBlocked: () => setState(
+                                  () => _future = _repo.comments(widget.post.id),
+                                ),
+                              ),
                             ),
                           ),
                         const SizedBox(height: AppSpacing.xl),
@@ -220,65 +231,84 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
 }
 
 class _CommentRow extends StatelessWidget {
-  const _CommentRow({required this.comment});
+  const _CommentRow({required this.comment, this.onBlocked});
 
   final CommunityComment comment;
 
+  /// Called after this comment's author is successfully blocked, so the
+  /// thread can drop their comments right away.
+  final VoidCallback? onBlocked;
+
   @override
   Widget build(BuildContext context) {
-    return EduvoraCard(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      shadows: AppShadows.subtle,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          InitialsAvatar(
-            initials: comment.authorName.isEmpty
-                ? 'S'
-                : comment.authorName.substring(0, 1).toUpperCase(),
-            size: 32,
-          ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Row(
-                  children: <Widget>[
-                    Expanded(
-                      child: Text(
-                        comment.authorName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: AppColours.text,
+    return GestureDetector(
+      // Long-press, the same gesture group messages use for their own
+      // report/block action, rather than a tap -- a comment has no other
+      // tap behaviour to collide with, but long-press keeps the gesture
+      // consistent across every piece of user-generated content in the app.
+      onLongPress: () => showModerationSheet(
+        context: context,
+        contentType: ReportedContentType.communityComment,
+        contentId: comment.id,
+        authorId: comment.authorId,
+        authorName: comment.authorName,
+        myUserId: sessionController.profile?.id ?? '',
+        onBlocked: onBlocked,
+      ),
+      child: EduvoraCard(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        shadows: AppShadows.subtle,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            InitialsAvatar(
+              initials: comment.authorName.isEmpty
+                  ? 'S'
+                  : comment.authorName.substring(0, 1).toUpperCase(),
+              size: 32,
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: Text(
+                          comment.authorName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: AppColours.text,
+                          ),
                         ),
                       ),
-                    ),
-                    Text(
-                      relativeTime(comment.createdAt),
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: AppColours.textFaint,
+                      Text(
+                        relativeTime(comment.createdAt),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColours.textFaint,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  comment.body,
-                  style: const TextStyle(
-                    fontSize: 13.5,
-                    height: 1.55,
-                    color: AppColours.text,
+                    ],
                   ),
-                ),
-              ],
+                  const SizedBox(height: 4),
+                  Text(
+                    comment.body,
+                    style: const TextStyle(
+                      fontSize: 13.5,
+                      height: 1.55,
+                      color: AppColours.text,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

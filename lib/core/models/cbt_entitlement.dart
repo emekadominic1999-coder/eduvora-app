@@ -35,6 +35,7 @@ class CbtEntitlement {
     required this.plan,
     required this.expiresAt,
     this.boundDeviceId,
+    this.boundWebDeviceId,
   });
 
   final String id;
@@ -48,6 +49,9 @@ class CbtEntitlement {
   /// trying to use a login that isn't theirs.
   final String? boundDeviceId;
 
+  /// The same, for the website (a browser is a separate slot from the app).
+  final String? boundWebDeviceId;
+
   bool get isActive => expiresAt.isAfter(DateTime.now());
 
   bool coversSubjectId(String id) => isActive && subjectId == id;
@@ -60,5 +64,6 @@ class CbtEntitlement {
         DateTime.tryParse((json['expires_at'] ?? '') as String) ??
         DateTime.now(),
     boundDeviceId: json['bound_device_id'] as String?,
+    boundWebDeviceId: json['bound_web_device_id'] as String?,
   );
 }

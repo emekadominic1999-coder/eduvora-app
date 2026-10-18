@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/ads/ads.dart';
 import '../../../../core/models/cbt.dart';
+import '../../../../core/services/cbt_repository.dart';
+import '../../../../core/services/paywall_repository.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/common.dart';
 import '../../../../core/widgets/math_text.dart';
@@ -20,10 +23,17 @@ class CbtResultScreen extends StatelessWidget {
     required this.questions,
     this.config,
     this.autoSubmitted = false,
+    this.adUnlocked = false,
+    this.freeTrial = false,
   });
 
   final CbtSubject subject;
   final CbtAttempt attempt;
+
+  /// True when this sitting was one of the limited free tries on a locked
+  /// paper. "Try again" then allows only the tries that are left, and after
+  /// the last one sends the student back to unlock the paper.
+  final bool freeTrial;
 
   /// The paper as actually sat — after any shuffling or shortening — so the
   /// review matches what the student saw rather than the original order.
@@ -32,6 +42,11 @@ class CbtResultScreen extends StatelessWidget {
   /// Carried through so "Try again" repeats the same settings.
   final CbtExamConfig? config;
   final bool autoSubmitted;
+
+  /// True when this sitting was opened by watching a rewarded ad rather
+  /// than paying, owning an entitlement, or the free trial -- "Try again"
+  /// asks for another ad first instead of retaking for free.
+  final bool adUnlocked;
 
   Color get _colour {
     final double p = attempt.percentage;
@@ -60,6 +75,80 @@ class CbtResultScreen extends StatelessWidget {
     }
     return 'This one was hard going, and that is genuinely all right. Every '
         'question below has a full explanation. Take them one at a time.';
+  }
+
+  /// A paper opened by watching a rewarded ad asks for another ad before
+  /// each retake too, same as unlocking it the first time -- a paid or
+  /// owned paper (and the free trial) always just retakes immediately.
+  Future<void> _tryAgain(BuildContext context) async {
+    final NavigatorState navigator = Navigator.of(context);
+    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+
+    if (freeTrial) {
+      const PaywallRepository paywall = PaywallRepository();
+      if (paywall.freeTrialsLeft(subject.id) == 0) {
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text(
+              'You have used your free tries on this paper. Watch a short ad '
+              'or pay to keep going.',
+            ),
+          ),
+        );
+        // Back to the paper list, which offers the unlock choices.
+        navigator.pop(true);
+        return;
+      }
+      await paywall.markFreeTrialUsed(subject.id);
+    }
+
+    if (adUnlocked) {
+      final RewardResult result = await AdService.showRewarded();
+      if (result == RewardResult.dismissed) {
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text('Watch the whole video to try again.'),
+          ),
+        );
+        return;
+      }
+      if (result == RewardResult.unavailable) {
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text(
+              'No video is available right now, so this one is on us.',
+            ),
+          ),
+        );
+      }
+    }
+
+    // The subject may be a summary (or a stub from resuming a saved attempt),
+    // so make sure its questions are loaded before the retake.
+    final CbtSubject loaded;
+    try {
+      loaded = await const CbtRepository().withQuestions(subject);
+    } catch (_) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Could not load this paper. Check your connection and try again.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    navigator.pushReplacement(
+      MaterialPageRoute<void>(
+        builder: (_) => CbtExamScreen(
+          subject: loaded,
+          config: config,
+          adUnlocked: adUnlocked,
+          freeTrial: freeTrial,
+        ),
+      ),
+    );
   }
 
   @override
@@ -102,12 +191,7 @@ class CbtResultScreen extends StatelessWidget {
                 const SizedBox(width: AppSpacing.md),
                 Expanded(
                   child: FilledButton(
-                    onPressed: () => Navigator.of(context).pushReplacement(
-                      MaterialPageRoute<void>(
-                        builder: (_) =>
-                            CbtExamScreen(subject: subject, config: config),
-                      ),
-                    ),
+                    onPressed: () => _tryAgain(context),
                     child: const Text('Try again'),
                   ),
                 ),

@@ -1,4 +1,6 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 
 import '../../../../core/models/cbt.dart';
 import '../../../../core/models/cbt_entitlement.dart';
@@ -38,6 +40,41 @@ class _CbtHomeScreenState extends State<CbtHomeScreen> {
   void initState() {
     super.initState();
     _future = _load();
+    // Warm up a rewarded ad well before anyone taps "watch ad to unlock" --
+    // a fresh on-tap load racing a timeout was the main reason students on
+    // a slow connection got told no ad was available.
+    AdService.preloadRewarded();
+    // The Android/iOS paywall's "Unlock on the Eduvora website" card opens
+    // this exact URL shape (see paywall_sheet.dart) so a student lands
+    // straight on that one paper's unlock screen here instead of having to
+    // find it again by hand.
+    if (kIsWeb) _openDeepLinkedUnlock();
+  }
+
+  void _openDeepLinkedUnlock() {
+    final String fragment = Uri.base.fragment;
+    final int queryStart = fragment.indexOf('?');
+    if (queryStart == -1) return;
+    final String subjectId = Uri.splitQueryString(
+      fragment.substring(queryStart + 1),
+    )['unlock'] ?? '';
+    if (subjectId.isEmpty) return;
+
+    _future.then((List<CbtSubject> subjects) {
+      if (!mounted) return;
+      CbtSubject? subject;
+      for (final CbtSubject s in subjects) {
+        if (s.id == subjectId) {
+          subject = s;
+          break;
+        }
+      }
+      if (subject == null) return;
+      final CbtSubject found = subject;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _start(found);
+      });
+    });
   }
 
   Future<void> _loadEntitlements() async {
@@ -120,8 +157,44 @@ class _CbtHomeScreenState extends State<CbtHomeScreen> {
     ),
   );
 
+  // Set only by [_watchAdToUnlock] succeeding -- read once, right after
+  // [_startFreeTrialOrPaywall] returns, to tell "Try again" on the result
+  // screen whether this sitting needs another ad rather than being free to
+  // retake (a paid or owned paper never does).
+  bool _lastUnlockWasViaAd = false;
+
+  /// The paper list holds summaries only; the questions are downloaded here,
+  /// just before they are needed. Null (after telling the student) on failure.
+  Future<CbtSubject?> _loadQuestions(CbtSubject subject) async {
+    if (subject.hasQuestions) return subject;
+    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+    messenger.showSnackBar(
+      const SnackBar(
+        content: Text('Loading paper…'),
+        duration: Duration(seconds: 30),
+      ),
+    );
+    try {
+      final CbtSubject loaded = await _cbt.withQuestions(subject);
+      messenger.hideCurrentSnackBar();
+      return loaded;
+    } catch (error) {
+      debugPrint('[Eduvora] loading paper failed: $error');
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Could not load this paper. Check your connection and try again.',
+          ),
+        ),
+      );
+      return null;
+    }
+  }
+
   Future<void> _start(CbtSubject subject) async {
     bool unlocked = _paywall.hasAccess(subject, _entitlements);
+    _lastUnlockWasViaAd = false;
 
     if (!unlocked) {
       final bool tried = await _startFreeTrialOrPaywall(subject);
@@ -144,13 +217,20 @@ class _CbtHomeScreenState extends State<CbtHomeScreen> {
       }
     }
 
+    final CbtSubject? loaded = await _loadQuestions(subject);
+    if (loaded == null || !mounted) return;
+
     // Ask how they want to sit it before the clock starts.
-    final CbtExamConfig? config = await showExamSetupSheet(context, subject);
+    final CbtExamConfig? config = await showExamSetupSheet(context, loaded);
     if (config == null || !mounted) return;
 
     final bool? completed = await Navigator.of(context).push<bool>(
       MaterialPageRoute<bool>(
-        builder: (_) => CbtExamScreen(subject: subject, config: config),
+        builder: (_) => CbtExamScreen(
+          subject: loaded,
+          config: config,
+          adUnlocked: _lastUnlockWasViaAd,
+        ),
       ),
     );
     if ((completed ?? false) && mounted) setState(() {});
@@ -167,15 +247,21 @@ class _CbtHomeScreenState extends State<CbtHomeScreen> {
       final bool wantsTrial = await _confirmFreeTrial(subject);
       if (!mounted || !wantsTrial) return false;
 
+      // Load before burning the one-time trial, so a failed download does
+      // not use it up.
+      final CbtSubject? loaded = await _loadQuestions(subject);
+      if (loaded == null || !mounted) return false;
+
       await _paywall.markFreeTrialUsed(subject.id);
       if (!mounted) return false;
-      final int count = subject.questions.length < PaywallRepository.freeTrialQuestionCount
-          ? subject.questions.length
+      final int count = loaded.questionCount < PaywallRepository.freeTrialQuestionCount
+          ? loaded.questionCount
           : PaywallRepository.freeTrialQuestionCount;
       final bool? completed = await Navigator.of(context).push<bool>(
         MaterialPageRoute<bool>(
           builder: (_) => CbtExamScreen(
-            subject: subject,
+            subject: loaded,
+            freeTrial: true,
             config: CbtExamConfig(
               questionCount: count,
               minutes: 10,
@@ -200,6 +286,8 @@ class _CbtHomeScreenState extends State<CbtHomeScreen> {
     if (choice == null || !mounted) return false;
 
     if (choice == PaywallChoice.watchAd) return _watchAdToUnlock();
+
+    if (choice == PaywallChoice.accessCode) return _redeemCode(subject);
 
     if (choice == PaywallChoice.coursePack) {
       final List<CbtSubject> all = await _cbt.all();
@@ -233,6 +321,104 @@ class _CbtHomeScreenState extends State<CbtHomeScreen> {
     return true;
   }
 
+  /// Asks for an access code, redeems it, and reports whether [subject] is now
+  /// open. The code itself is checked entirely server-side.
+  Future<bool> _redeemCode(CbtSubject subject) async {
+    final TextEditingController controller = TextEditingController();
+    // A student who has just copied their code from the website should not
+    // have to retype it: if the clipboard holds something shaped like a code
+    // (letters and digits, groups of four), fill it in.
+    try {
+      final ClipboardData? clip = await Clipboard.getData(Clipboard.kTextPlain);
+      final String pasted = (clip?.text ?? '').trim().toUpperCase();
+      if (RegExp(r'^[A-Z0-9]{4}(-?[A-Z0-9]{4}){2}$').hasMatch(pasted)) {
+        controller.text = pasted;
+      }
+    } catch (_) {
+      // Clipboard access can be refused; typing the code still works.
+    }
+    if (!mounted) return false;
+    String? error;
+    bool busy = false;
+    final bool? redeemed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext dialogContext) => StatefulBuilder(
+        builder: (BuildContext context, StateSetter setDialogState) =>
+            AlertDialog(
+              title: const Text('Enter access code'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  TextField(
+                    controller: controller,
+                    autofocus: true,
+                    textCapitalization: TextCapitalization.characters,
+                    decoration: InputDecoration(
+                      hintText: 'XXXX-XXXX-XXXX',
+                      errorText: error,
+                    ),
+                  ),
+                ],
+              ),
+              actions: <Widget>[
+                TextButton(
+                  onPressed: busy
+                      ? null
+                      : () => Navigator.of(dialogContext).pop(false),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: busy
+                      ? null
+                      : () async {
+                          if (controller.text.trim().isEmpty) {
+                            setDialogState(() => error = 'Enter your code.');
+                            return;
+                          }
+                          setDialogState(() {
+                            busy = true;
+                            error = null;
+                          });
+                          try {
+                            await _paywall.redeemAccessCode(controller.text);
+                            if (dialogContext.mounted) {
+                              Navigator.of(dialogContext).pop(true);
+                            }
+                          } catch (e) {
+                            setDialogState(() {
+                              busy = false;
+                              error = e.toString().replaceFirst(
+                                'Bad state: ',
+                                '',
+                              );
+                            });
+                          }
+                        },
+                  child: Text(busy ? 'Checking…' : 'Unlock'),
+                ),
+              ],
+            ),
+      ),
+    );
+    controller.dispose();
+    if (redeemed != true || !mounted) return false;
+    await _loadEntitlements();
+    if (!mounted) return false;
+    final bool open = _paywall.hasAccess(subject, _entitlements);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          open
+              ? 'Code accepted. Your papers are unlocked.'
+              : 'Code accepted. This paper is not part of that code, but '
+                    'your other papers are now unlocked.',
+        ),
+      ),
+    );
+    return open;
+  }
+
   /// The student chose to watch a short video instead of paying. Opens the
   /// paper for this one sitting once the video has been watched to the end.
   Future<bool> _watchAdToUnlock() async {
@@ -241,6 +427,7 @@ class _CbtHomeScreenState extends State<CbtHomeScreen> {
     final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
     switch (result) {
       case RewardResult.earned:
+        _lastUnlockWasViaAd = true;
         return true;
       case RewardResult.dismissed:
         messenger.showSnackBar(
@@ -252,6 +439,7 @@ class _CbtHomeScreenState extends State<CbtHomeScreen> {
       case RewardResult.unavailable:
         // No ad could be loaded (offline or nothing to show): never lock a
         // student out because of that.
+        _lastUnlockWasViaAd = true;
         messenger.showSnackBar(
           const SnackBar(
             content: Text('No video is available right now, so this one is on us.'),
@@ -267,9 +455,12 @@ class _CbtHomeScreenState extends State<CbtHomeScreen> {
       builder: (BuildContext context) => AlertDialog(
         title: const Text('Try before you unlock'),
         content: Text(
-          'This paper is locked, but you get '
-          '${PaywallRepository.freeTrialQuestionCount} free questions to try '
-          'it first — no payment needed.',
+          'This paper is locked, but you can try it free. You get '
+          '${PaywallRepository.freeTrialQuestionCount} questions each time, '
+          'and ${_paywall.freeTrialsLeft(subject.id)} free '
+          '${_paywall.freeTrialsLeft(subject.id) == 1 ? 'try' : 'tries'} '
+          'left on this paper. After that you can watch a short ad or pay to '
+          'unlock it.',
         ),
         actions: <Widget>[
           TextButton(
@@ -337,7 +528,7 @@ class _CbtHomeScreenState extends State<CbtHomeScreen> {
                       average,
                       papers.fold(
                         0,
-                        (int sum, CbtSubject s) => sum + s.questions.length,
+                        (int sum, CbtSubject s) => sum + s.questionCount,
                       ),
                     ),
                     const _Disclaimer(),
@@ -652,7 +843,7 @@ class _PaperCard extends StatelessWidget {
           Row(
             children: <Widget>[
               Pill(
-                label: '${subject.questions.length} questions',
+                label: '${subject.questionCount} questions',
                 icon: Icons.list_alt_rounded,
                 dense: true,
               ),

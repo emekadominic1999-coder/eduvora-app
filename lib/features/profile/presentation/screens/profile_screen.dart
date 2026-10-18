@@ -650,6 +650,19 @@ class _ProfileScreenState extends State<ProfileScreen>
                 if (await canLaunchUrl(uri)) await launchUrl(uri);
               },
             ),
+            const Divider(height: 1, indent: 16, endIndent: 16),
+            ListTile(
+              leading: const Icon(Icons.language_rounded, size: 20),
+              title: const Text('Visit our website'),
+              subtitle: const Text('eduvoraapp.com.ng'),
+              trailing: const Icon(Icons.open_in_new_rounded, size: 17),
+              onTap: () async {
+                final Uri uri = Uri.parse('https://eduvoraapp.com.ng/welcome.html');
+                if (await canLaunchUrl(uri)) {
+                  await launchUrl(uri, mode: LaunchMode.externalApplication);
+                }
+              },
+            ),
           ],
         ),
       ),

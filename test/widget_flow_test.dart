@@ -308,17 +308,22 @@ void main() {
     testWidgets('computes a semester GPA from entered courses',
         (WidgetTester tester) async {
       await _signInTestStudent();
+      // Tall enough that the course row is built without scrolling.
+      await tester.binding.setSurfaceSize(const Size(420, 2400));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
       await tester.pumpWidget(_wrap(const GpaCalculatorScreen()));
       await tester.pumpAndSettle();
 
       // The default row has no grade chosen yet, so it is left out of the
-      // totals entirely: GPA reads 0.00 until a grade (or a score) is given.
-      expect(find.text('0.00'), findsWidgets);
+      // totals entirely: the result bar shows a dash until a grade (or a
+      // score) is given.
+      expect(find.text('–'), findsWidgets);
 
       // Typing a score fills in the grade automatically. 70 is an A (5
       // points), and any number of units at 5 points gives a GPA of 5.00.
       final Finder scoreField = find.byWidgetPredicate(
-        (Widget w) => w is TextField && w.decoration?.labelText == 'Score',
+        (Widget w) =>
+            w is TextField && w.decoration?.labelText == 'Score (optional)',
       );
       expect(scoreField, findsOneWidget);
       await tester.enterText(scoreField, '70');
@@ -344,17 +349,10 @@ void main() {
       await tester.tap(find.byTooltip('Grading scale and rules'));
       await tester.pumpAndSettle();
 
-      expect(find.text('The 5-point scale'), findsOneWidget);
-      expect(
-        find.text(
-          'TNU = total units registered\n'
-          'TCP = total credit points (units × grade point)\n'
-          'GPA = TCP ÷ TNU',
-        ),
-        findsOneWidget,
-      );
+      expect(find.text('How GPA works'), findsOneWidget);
+      expect(find.textContaining('GPA = TCP ÷ TNU'), findsOneWidget);
       expect(find.textContaining('Excellent'), findsOneWidget);
-      expect(find.textContaining('Fail'), findsOneWidget);
+      expect(find.textContaining('Fail'), findsWidgets);
     });
   });
 

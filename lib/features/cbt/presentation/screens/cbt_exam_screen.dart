@@ -14,13 +14,29 @@ import 'cbt_result_screen.dart';
 /// The exam itself: a countdown, one question at a time, a jump grid and
 /// flags for questions worth revisiting.
 class CbtExamScreen extends StatefulWidget {
-  const CbtExamScreen({super.key, required this.subject, this.config});
+  const CbtExamScreen({
+    super.key,
+    required this.subject,
+    this.config,
+    this.adUnlocked = false,
+    this.freeTrial = false,
+  });
 
   final CbtSubject subject;
+
+  /// True when this sitting is one of the limited free tries on a locked
+  /// paper, so the result screen can stop "Try again" after the last one.
+  final bool freeTrial;
 
   /// How the student chose to sit this paper. Falls back to the paper's own
   /// standard settings when the screen is opened without a choice.
   final CbtExamConfig? config;
+
+  /// True only when this sitting was opened by watching a rewarded ad
+  /// rather than paying, owning an entitlement, or the free trial -- carried
+  /// through to the result screen so "Try again" asks for another ad too,
+  /// instead of retaking for free.
+  final bool adUnlocked;
 
   @override
   State<CbtExamScreen> createState() => _CbtExamScreenState();
@@ -247,6 +263,8 @@ class _CbtExamScreenState extends State<CbtExamScreen> {
           questions: _questions,
           config: _config,
           autoSubmitted: auto,
+          adUnlocked: widget.adUnlocked,
+          freeTrial: widget.freeTrial,
         ),
       ),
     );

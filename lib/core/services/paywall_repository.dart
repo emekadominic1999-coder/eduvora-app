@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
-import 'package:supabase_flutter/supabase_flutter.dart' show FunctionException;
+import 'package:supabase_flutter/supabase_flutter.dart'
+    show FunctionException, PostgrestException;
 import 'package:uuid/uuid.dart';
 
 import '../models/cbt.dart';
@@ -60,7 +61,13 @@ class PaywallRepository {
   /// of going through [hasAccess], or this override silently makes every
   /// paper look relevant to every faculty too (that exact bug shipped once
   /// already — see `cbt_home_screen.dart`'s `_load`).
-  static const bool testingUnlockAll = true;
+  static const bool testingUnlockAll = false;
+
+  static const String _ownerEmail = 'emekadominic1999@gmail.com';
+
+  static bool get _signedInAsOwner =>
+      SupabaseService.isReady &&
+      SupabaseService.auth.currentUser?.email?.trim().toLowerCase() == _ownerEmail;
 
   /// How many questions a locked paper allows for free, once, before the
   /// paywall is shown. Tracked on-device only — a soft nudge rather than a
@@ -87,6 +94,7 @@ class PaywallRepository {
 
   bool hasAccess(CbtSubject subject, List<CbtEntitlement> entitlements) =>
       testingUnlockAll ||
+      _signedInAsOwner ||
       entitlements.any((CbtEntitlement e) => e.coversSubjectId(subject.id));
 
   /// A random id generated once per install and kept for the life of the
@@ -110,7 +118,12 @@ class PaywallRepository {
   Future<DeviceCheckResult> verifyDevice(CbtEntitlement entitlement) async {
     if (!SupabaseService.isReady) return DeviceCheckResult.allowed;
     final String thisDevice = await deviceId();
-    final String? bound = entitlement.boundDeviceId;
+    // The app and the website each have their own slot, so paying on the
+    // website and then opening the app on the same phone is not "another device".
+    final String slot = kIsWeb ? 'bound_web_device_id' : 'bound_device_id';
+    final String? bound = kIsWeb
+        ? entitlement.boundWebDeviceId
+        : entitlement.boundDeviceId;
 
     if (bound != null && bound.isNotEmpty) {
       return bound == thisDevice
@@ -121,7 +134,7 @@ class PaywallRepository {
     try {
       await SupabaseService.client
           .from('cbt_entitlements')
-          .update(<String, dynamic>{'bound_device_id': thisDevice})
+          .update(<String, dynamic>{slot: thisDevice})
           .eq('id', entitlement.id);
       return DeviceCheckResult.allowed;
     } catch (error) {
@@ -130,11 +143,35 @@ class PaywallRepository {
     }
   }
 
-  bool hasUsedFreeTrial(String subjectId) =>
-      LocalStore.instance.readBool(_trialKey(subjectId));
+  /// How many free tries a student gets on one locked paper before it asks
+  /// them to watch an ad, enter an access code or pay.
+  static const int maxFreeTrials = 2;
 
-  Future<void> markFreeTrialUsed(String subjectId) =>
-      LocalStore.instance.writeBool(_trialKey(subjectId), value: true);
+  /// Free tries already used on [subjectId]. A student who used the old
+  /// single trial (stored as a plain flag) counts as having used one.
+  int freeTrialsUsed(String subjectId) {
+    final String? stored = LocalStore.instance.readString(_trialCountKey(subjectId));
+    final int? counted = stored == null ? null : int.tryParse(stored);
+    if (counted != null) return counted;
+    return LocalStore.instance.readBool(_trialKey(subjectId)) ? 1 : 0;
+  }
+
+  int freeTrialsLeft(String subjectId) {
+    final int left = maxFreeTrials - freeTrialsUsed(subjectId);
+    return left < 0 ? 0 : left;
+  }
+
+  /// True once every free try on this paper has been spent.
+  bool hasUsedFreeTrial(String subjectId) => freeTrialsLeft(subjectId) == 0;
+
+  Future<void> markFreeTrialUsed(String subjectId) async {
+    final int next = freeTrialsUsed(subjectId) + 1;
+    await LocalStore.instance.writeString(_trialCountKey(subjectId), '$next');
+    await LocalStore.instance.writeBool(_trialKey(subjectId), value: true);
+  }
+
+  String _trialCountKey(String subjectId) =>
+      '${StoreKeys.cbtFreeTrialUsed}.count.$subjectId';
 
   String _trialKey(String subjectId) => '${StoreKeys.cbtFreeTrialUsed}.$subjectId';
 
@@ -192,6 +229,30 @@ class PaywallRepository {
           ? details['error'] as String
           : null;
       throw StateError(reason ?? 'Could not start checkout. Please try again.');
+    }
+  }
+
+  /// Redeems an access code bought outside the app. The database function
+  /// validates it and writes the entitlements; throws a plain-English
+  /// [StateError] if the code is wrong or already used.
+  Future<int> redeemAccessCode(String code) async {
+    if (!SupabaseService.isReady) {
+      throw StateError('Connect to the internet and try again.');
+    }
+    try {
+      // The papers the code unlocks are bound to this phone right away, so the
+      // same login cannot be used to open them on someone else's device.
+      final dynamic result = await SupabaseService.client.rpc(
+        'redeem_access_code',
+        params: <String, dynamic>{
+          'p_code': code,
+          'p_device_id': await deviceId(),
+          'p_platform': kIsWeb ? 'web' : 'app',
+        },
+      );
+      return result is Map ? (result['papers'] as num?)?.toInt() ?? 0 : 0;
+    } on PostgrestException catch (error) {
+      throw StateError(error.message);
     }
   }
 

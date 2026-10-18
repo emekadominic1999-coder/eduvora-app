@@ -68,12 +68,12 @@ class _UploadMaterialScreenState extends State<UploadMaterialScreen> {
       if (result == null || result.files.isEmpty) return;
 
       final PlatformFile picked = result.files.first;
-      const int limit = 25 * 1024 * 1024;
+      const int limit = 15 * 1024 * 1024;
       if (picked.size > limit) {
         if (!mounted) return;
         showEduvoraSnack(
           context,
-          'That file is larger than 25 MB. Please compress it first.',
+          'That file is larger than 15 MB. Please compress it first.',
           isError: true,
         );
         return;

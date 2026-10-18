@@ -105,7 +105,11 @@ class QuickActionGrid extends StatelessWidget {
           crossAxisCount: 4,
           mainAxisSpacing: AppSpacing.md,
           crossAxisSpacing: AppSpacing.md,
-          childAspectRatio: 0.74,
+          // A touch taller than 0.74 -- on some phones the two-line label
+          // plus icon was a couple of pixels too tall for the tile, which
+          // Flutter's debug build flags loudly (an "OVERFLOWED BY n PIXELS"
+          // banner) even though release builds just clip it silently.
+          childAspectRatio: 0.70,
         ),
         itemCount: _actions.length,
         itemBuilder: (BuildContext context, int index) {

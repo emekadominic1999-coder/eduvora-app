@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -8,6 +9,7 @@ import '../../../../core/state/profile_refresh_mixin.dart';
 import '../../../../core/state/session_controller.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/common.dart';
+import 'material_viewer_screen.dart';
 import 'upload_material_screen.dart';
 
 /// The shared resource library for a student's department and level.
@@ -269,10 +271,86 @@ class _MaterialRow extends StatelessWidget {
       );
       return;
     }
-    final Uri uri = Uri.parse(material.fileUrl);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } else if (context.mounted) {
+    final String ext = material.extension;
+    final bool pdfOrImage =
+        ext == 'PDF' || <String>['PNG', 'JPG', 'JPEG', 'WEBP'].contains(ext);
+    final bool isDrive = material.fileUrl.startsWith(
+      ContentRepository.driveScheme,
+    );
+
+    // Word, PowerPoint and similar files cannot be shown by the in-app PDF
+    // viewer, and a browser would just download them. Drive shows them in its
+    // own viewer; a plain web link goes through Google's document viewer.
+    // Very large Drive files are also streamed by Drive's viewer, which shows
+    // the first page at once instead of waiting for the whole file to arrive.
+    const int streamAboveBytes = 12 * 1024 * 1024;
+    if (isDrive && (!pdfOrImage || material.fileSizeBytes > streamAboveBytes)) {
+      final String id = material.fileUrl.substring(
+        ContentRepository.driveScheme.length,
+      );
+      await _openInViewerBrowser(
+        context,
+        Uri.parse('https://drive.google.com/file/d/$id/preview'),
+      );
+      return;
+    }
+    if (!isDrive && !pdfOrImage && !material.fileUrl.startsWith(ContentRepository.r2Scheme)) {
+      await _openInViewerBrowser(
+        context,
+        Uri.parse(
+          'https://docs.google.com/gview?embedded=1&url='
+          '${Uri.encodeComponent(material.fileUrl)}',
+        ),
+      );
+      return;
+    }
+
+    // On the web the browser already previews PDFs and images inline, so
+    // only the app (Android/iOS/desktop) needs the in-app viewer — there,
+    // handing the URL to the OS would otherwise just download the file.
+    if (!kIsWeb) {
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (BuildContext context) =>
+              MaterialViewerScreen(material: material),
+        ),
+      );
+      return;
+    }
+    // Private (r2://) files are swapped for a short-lived view link first.
+    String url;
+    try {
+      url = await const ContentRepository().resolveMaterialUrl(material);
+    } catch (_) {
+      if (context.mounted) {
+        showEduvoraSnack(
+          context,
+          'Could not open this material. Check your connection.',
+          isError: true,
+        );
+      }
+      return;
+    }
+    if (!context.mounted) return;
+    await _openInViewerBrowser(context, Uri.parse(url));
+  }
+
+  /// Opens a viewing page inside the app (a Chrome Custom Tab on Android), or
+  /// in a new browser tab on the web, falling back to the default browser.
+  Future<void> _openInViewerBrowser(BuildContext context, Uri uri) async {
+    bool ok = false;
+    try {
+      ok = await launchUrl(
+        uri,
+        mode: kIsWeb
+            ? LaunchMode.platformDefault
+            : LaunchMode.inAppBrowserView,
+      );
+      if (!ok) ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (_) {
+      ok = false;
+    }
+    if (!ok && context.mounted) {
       showEduvoraSnack(context, 'We could not open that file.', isError: true);
     }
   }

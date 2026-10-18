@@ -148,10 +148,15 @@ class SessionController extends ChangeNotifier {
           data: <String, dynamic>{'full_name': fullName.trim()},
         );
         final sb.User? user = response.user;
-        if (user == null) {
+        // With email confirmation switched on, Supabase creates the account
+        // but returns NO session until the link is opened. Treating that
+        // half-made account as signed in left students browsing as an
+        // anonymous visitor, so every list (CBT, outlines) came back empty
+        // and their profile never saved.
+        if (user == null || response.session == null) {
           throw const AuthFailure(
-            'We have sent a confirmation link to your email. Please open it, '
-            'then come back and sign in.',
+            'Almost done! We sent a confirmation link to your email. Open it '
+            '(check your spam folder too), then come back here and sign in.',
           );
         }
         await _loadRemoteProfile(user, fallbackName: fullName.trim());

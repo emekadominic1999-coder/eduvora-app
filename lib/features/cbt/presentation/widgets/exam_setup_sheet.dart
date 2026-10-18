@@ -4,21 +4,10 @@ import '../../../../core/models/cbt.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/common.dart';
 
-/// Distinct topics in [questions], sorted alphabetically, blank ones
-/// dropped — a paper with no topic tags at all yields an empty list, and
-/// the caller falls back to hiding the topic picker entirely.
-List<String> _topicsIn(List<CbtQuestion> questions) {
-  final Set<String> topics = <String>{
-    for (final CbtQuestion q in questions)
-      if (q.topic.trim().isNotEmpty) q.topic,
-  };
-  final List<String> sorted = topics.toList()..sort();
-  return sorted;
-}
-
 /// Asks how the student would like to sit a paper before the clock starts.
 ///
-/// Returns the chosen [CbtExamConfig], or null if they backed out.
+/// Returns the chosen [CbtExamConfig], or null if they backed out. Expects a
+/// subject whose questions are loaded (per-topic counts read them).
 Future<CbtExamConfig?> showExamSetupSheet(
   BuildContext context,
   CbtSubject subject,
@@ -43,7 +32,7 @@ class _ExamSetupSheetState extends State<_ExamSetupSheet> {
   bool _custom = false;
   String? _selectedTopic;
   String _topicQuery = '';
-  late final List<String> _topics = _topicsIn(widget.subject.questions);
+  late final List<String> _topics = widget.subject.topics;
 
   /// Starts at the whole paper, but never above the custom ceiling — a
   /// two-hundred-question bank must not open the stepper on a value its own
@@ -53,7 +42,7 @@ class _ExamSetupSheetState extends State<_ExamSetupSheet> {
   bool _shuffleQuestions = true;
   bool _shuffleOptions = false;
 
-  int get _total => widget.subject.questions.length;
+  int get _total => widget.subject.questionCount;
 
   /// How many questions actually match the topic a custom paper is
   /// restricted to — the whole subject when no topic is chosen.
@@ -90,7 +79,7 @@ class _ExamSetupSheetState extends State<_ExamSetupSheet> {
   }
 
   int _countFor(String? topic) => topic == null
-      ? widget.subject.questions.length
+      ? widget.subject.questionCount
       : widget.subject.questions.where((CbtQuestion q) => q.topic == topic).length;
 
   void _start() {

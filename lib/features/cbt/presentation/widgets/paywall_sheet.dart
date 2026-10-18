@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
 import '../../../../core/models/cbt.dart';
@@ -5,7 +6,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/common.dart';
 
 /// What the student picked on the paywall.
-enum PaywallChoice { watchAd, singlePaper, coursePack }
+enum PaywallChoice { watchAd, singlePaper, coursePack, accessCode }
 
 /// Offers the ways to unlock CBT access, once a locked paper (or a spent
 /// free trial) has been tapped. Returns the chosen [PaywallChoice], or null
@@ -85,46 +86,69 @@ class _PaywallSheet extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.md),
           ],
-          _PlanCard(
-            title: 'This paper only',
-            body: allowAd
-                ? '${subject.name} · unlimited attempts, no ads'
-                : '${subject.name} · unlimited attempts, this session',
-            price: '₦350',
-            highlighted: false,
-            onTap: () => Navigator.of(context).pop(PaywallChoice.singlePaper),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          _PlanCard(
-            title: 'Build a course pack',
-            body:
-                'Pick your department, level and semester, then choose up '
-                'to 23 units of papers to unlock${allowAd ? ', no ads' : ''}',
-            price: '₦2,300',
-            highlighted: true,
-            badge: 'BEST VALUE',
-            onTap: () => Navigator.of(context).pop(PaywallChoice.coursePack),
-          ),
-
-          const SizedBox(height: AppSpacing.lg),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              const Icon(
-                Icons.shield_outlined,
-                size: 14,
-                color: AppColours.textFaint,
+          if (kIsWeb) ...<Widget>[
+            _PlanCard(
+              title: 'This paper only',
+              body: allowAd
+                  ? '${subject.name} · unlimited attempts, no ads'
+                  : '${subject.name} · unlimited attempts, this session',
+              price: '₦350',
+              highlighted: false,
+              onTap: () =>
+                  Navigator.of(context).pop(PaywallChoice.singlePaper),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            _PlanCard(
+              title: 'Build a course pack',
+              body:
+                  'Pick your department, level and semester, then choose up '
+                  'to 23 units of papers to unlock${allowAd ? ', no ads' : ''}',
+              price: '₦2,300',
+              highlighted: true,
+              badge: 'BEST VALUE',
+              onTap: () =>
+                  Navigator.of(context).pop(PaywallChoice.coursePack),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                const Icon(
+                  Icons.shield_outlined,
+                  size: 14,
+                  color: AppColours.textFaint,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  'Pay by transfer, USSD or card · secured by Paystack',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppColours.textFaint,
+                  ),
+                ),
+              ],
+            ),
+          ] else
+            // Store policy: the Android app neither sells nor links out to a
+            // payment page. Access bought on the website simply shows up on
+            // the same account here, so this is a plain, non-clickable note.
+            Text(
+              'Already have access on your Eduvora account? It appears here '
+              'automatically — just sign in with the same account.',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: AppColours.textMuted,
+                height: 1.5,
               ),
-              const SizedBox(width: 6),
-              Text(
-                'Pay by transfer, USSD or card · secured by Paystack',
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: AppColours.textFaint),
-              ),
-            ],
-          ),
+            ),
           const SizedBox(height: AppSpacing.sm),
+          Center(
+            child: TextButton.icon(
+              onPressed: () =>
+                  Navigator.of(context).pop(PaywallChoice.accessCode),
+              icon: const Icon(Icons.vpn_key_outlined, size: 18),
+              label: const Text('I have an access code'),
+            ),
+          ),
           Text(
             'Independent practice app. Not affiliated with or endorsed by the '
             'University of Nigeria, Nsukka or any school. Practice questions, '

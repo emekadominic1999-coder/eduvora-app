@@ -9,6 +9,7 @@ import '../models/class_list.dart';
 import '../models/student_profile.dart';
 import '../models/study_group.dart';
 import 'local_store.dart';
+import 'moderation_repository.dart';
 import 'supabase_service.dart';
 
 /// Raised when a group action fails in a way worth telling the student about.
@@ -29,6 +30,7 @@ class GroupRepository {
   const GroupRepository();
 
   static const Uuid _uuid = Uuid();
+  static const ModerationRepository _moderation = ModerationRepository();
 
   // ------------------------------------------------------------------ groups
 
@@ -264,7 +266,14 @@ class GroupRepository {
       }
       final List<GroupMessage> merged = byId.values.toList()
         ..sort((GroupMessage a, GroupMessage b) => a.sentAt.compareTo(b.sentAt));
-      return merged;
+
+      // A blocked student's messages never reach the thread -- blocking is
+      // meant to make them disappear, not just go quiet.
+      final Set<String> blocked = await _moderation.blockedUserIds();
+      if (blocked.isEmpty) return merged;
+      return merged
+          .where((GroupMessage m) => !blocked.contains(m.authorId))
+          .toList();
     } catch (error) {
       debugPrint('[Eduvora] group messages failed: $error');
       return local;
@@ -283,6 +292,14 @@ class GroupRepository {
     final StreamController<GroupMessage> controller =
         StreamController<GroupMessage>.broadcast();
 
+    // Kept current in the background. A message from someone blocked after
+    // this stream started is filtered out once this refreshes rather than
+    // instantly -- an acceptable trade-off for a plain in-memory set.
+    Set<String> blockedIds = <String>{};
+    unawaited(
+      _moderation.blockedUserIds().then((Set<String> ids) => blockedIds = ids),
+    );
+
     final RealtimeChannel channel = SupabaseService.client
         .channel('group:$groupId')
         .onPostgresChanges(
@@ -297,7 +314,11 @@ class GroupRepository {
           callback: (PostgresChangePayload payload) {
             if (payload.newRecord.isEmpty) return;
             try {
-              controller.add(GroupMessage.fromJson(payload.newRecord));
+              final GroupMessage message = GroupMessage.fromJson(
+                payload.newRecord,
+              );
+              if (blockedIds.contains(message.authorId)) return;
+              controller.add(message);
             } catch (error) {
               debugPrint('[Eduvora] realtime decode failed: $error');
             }

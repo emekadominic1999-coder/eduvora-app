@@ -20,6 +20,8 @@ class AdService {
 
   static Future<void> init() async {}
 
+  static void preloadRewarded() {}
+
   static Future<RewardResult> showRewarded() async => RewardResult.unavailable;
 }
 

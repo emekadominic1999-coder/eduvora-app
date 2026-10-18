@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/models/community.dart';
+import '../../../../core/models/content_report.dart';
 import '../../../../core/models/student_profile.dart';
 import '../../../../core/services/community_repository.dart';
 import '../../../../core/state/session_controller.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/common.dart';
+import '../../../../core/widgets/moderation_actions.dart';
 import 'post_detail_screen.dart';
 
 /// Topic channels where students help one another.
@@ -163,6 +165,7 @@ class _CommunityScreenState extends State<CommunityScreen>
                               );
                               if (mounted) await _refresh();
                             },
+                            onBlocked: _refresh,
                           );
                         },
                       );
@@ -238,6 +241,7 @@ class PostCard extends StatelessWidget {
     required this.onLike,
     required this.onOpen,
     this.expanded = false,
+    this.onBlocked,
   });
 
   final CommunityPost post;
@@ -245,6 +249,11 @@ class PostCard extends StatelessWidget {
   final VoidCallback onLike;
   final VoidCallback onOpen;
   final bool expanded;
+
+  /// Called after the post's author is successfully blocked from the
+  /// report/block sheet, so the caller can drop this post from view right
+  /// away instead of waiting for the next natural refetch.
+  final VoidCallback? onBlocked;
 
   @override
   Widget build(BuildContext context) {
@@ -334,6 +343,29 @@ class PostCard extends StatelessWidget {
                 icon: post.topic.icon,
                 dense: true,
               ),
+              if (!post.isAnnouncement) ...<Widget>[
+                const SizedBox(width: 2),
+                InkWell(
+                  onTap: () => showModerationSheet(
+                    context: context,
+                    contentType: ReportedContentType.communityPost,
+                    contentId: post.id,
+                    authorId: post.authorId,
+                    authorName: post.authorName,
+                    myUserId: sessionController.profile?.id ?? '',
+                    onBlocked: onBlocked,
+                  ),
+                  borderRadius: AppRadii.sm,
+                  child: const Padding(
+                    padding: EdgeInsets.all(4),
+                    child: Icon(
+                      Icons.more_vert_rounded,
+                      size: 18,
+                      color: AppColours.textFaint,
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
           const SizedBox(height: AppSpacing.md),

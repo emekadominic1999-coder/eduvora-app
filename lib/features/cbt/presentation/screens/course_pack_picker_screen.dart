@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/models/cbt.dart';
-import '../../../../core/state/session_controller.dart';
+
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/common.dart';
 
@@ -23,9 +23,9 @@ class CoursePackSelection {
       subjects.fold(0, (int sum, CbtSubject s) => sum + s.units);
 }
 
-/// Lets the student build their own course pack: department, level and
-/// semester first, then a checklist of only the papers that actually exist
-/// for that combination, capped at a real semester's course load.
+/// Lets the student build their own course pack: one list of every paper
+/// that has been uploaded, with a search box. They tick what they want, up to
+/// a real semester's course load, and pay once.
 ///
 /// [allSubjects] should already be loaded (the CBT home screen has it).
 Future<CoursePackSelection?> showCoursePackPicker(
@@ -53,56 +53,24 @@ class CoursePackPickerScreen extends StatefulWidget {
 }
 
 class _CoursePackPickerScreenState extends State<CoursePackPickerScreen> {
-  String? _department;
-  String? _level;
-  String? _semester;
   final Set<String> _selectedIds = <String>{};
+  String _query = '';
 
-  List<CbtSubject> get _withDepartment => widget.allSubjects
-      .where((CbtSubject s) => s.department.isNotEmpty)
-      .toList();
+  List<CbtSubject> get _all =>
+      widget.allSubjects.where((CbtSubject s) => s.questionCount > 0).toList()
+        ..sort((CbtSubject a, CbtSubject b) => a.name.compareTo(b.name));
 
-  List<String> get _departments =>
-      _withDepartment.map((CbtSubject s) => s.department).toSet().toList()
-        ..sort();
+  List<CbtSubject> get _visible {
+    final String q = _query.trim().toLowerCase();
+    if (q.isEmpty) return _all;
+    return _all
+        .where((CbtSubject s) => s.name.toLowerCase().contains(q))
+        .toList();
+  }
 
-  List<String> get _levels => _withDepartment
-      .where((CbtSubject s) => s.department == _department)
-      .map((CbtSubject s) => s.level)
-      .where((String l) => l.isNotEmpty)
-      .toSet()
-      .toList()
-    ..sort();
-
-  List<String> get _semesters => _withDepartment
-      .where((CbtSubject s) => s.department == _department && s.level == _level)
-      .map((CbtSubject s) => s.semester)
-      .where((String sem) => sem.isNotEmpty)
-      .toSet()
-      .toList()
-    ..sort();
-
-  List<CbtSubject> get _available => _withDepartment
-      .where(
-        (CbtSubject s) =>
-            s.department == _department &&
-            s.level == _level &&
-            s.semester == _semester,
-      )
-      .toList();
-
-  int get _selectedUnits => _available
+  int get _selectedUnits => widget.allSubjects
       .where((CbtSubject s) => _selectedIds.contains(s.id))
       .fold(0, (int sum, CbtSubject s) => sum + s.units);
-
-  @override
-  void initState() {
-    super.initState();
-    final String? profileDepartment = sessionController.profile?.department;
-    if (profileDepartment != null && _departments.contains(profileDepartment)) {
-      _department = profileDepartment;
-    }
-  }
 
   void _toggle(CbtSubject subject) {
     setState(() {
@@ -116,124 +84,97 @@ class _CoursePackPickerScreenState extends State<CoursePackPickerScreen> {
   }
 
   void _confirm() {
-    final List<CbtSubject> chosen = _available
+    final List<CbtSubject> chosen = widget.allSubjects
         .where((CbtSubject s) => _selectedIds.contains(s.id))
         .toList();
     Navigator.of(context).pop(
       CoursePackSelection(
         subjects: chosen,
-        department: _department ?? '',
-        level: _level ?? '',
-        semester: _semester ?? '',
+        department: '',
+        level: '',
+        semester: '',
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final List<CbtSubject> visible = _visible;
     return Scaffold(
       backgroundColor: AppColours.background,
-      appBar: AppBar(title: const Text('Build your course pack')),
+      appBar: AppBar(title: const Text('Choose your courses')),
       body: SafeArea(
         child: Column(
           children: <Widget>[
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.all(AppSpacing.xl),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.xl,
+                AppSpacing.md,
+                AppSpacing.xl,
+                AppSpacing.sm,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   Text(
-                    'Pick your department, level and semester, then choose '
-                    'which papers to unlock — up to ${CoursePackPickerScreen.maxUnits} '
-                    'units, the same cap as real course registration. One flat '
-                    '₦2,300 either way.',
+                    'Tick every course you want, then pay once — one flat ₦2,300. '
+                    'You can pick up to ${CoursePackPickerScreen.maxUnits} units in total.',
                     style: Theme.of(
                       context,
                     ).textTheme.bodySmall?.copyWith(height: 1.5),
                   ),
-                  const SizedBox(height: AppSpacing.xl),
-                  _Selector(
-                    label: 'Department',
-                    value: _department,
-                    options: _departments,
-                    onChanged: (String? v) => setState(() {
-                      _department = v;
-                      _level = null;
-                      _semester = null;
-                      _selectedIds.clear();
-                    }),
+                  const SizedBox(height: AppSpacing.md),
+                  TextField(
+                    onChanged: (String v) => setState(() => _query = v),
+                    decoration: const InputDecoration(
+                      prefixIcon: Icon(Icons.search_rounded),
+                      hintText: 'Search a course, e.g. MTH 101',
+                    ),
                   ),
-                  if (_department != null) ...<Widget>[
-                    const SizedBox(height: AppSpacing.md),
-                    _Selector(
-                      label: 'Level',
-                      value: _level,
-                      options: _levels,
-                      onChanged: (String? v) => setState(() {
-                        _level = v;
-                        _semester = null;
-                        _selectedIds.clear();
-                      }),
-                    ),
-                  ],
-                  if (_level != null) ...<Widget>[
-                    const SizedBox(height: AppSpacing.md),
-                    _Selector(
-                      label: 'Semester',
-                      value: _semester,
-                      options: _semesters,
-                      labelFor: (String s) =>
-                          s == 'first' ? 'First semester' : 'Second semester',
-                      onChanged: (String? v) => setState(() {
-                        _semester = v;
-                        _selectedIds.clear();
-                      }),
-                    ),
-                  ],
-                  if (_semester != null) ...<Widget>[
-                    const SizedBox(height: AppSpacing.xl),
-                    if (_available.isEmpty)
-                      const EmptyState(
-                        icon: Icons.quiz_outlined,
-                        title: 'No papers yet',
-                        message:
-                            'Nothing has been added for this department, '
-                            'level and semester yet — try another combination, '
-                            'or unlock a single paper instead.',
-                        compact: true,
-                      )
-                    else ...<Widget>[
-                      SectionHeader(
-                        title: 'Available papers',
-                        subtitle:
-                            '$_selectedUnits / ${CoursePackPickerScreen.maxUnits} units selected',
-                      ),
-                      ..._available.map(
-                        (CbtSubject s) => Padding(
-                          padding: const EdgeInsets.only(
-                            bottom: AppSpacing.sm,
-                          ),
-                          child: _SubjectTile(
-                            subject: s,
-                            selected: _selectedIds.contains(s.id),
-                            disabled:
-                                !_selectedIds.contains(s.id) &&
-                                _selectedUnits + s.units >
-                                    CoursePackPickerScreen.maxUnits,
-                            onTap: () => _toggle(s),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(
+                    '$_selectedUnits / ${CoursePackPickerScreen.maxUnits} units selected',
+                    style: Theme.of(context).textTheme.labelMedium,
+                  ),
                 ],
               ),
+            ),
+            Expanded(
+              child: visible.isEmpty
+                  ? const EmptyState(
+                      icon: Icons.quiz_outlined,
+                      title: 'No course found',
+                      message: 'Try a different search.',
+                      compact: true,
+                    )
+                  : ListView.separated(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.xl,
+                        vertical: AppSpacing.sm,
+                      ),
+                      itemCount: visible.length,
+                      separatorBuilder: (_, _) =>
+                          const SizedBox(height: AppSpacing.sm),
+                      itemBuilder: (BuildContext context, int i) {
+                        final CbtSubject s = visible[i];
+                        return _SubjectTile(
+                          subject: s,
+                          selected: _selectedIds.contains(s.id),
+                          disabled:
+                              !_selectedIds.contains(s.id) &&
+                              _selectedUnits + s.units >
+                                  CoursePackPickerScreen.maxUnits,
+                          onTap: () => _toggle(s),
+                        );
+                      },
+                    ),
             ),
             SafeArea(
               top: false,
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(
                   AppSpacing.xl,
-                  0,
+                  AppSpacing.sm,
                   AppSpacing.xl,
                   AppSpacing.lg,
                 ),
@@ -241,7 +182,7 @@ class _CoursePackPickerScreenState extends State<CoursePackPickerScreen> {
                   onPressed: _selectedIds.isEmpty ? null : _confirm,
                   child: Text(
                     _selectedIds.isEmpty
-                        ? 'Select at least one paper'
+                        ? 'Select at least one course'
                         : 'Continue to payment — ₦2,300',
                   ),
                 ),
@@ -250,53 +191,6 @@ class _CoursePackPickerScreenState extends State<CoursePackPickerScreen> {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _Selector extends StatelessWidget {
-  const _Selector({
-    required this.label,
-    required this.value,
-    required this.options,
-    required this.onChanged,
-    this.labelFor,
-  });
-
-  final String label;
-  final String? value;
-  final List<String> options;
-  final String Function(String)? labelFor;
-  final ValueChanged<String?> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Text(label, style: Theme.of(context).textTheme.titleSmall),
-        const SizedBox(height: AppSpacing.sm),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: options.map((String option) {
-            final bool selected = option == value;
-            return ChoiceChip(
-              label: Text(labelFor?.call(option) ?? option),
-              selected: selected,
-              onSelected: (_) => onChanged(option),
-              selectedColor: AppColours.primaryTint,
-              labelStyle: TextStyle(
-                color: selected ? AppColours.primary : AppColours.text,
-                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-              ),
-              side: BorderSide(
-                color: selected ? AppColours.primary : AppColours.border,
-              ),
-            );
-          }).toList(),
-        ),
-      ],
     );
   }
 }
@@ -350,7 +244,7 @@ class _SubjectTile extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    '${subject.questions.length} questions',
+                    '${subject.questionCount} questions',
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ],

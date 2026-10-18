@@ -11,6 +11,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/config/app_config.dart';
 import '../../../../core/models/chat.dart';
+import '../../../../core/models/content_report.dart';
 import '../../../../core/models/student_profile.dart';
 import '../../../../core/models/study_group.dart';
 import '../../../../core/services/group_repository.dart';
@@ -18,6 +19,7 @@ import '../../../../core/state/session_controller.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/wav_encoder.dart';
 import '../../../../core/widgets/common.dart';
+import '../../../../core/widgets/moderation_actions.dart';
 import '../../../chats/presentation/widgets/message_bubble.dart';
 import 'group_info_screen.dart';
 
@@ -339,6 +341,23 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                 title: const Text('Copy text'),
                 onTap: () => Navigator.of(context).pop('copy'),
               ),
+            ListTile(
+              leading: const Icon(
+                Icons.flag_outlined,
+                color: AppColours.danger,
+              ),
+              title: const Text('Report message'),
+              onTap: () => Navigator.of(context).pop('report'),
+            ),
+            if (message.authorId != myId)
+              ListTile(
+                leading: const Icon(
+                  Icons.block_rounded,
+                  color: AppColours.danger,
+                ),
+                title: Text('Block ${message.authorName}'),
+                onTap: () => Navigator.of(context).pop('block'),
+              ),
             if (canDelete)
               ListTile(
                 leading: const Icon(
@@ -370,6 +389,19 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
       case 'copy':
         await Clipboard.setData(ClipboardData(text: message.body));
         if (mounted) showEduvoraSnack(context, 'Message copied.');
+      case 'report':
+        await promptReport(
+          context,
+          contentType: ReportedContentType.groupMessage,
+          contentId: message.id,
+        );
+      case 'block':
+        await promptBlockUser(
+          context,
+          userId: message.authorId,
+          userName: message.authorName,
+          onBlocked: _load,
+        );
       case 'delete':
         await _delete(message);
     }

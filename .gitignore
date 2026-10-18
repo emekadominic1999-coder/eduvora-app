@@ -47,3 +47,9 @@ app.*.map.json
 # Supabase CLI local project link cache
 supabase/.temp/
 .vercel
+
+# Android release signing secrets — never commit these
+/android/keystore_secrets/
+*.jks
+*.keystore
+/android/key.properties

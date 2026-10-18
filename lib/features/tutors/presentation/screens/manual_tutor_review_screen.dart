@@ -29,7 +29,7 @@ class _ManualTutorReviewScreenState extends State<ManualTutorReviewScreen> {
 
   late final Future<List<CbtSubject>> _subjects = _cbt.all().then(
     (List<CbtSubject> all) => all
-        .where((CbtSubject s) => s.questions.any((CbtQuestion q) => q.topic != 'Coming Soon'))
+        .where((CbtSubject s) => !s.isPlaceholder)
         .toList(),
   );
 

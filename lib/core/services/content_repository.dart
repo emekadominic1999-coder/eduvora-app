@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import 'package:uuid/uuid.dart';
 
 import '../config/app_config.dart';
@@ -132,16 +133,24 @@ class ContentRepository {
     String fileUrl = '';
 
     if (SupabaseService.isReady && bytes != null && fileName.isNotEmpty) {
-      try {
-        final String path = '${profile.id}/$id-$fileName';
-        await SupabaseService.client.storage
-            .from(AppConfig.materialsBucket)
-            .uploadBinary(path, bytes);
-        fileUrl = SupabaseService.client.storage
-            .from(AppConfig.materialsBucket)
-            .getPublicUrl(path);
-      } catch (error) {
-        debugPrint('[Eduvora] material upload failed: $error');
+      // Preferred: the private Cloudflare R2 bucket. If that isn't set up
+      // (function not deployed, secrets missing, offline hiccup) fall back
+      // to Supabase Storage so an upload never breaks.
+      final String? r2Key = await _uploadToR2(fileName, bytes);
+      if (r2Key != null) {
+        fileUrl = '$r2Scheme$r2Key';
+      } else {
+        try {
+          final String path = '${profile.id}/$id-$fileName';
+          await SupabaseService.client.storage
+              .from(AppConfig.materialsBucket)
+              .uploadBinary(path, bytes);
+          fileUrl = SupabaseService.client.storage
+              .from(AppConfig.materialsBucket)
+              .getPublicUrl(path);
+        } catch (error) {
+          debugPrint('[Eduvora] material upload failed: $error');
+        }
       }
     }
 
@@ -179,6 +188,95 @@ class ContentRepository {
     await LocalStore.instance.writeList(StoreKeys.materials, cached);
 
     return material;
+  }
+
+  /// Prefix of a `materials.file_url` that points into the private R2 bucket.
+  static const String r2Scheme = 'r2://';
+  static const String driveScheme = 'gdrive://';
+
+  static const Map<String, String> _uploadContentTypes = <String, String>{
+    'pdf': 'application/pdf',
+    'jpg': 'image/jpeg',
+    'jpeg': 'image/jpeg',
+    'png': 'image/png',
+    'docx':
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'pptx':
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  };
+
+  /// Uploads [bytes] to the private R2 bucket through a presigned link and
+  /// returns the object key, or null when anything about that path fails.
+  Future<String?> _uploadToR2(String fileName, Uint8List bytes) async {
+    try {
+      final int dot = fileName.lastIndexOf('.');
+      final String extension = dot == -1
+          ? ''
+          : fileName.substring(dot + 1).toLowerCase();
+      final String? contentType = _uploadContentTypes[extension];
+      if (contentType == null) return null;
+
+      final response = await SupabaseService.client.functions.invoke(
+        'material-upload-url',
+        body: <String, dynamic>{
+          'fileName': fileName,
+          'contentType': contentType,
+          'size': bytes.lengthInBytes,
+        },
+      );
+      final Object? data = response.data;
+      if (data is! Map<String, dynamic>) return null;
+      final String? key = data['key'] as String?;
+      final String? uploadUrl = data['uploadUrl'] as String?;
+      if (key == null || uploadUrl == null) return null;
+
+      final http.Response put = await http.put(
+        Uri.parse(uploadUrl),
+        headers: <String, String>{'Content-Type': contentType},
+        body: bytes,
+      );
+      if (put.statusCode < 200 || put.statusCode >= 300) {
+        debugPrint('[Eduvora] R2 upload rejected: ${put.statusCode}');
+        return null;
+      }
+      return key;
+    } catch (error) {
+      debugPrint('[Eduvora] R2 upload unavailable, using fallback: $error');
+      return null;
+    }
+  }
+
+  /// A link the viewer can open right now. Normal web URLs (old Supabase
+  /// files) come back unchanged; `r2://` files are exchanged for a 5-minute
+  /// view-only link. Throws when it cannot be resolved.
+  Future<String> resolveMaterialUrl(StudyMaterial material) async {
+    // A Google Drive file: `gdrive://<fileId>`. The apps read the raw bytes
+    // (the `confirm=t` form skips Drive's "can't scan for viruses" page that
+    // large files otherwise hit); the website cannot fetch Drive bytes across
+    // origins, so it gets Drive's own viewer page instead.
+    if (material.fileUrl.startsWith(driveScheme)) {
+      final String id = material.fileUrl.substring(driveScheme.length);
+      return kIsWeb
+          ? 'https://drive.google.com/file/d/$id/preview'
+          : 'https://drive.usercontent.google.com/download?id=$id&export=download&confirm=t';
+    }
+    if (!material.fileUrl.startsWith(r2Scheme)) return material.fileUrl;
+    if (!SupabaseService.isReady) {
+      throw StateError('Not connected to the Eduvora backend.');
+    }
+    final response = await SupabaseService.client.functions.invoke(
+      'material-url',
+      body: <String, dynamic>{'materialId': material.id},
+    );
+    final Object? data = response.data;
+    final String? url = data is Map<String, dynamic>
+        ? data['url'] as String?
+        : null;
+    if (url == null || url.isEmpty) {
+      throw StateError('No link returned for this material.');
+    }
+    return url;
   }
 
   /// Materials this student personally contributed.
