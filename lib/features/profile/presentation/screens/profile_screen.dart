@@ -13,6 +13,7 @@ import '../../../../core/state/session_controller.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/common.dart';
 import '../../../../core/widgets/institution_crest.dart';
+import '../../../../core/services/rate_prompt.dart';
 import '../../../auth/presentation/screens/auth_screen.dart';
 import '../../../onboarding/presentation/screens/onboarding_screen.dart';
 
@@ -97,9 +98,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     if (cleaned.isEmpty || !mounted) return;
 
     try {
-      await sessionController.saveProfile(
-        profile.copyWith(fullName: cleaned),
-      );
+      await sessionController.saveProfile(profile.copyWith(fullName: cleaned));
       if (!mounted) return;
       setState(() {});
       showEduvoraSnack(context, 'Saved. Welcome, ${cleaned.split(' ').first}.');
@@ -640,6 +639,16 @@ class _ProfileScreenState extends State<ProfileScreen>
               onTap: () => Navigator.of(context).pushNamed(AppRouter.privacy),
             ),
             const Divider(height: 1, indent: 16, endIndent: 16),
+            if (RatePrompt.canRateFromProfile) ...<Widget>[
+              ListTile(
+                leading: const Icon(Icons.star_outline_rounded, size: 20),
+                title: const Text('Rate Eduvora'),
+                subtitle: const Text('Tell other students what you think'),
+                trailing: const Icon(Icons.chevron_right_rounded, size: 20),
+                onTap: RatePrompt.rateNow,
+              ),
+              const Divider(height: 1, indent: 16, endIndent: 16),
+            ],
             ListTile(
               leading: const Icon(Icons.mail_outline_rounded, size: 20),
               title: const Text('Contact support'),
@@ -657,7 +666,9 @@ class _ProfileScreenState extends State<ProfileScreen>
               subtitle: const Text('eduvoraapp.com.ng'),
               trailing: const Icon(Icons.open_in_new_rounded, size: 17),
               onTap: () async {
-                final Uri uri = Uri.parse('https://eduvoraapp.com.ng/welcome.html');
+                final Uri uri = Uri.parse(
+                  'https://eduvoraapp.com.ng/welcome.html',
+                );
                 if (await canLaunchUrl(uri)) {
                   await launchUrl(uri, mode: LaunchMode.externalApplication);
                 }

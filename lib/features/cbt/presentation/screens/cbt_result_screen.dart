@@ -4,6 +4,7 @@ import '../../../../core/ads/ads.dart';
 import '../../../../core/models/cbt.dart';
 import '../../../../core/services/cbt_repository.dart';
 import '../../../../core/services/paywall_repository.dart';
+import '../../../../core/services/rate_prompt.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/common.dart';
 import '../../../../core/widgets/math_text.dart';
@@ -202,6 +203,7 @@ class CbtResultScreen extends StatelessWidget {
         body: ListView(
           padding: const EdgeInsets.only(bottom: AppSpacing.xxl),
           children: <Widget>[
+            RatePromptTrigger(percentage: attempt.percentage),
             _scoreCard(context),
             if (autoSubmitted)
               Padding(
