@@ -112,17 +112,19 @@ class GroupRepository {
       try {
         await SupabaseService.client.from('chat_groups').insert(group.toJson());
         // The creator is the first member, and its admin.
-        await SupabaseService.client.from('chat_group_members').insert(
-          GroupMember(
-            id: _uuid.v4(),
-            groupId: group.id,
-            userId: profile.id,
-            fullName: profile.fullName,
-            headline: profile.academicSummary,
-            isAdmin: true,
-            joinedAt: DateTime.now(),
-          ).toJson(),
-        );
+        await SupabaseService.client
+            .from('chat_group_members')
+            .insert(
+              GroupMember(
+                id: _uuid.v4(),
+                groupId: group.id,
+                userId: profile.id,
+                fullName: profile.fullName,
+                headline: profile.academicSummary,
+                isAdmin: true,
+                joinedAt: DateTime.now(),
+              ).toJson(),
+            );
       } catch (error) {
         debugPrint('[Eduvora] group create failed: $error');
         throw const GroupFailure(
@@ -177,16 +179,18 @@ class GroupRepository {
           .eq('user_id', profile.id);
 
       if (existing.isEmpty) {
-        await SupabaseService.client.from('chat_group_members').insert(
-          GroupMember(
-            id: _uuid.v4(),
-            groupId: group.id,
-            userId: profile.id,
-            fullName: profile.fullName,
-            headline: profile.academicSummary,
-            joinedAt: DateTime.now(),
-          ).toJson(),
-        );
+        await SupabaseService.client
+            .from('chat_group_members')
+            .insert(
+              GroupMember(
+                id: _uuid.v4(),
+                groupId: group.id,
+                userId: profile.id,
+                fullName: profile.fullName,
+                headline: profile.academicSummary,
+                joinedAt: DateTime.now(),
+              ).toJson(),
+            );
       }
 
       await _cacheGroup(group, profile.id);
@@ -265,7 +269,9 @@ class GroupRepository {
         byId[m.id] = m;
       }
       final List<GroupMessage> merged = byId.values.toList()
-        ..sort((GroupMessage a, GroupMessage b) => a.sentAt.compareTo(b.sentAt));
+        ..sort(
+          (GroupMessage a, GroupMessage b) => a.sentAt.compareTo(b.sentAt),
+        );
 
       // A blocked student's messages never reach the thread -- blocking is
       // meant to make them disappear, not just go quiet.
@@ -384,9 +390,7 @@ class GroupRepository {
   }
 
   /// Blanks a message. Authors may clear their own; admins may clear anyone's.
-  Future<GroupMessage> deleteMessage({
-    required GroupMessage message,
-  }) async {
+  Future<GroupMessage> deleteMessage({required GroupMessage message}) async {
     final GroupMessage cleared = message.copyWith(
       body: '',
       deletedAt: DateTime.now(),
@@ -530,16 +534,18 @@ class GroupRepository {
       );
     }
     try {
-      await SupabaseService.client.from('chat_group_message_reactions').upsert(
-        GroupMessageReaction(
-          id: _uuid.v4(),
-          messageId: message.id,
-          userId: profile.id,
-          userName: profile.fullName,
-          emoji: emoji,
-        ).toJson(),
-        onConflict: 'message_id,user_id',
-      );
+      await SupabaseService.client
+          .from('chat_group_message_reactions')
+          .upsert(
+            GroupMessageReaction(
+              id: _uuid.v4(),
+              messageId: message.id,
+              userId: profile.id,
+              userName: profile.fullName,
+              emoji: emoji,
+            ).toJson(),
+            onConflict: 'message_id,user_id',
+          );
     } catch (error) {
       debugPrint('[Eduvora] reaction failed: $error');
       throw const GroupFailure('That reaction did not go through. Try again.');
@@ -877,9 +883,9 @@ class GroupRepository {
         debugPrint('[Eduvora] entry delete failed: $error');
       }
     }
-    final List<Map<String, dynamic>> cached =
-        LocalStore.instance.readList('${StoreKeys.classEntries}.$classListId')
-          ..removeWhere((Map<String, dynamic> e) => e['id'] == entryId);
+    final List<Map<String, dynamic>> cached = LocalStore.instance.readList(
+      '${StoreKeys.classEntries}.$classListId',
+    )..removeWhere((Map<String, dynamic> e) => e['id'] == entryId);
     await LocalStore.instance.writeList(
       '${StoreKeys.classEntries}.$classListId',
       cached,
@@ -906,9 +912,9 @@ class GroupRepository {
   }
 
   Future<void> _uncacheGroup(String groupId, String userId) async {
-    final List<Map<String, dynamic>> cached =
-        LocalStore.instance.readList('${StoreKeys.myGroups}.$userId')
-          ..removeWhere((Map<String, dynamic> g) => g['id'] == groupId);
+    final List<Map<String, dynamic>> cached = LocalStore.instance.readList(
+      '${StoreKeys.myGroups}.$userId',
+    )..removeWhere((Map<String, dynamic> g) => g['id'] == groupId);
     await LocalStore.instance.writeList(
       '${StoreKeys.myGroups}.$userId',
       cached,

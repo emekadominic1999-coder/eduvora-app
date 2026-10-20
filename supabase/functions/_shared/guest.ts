@@ -1,3 +1,5 @@
+import { codeEmail, sendEmail } from './email.ts';
+
 // Shared helpers for guest checkout: a visitor pays through Paystack without
 // an account and is handed a one-time access code. Prices and limits live here
 // so the checkout and the verification can never disagree.
@@ -97,6 +99,21 @@ export async function settleGuestOrder(
     // Roll back so the next call can try again rather than hand out a dead code.
     await client.from('guest_orders').update({ status: 'pending', code: null }).eq('reference', reference);
     return { found: true, paid: false };
+  }
+
+  // Email the code too, so a buyer who closes the page never loses it.
+  try {
+    if (order.email) {
+      const mail = codeEmail({
+        code: formatCode(code),
+        amountKobo: order.amount_kobo,
+        reference,
+        accessDays: order.access_days,
+      });
+      await sendEmail(client, { to: order.email, kind: 'code', ref: reference, ...mail });
+    }
+  } catch (error) {
+    console.error('code email failed', error);
   }
 
   return { found: true, paid: true, code };

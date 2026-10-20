@@ -46,9 +46,7 @@ class _TutorProfileScreenState extends State<TutorProfileScreen> {
     setState(() => _booked = true);
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text(
-          'Request sent. You will pay once the tutor accepts.',
-        ),
+        content: Text('Request sent. You will pay once the tutor accepts.'),
       ),
     );
   }
@@ -65,9 +63,7 @@ class _TutorProfileScreenState extends State<TutorProfileScreen> {
       child: Scaffold(
         backgroundColor: AppColours.background,
         appBar: AppBar(
-          title: Text(
-            tutor.fullName.isEmpty ? 'Tutor' : tutor.fullName,
-          ),
+          title: Text(tutor.fullName.isEmpty ? 'Tutor' : tutor.fullName),
         ),
         body: ListView(
           padding: const EdgeInsets.only(bottom: AppSpacing.xxl),

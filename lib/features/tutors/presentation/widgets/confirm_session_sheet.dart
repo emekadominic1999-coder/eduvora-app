@@ -92,10 +92,7 @@ class _ConfirmSessionSheetState extends State<_ConfirmSessionSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Text(
-            'How did it go?',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
+          Text('How did it go?', style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 4),
           Text(
             'Confirming releases ₦${widget.session.tutorEarningsNaira.round()} '

@@ -18,8 +18,7 @@ import '../../../../core/widgets/common.dart';
 extension on NewsCategory {
   CommunityTopic get communityTopic => switch (this) {
     NewsCategory.scholarship => CommunityTopic.scholarships,
-    NewsCategory.admission ||
-    NewsCategory.academic => CommunityTopic.academics,
+    NewsCategory.admission || NewsCategory.academic => CommunityTopic.academics,
     NewsCategory.opportunity => CommunityTopic.careers,
     NewsCategory.competition => CommunityTopic.general,
   };
@@ -47,9 +46,7 @@ class _PostNewsScreenState extends State<PostNewsScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _title = TextEditingController();
   final TextEditingController _summary = TextEditingController();
-  final TextEditingController _source = TextEditingController(
-    text: 'Eduvora',
-  );
+  final TextEditingController _source = TextEditingController(text: 'Eduvora');
   final TextEditingController _link = TextEditingController();
 
   NewsCategory _category = NewsCategory.scholarship;
@@ -120,9 +117,8 @@ class _PostNewsScreenState extends State<PostNewsScreen> {
     );
   }
 
-  Future<void> _clearDraft() => LocalStore.instance.remove(
-    StoreKeys.postNewsDraft,
-  );
+  Future<void> _clearDraft() =>
+      LocalStore.instance.remove(StoreKeys.postNewsDraft);
 
   @override
   void dispose() {
@@ -214,10 +210,7 @@ class _PostNewsScreenState extends State<PostNewsScreen> {
       final PlatformFile? image = _image;
       if (image != null && image.bytes != null) {
         try {
-          imageUrl = await _content.uploadNoticeImage(
-            image.bytes!,
-            image.name,
-          );
+          imageUrl = await _content.uploadNoticeImage(image.bytes!, image.name);
         } catch (error) {
           debugPrint('Notice picture upload failed: $error');
           if (mounted) {
@@ -276,7 +269,8 @@ class _PostNewsScreenState extends State<PostNewsScreen> {
           imageUrl: imageUrl,
         );
       } catch (error) {
-        communityWarning = ' It did not reach Community, though — check your '
+        communityWarning =
+            ' It did not reach Community, though — check your '
             'connection and try posting again if that matters for this one.';
       }
       if (!mounted) return;
@@ -420,8 +414,7 @@ class _PostNewsScreenState extends State<PostNewsScreen> {
                       maxLines: 4,
                       decoration: const InputDecoration(
                         labelText: 'Details',
-                        hintText:
-                            'Who it is for, how much, and how to apply.',
+                        hintText: 'Who it is for, how much, and how to apply.',
                         alignLabelWithHint: true,
                       ),
                       validator: (String? v) => (v == null || v.trim().isEmpty)
@@ -486,7 +479,10 @@ class _PostNewsScreenState extends State<PostNewsScreen> {
                       },
                       title: const Text(
                         'Feature at the top of the Noticeboard',
-                        style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600),
+                        style: TextStyle(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                     const SizedBox(height: AppSpacing.md),
@@ -504,7 +500,9 @@ class _PostNewsScreenState extends State<PostNewsScreen> {
                                 ),
                               )
                             : const Icon(Icons.campaign_rounded, size: 19),
-                        label: Text(_posting ? 'Posting…' : 'Post to Noticeboard'),
+                        label: Text(
+                          _posting ? 'Posting…' : 'Post to Noticeboard',
+                        ),
                       ),
                     ),
                   ],
@@ -561,12 +559,11 @@ class _PostNewsScreenState extends State<PostNewsScreen> {
                                               width: 34,
                                               height: 34,
                                               fit: BoxFit.cover,
-                                              errorBuilder:
-                                                  (_, _, _) => Icon(
-                                                    item.category.icon,
-                                                    size: 17,
-                                                    color: item.category.colour,
-                                                  ),
+                                              errorBuilder: (_, _, _) => Icon(
+                                                item.category.icon,
+                                                size: 17,
+                                                color: item.category.colour,
+                                              ),
                                             ),
                                           )
                                         : Container(

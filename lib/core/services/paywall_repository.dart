@@ -67,7 +67,8 @@ class PaywallRepository {
 
   static bool get _signedInAsOwner =>
       SupabaseService.isReady &&
-      SupabaseService.auth.currentUser?.email?.trim().toLowerCase() == _ownerEmail;
+      SupabaseService.auth.currentUser?.email?.trim().toLowerCase() ==
+          _ownerEmail;
 
   /// How many questions a locked paper allows for free, once, before the
   /// paywall is shown. Tracked on-device only — a soft nudge rather than a
@@ -101,9 +102,7 @@ class PaywallRepository {
   /// app (survives sign-out) -- stands in for "this physical device".
   Future<String> deviceId() async {
     if (!LocalStore.isReady) return _uuid.v4();
-    final String? existing = LocalStore.instance.readString(
-      StoreKeys.deviceId,
-    );
+    final String? existing = LocalStore.instance.readString(StoreKeys.deviceId);
     if (existing != null && existing.isNotEmpty) return existing;
     final String fresh = _uuid.v4();
     await LocalStore.instance.writeString(StoreKeys.deviceId, fresh);
@@ -150,7 +149,9 @@ class PaywallRepository {
   /// Free tries already used on [subjectId]. A student who used the old
   /// single trial (stored as a plain flag) counts as having used one.
   int freeTrialsUsed(String subjectId) {
-    final String? stored = LocalStore.instance.readString(_trialCountKey(subjectId));
+    final String? stored = LocalStore.instance.readString(
+      _trialCountKey(subjectId),
+    );
     final int? counted = stored == null ? null : int.tryParse(stored);
     if (counted != null) return counted;
     return LocalStore.instance.readBool(_trialKey(subjectId)) ? 1 : 0;
@@ -173,7 +174,8 @@ class PaywallRepository {
   String _trialCountKey(String subjectId) =>
       '${StoreKeys.cbtFreeTrialUsed}.count.$subjectId';
 
-  String _trialKey(String subjectId) => '${StoreKeys.cbtFreeTrialUsed}.$subjectId';
+  String _trialKey(String subjectId) =>
+      '${StoreKeys.cbtFreeTrialUsed}.$subjectId';
 
   /// Starts a checkout for one specific paper.
   Future<PaystackCheckout> startSinglePaperCheckout({

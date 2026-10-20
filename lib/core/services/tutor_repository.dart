@@ -82,7 +82,9 @@ class TutorRepository {
           .eq('user_id', userId)
           .maybeSingle();
       if (row == null) return null;
-      final List<Tutor> withCourses = await _attachCourses(<Map<String, dynamic>>[row]);
+      final List<Tutor> withCourses = await _attachCourses(
+        <Map<String, dynamic>>[row],
+      );
       return withCourses.isEmpty ? null : withCourses.first;
     } catch (error) {
       debugPrint('[Eduvora] tutor profile fetch failed: $error');
@@ -100,8 +102,9 @@ class TutorRepository {
           .order('created_at', ascending: false)
           .limit(20);
 
-      final List<Map<String, dynamic>> reviews =
-          rows.whereType<Map<String, dynamic>>().toList();
+      final List<Map<String, dynamic>> reviews = rows
+          .whereType<Map<String, dynamic>>()
+          .toList();
       final Map<String, Map<String, dynamic>> profiles = await _profilesFor(
         reviews
             .map((Map<String, dynamic> r) => (r['student_id'] ?? '') as String)
@@ -164,10 +167,10 @@ class TutorRepository {
     return rows.map((Map<String, dynamic> row) {
       final String id = (row['id'] ?? '') as String;
       final String userId = (row['user_id'] ?? '') as String;
-      return Tutor.fromJson(
-        <String, dynamic>{...row, 'profiles': profiles[userId]},
-        courses: byTutor[id] ?? const <TutorCourse>[],
-      );
+      return Tutor.fromJson(<String, dynamic>{
+        ...row,
+        'profiles': profiles[userId],
+      }, courses: byTutor[id] ?? const <TutorCourse>[]);
     }).toList();
   }
 
@@ -281,17 +284,19 @@ class TutorRepository {
     if (!SupabaseService.isReady || userId == null) {
       throw StateError('Booking a session needs you to be signed in.');
     }
-    await SupabaseService.client.from('tutor_sessions').insert(<String, dynamic>{
-      'student_id': userId,
-      'tutor_id': tutorId,
-      'subject_id': subjectId,
-      'subject_name': subjectName,
-      'topic': topic,
-      'meeting_mode': mode.wireName,
-      'duration_minutes': durationMinutes,
-      'scheduled_at': scheduledAt?.toIso8601String(),
-      'status': 'requested',
-    });
+    await SupabaseService.client
+        .from('tutor_sessions')
+        .insert(<String, dynamic>{
+          'student_id': userId,
+          'tutor_id': tutorId,
+          'subject_id': subjectId,
+          'subject_name': subjectName,
+          'topic': topic,
+          'meeting_mode': mode.wireName,
+          'duration_minutes': durationMinutes,
+          'scheduled_at': scheduledAt?.toIso8601String(),
+          'status': 'requested',
+        });
   }
 
   /// Tutor accepts a request, or either side cancels one. Both are

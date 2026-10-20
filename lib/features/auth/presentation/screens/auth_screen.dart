@@ -520,7 +520,8 @@ class _AuthScreenState extends State<AuthScreen> {
                           Navigator.of(context).pushNamed(AppRouter.privacy),
                   ),
                   const TextSpan(
-                    text: ', and to keeping this a respectful space for '
+                    text:
+                        ', and to keeping this a respectful space for '
                         'fellow students.',
                   ),
                 ],

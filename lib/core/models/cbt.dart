@@ -120,7 +120,8 @@ class CbtSubject {
   /// are not loaded, otherwise derived from them.
   List<String> get topics {
     final List<String>? known = _topics;
-    final Iterable<String> source = known ?? questions.map((CbtQuestion q) => q.topic);
+    final Iterable<String> source =
+        known ?? questions.map((CbtQuestion q) => q.topic);
     final Set<String> distinct = <String>{
       for (final String t in source)
         if (t.trim().isNotEmpty) t,
@@ -270,14 +271,18 @@ class CbtExamConfig {
       return (List<CbtQuestion>.from(pool)..shuffle(rng));
     }
 
-    final Map<String, List<CbtQuestion>> byTopic = <String, List<CbtQuestion>>{};
+    final Map<String, List<CbtQuestion>> byTopic =
+        <String, List<CbtQuestion>>{};
     for (final CbtQuestion q in pool) {
       byTopic.putIfAbsent(q.topic, () => <CbtQuestion>[]).add(q);
     }
-    final List<List<CbtQuestion>> groups = byTopic.values
-        .map((List<CbtQuestion> g) => List<CbtQuestion>.from(g)..shuffle(rng))
-        .toList()
-      ..shuffle(rng);
+    final List<List<CbtQuestion>> groups =
+        byTopic.values
+            .map(
+              (List<CbtQuestion> g) => List<CbtQuestion>.from(g)..shuffle(rng),
+            )
+            .toList()
+          ..shuffle(rng);
 
     final List<CbtQuestion> selected = <CbtQuestion>[];
     int round = 0;
@@ -322,8 +327,7 @@ class CbtAttempt {
   /// The paper scaled to the 70 marks a Nigerian university examination
   /// carries, so 30 correct out of 40 reads as 53 — the figure that will
   /// appear on a result sheet, rather than a bare percentage.
-  double get marks =>
-      totalQuestions == 0
+  double get marks => totalQuestions == 0
       ? 0
       : (score / totalQuestions) * CbtExamConfig.totalMarks;
 

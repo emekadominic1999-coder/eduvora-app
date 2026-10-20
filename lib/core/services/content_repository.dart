@@ -299,7 +299,10 @@ class ContentRepository {
           .select()
           .order('published_at', ascending: false)
           .limit(60);
-      return rows.whereType<Map<String, dynamic>>().map(NewsItem.fromJson).toList();
+      return rows
+          .whereType<Map<String, dynamic>>()
+          .map(NewsItem.fromJson)
+          .toList();
     } catch (error) {
       debugPrint('[Eduvora] news fetch failed: $error');
       return <NewsItem>[];

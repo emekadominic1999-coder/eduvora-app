@@ -110,8 +110,7 @@ class _ChatsScreenState extends State<ChatsScreen>
               AppSpacing.md,
             ),
             child: EduvoraCard(
-              onTap: () =>
-                  Navigator.of(context).pushNamed(AppRouter.groups),
+              onTap: () => Navigator.of(context).pushNamed(AppRouter.groups),
               colour: AppColours.primaryTint,
               shadows: const <BoxShadow>[],
               border: Border.all(color: AppColours.primarySoft),

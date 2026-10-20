@@ -7,10 +7,7 @@ import '../../../../core/theme/app_theme.dart';
 /// A tutor cashes out. The account details are collected here rather than
 /// kept on the profile, so a stale account number can never be paid by
 /// accident months later.
-Future<bool?> showWithdrawSheet(
-  BuildContext context, {
-  required Tutor tutor,
-}) {
+Future<bool?> showWithdrawSheet(BuildContext context, {required Tutor tutor}) {
   return showModalBottomSheet<bool>(
     context: context,
     isScrollControlled: true,

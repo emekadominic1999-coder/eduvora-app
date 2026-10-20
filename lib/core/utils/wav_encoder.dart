@@ -94,7 +94,10 @@ class WavEncoder {
     for (int i = 0; i < outSamples; i++) {
       int total = 0;
       for (int j = 0; j < factor; j++) {
-        total += src.getInt16((i * factor + j) * _bytesPerSample, Endian.little);
+        total += src.getInt16(
+          (i * factor + j) * _bytesPerSample,
+          Endian.little,
+        );
       }
       int value = (total / factor).round();
       if (value > 32767) value = 32767;

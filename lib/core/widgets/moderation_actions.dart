@@ -30,10 +30,7 @@ Future<void> showModerationSheet({
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           ListTile(
-            leading: const Icon(
-              Icons.flag_outlined,
-              color: AppColours.danger,
-            ),
+            leading: const Icon(Icons.flag_outlined, color: AppColours.danger),
             title: const Text('Report'),
             onTap: () => Navigator.of(context).pop('report'),
           ),
@@ -43,7 +40,9 @@ Future<void> showModerationSheet({
                 Icons.block_rounded,
                 color: AppColours.danger,
               ),
-              title: Text('Block ${authorName.isEmpty ? 'this student' : authorName}'),
+              title: Text(
+                'Block ${authorName.isEmpty ? 'this student' : authorName}',
+              ),
               onTap: () => Navigator.of(context).pop('block'),
             ),
         ],
@@ -215,9 +214,9 @@ class _ReportSheetState extends State<_ReportSheet> {
             ),
             const SizedBox(height: AppSpacing.lg),
             FilledButton(
-              onPressed: () => Navigator.of(context).pop(
-                _ReportDraft(_reason, _note.text.trim()),
-              ),
+              onPressed: () => Navigator.of(
+                context,
+              ).pop(_ReportDraft(_reason, _note.text.trim())),
               child: const Text('Submit report'),
             ),
           ],

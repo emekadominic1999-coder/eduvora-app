@@ -159,8 +159,7 @@ class _BecomeTutorScreenState extends State<BecomeTutorScreen> {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());
               }
-              final List<CbtSubject> subjects =
-                  snapshot.data ?? <CbtSubject>[];
+              final List<CbtSubject> subjects = snapshot.data ?? <CbtSubject>[];
               final List<CbtSubject> eligible = subjects
                   .where((CbtSubject s) => _eligible(s.id))
                   .toList();

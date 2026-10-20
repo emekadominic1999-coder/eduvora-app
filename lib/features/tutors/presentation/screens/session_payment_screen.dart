@@ -248,7 +248,10 @@ class _Success extends StatelessWidget {
           ),
         ),
         const SizedBox(height: AppSpacing.lg),
-        Text('Session confirmed', style: Theme.of(context).textTheme.titleLarge),
+        Text(
+          'Session confirmed',
+          style: Theme.of(context).textTheme.titleLarge,
+        ),
         const SizedBox(height: 6),
         Text(
           'Your tutor has been notified. Message them in Eduvora to agree a '

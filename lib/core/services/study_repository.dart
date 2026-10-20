@@ -61,11 +61,11 @@ class StudyRepository {
   Future<void> saveGpaDraft(Map<String, dynamic> draft) =>
       LocalStore.instance.writeMap(StoreKeys.gpaDraft, draft);
 
-  Future<void> clearGpaDraft() => LocalStore.instance.remove(StoreKeys.gpaDraft);
+  Future<void> clearGpaDraft() =>
+      LocalStore.instance.remove(StoreKeys.gpaDraft);
 
-  GpaSettings gpaSettings() => GpaSettings.fromJson(
-    LocalStore.instance.readMap(StoreKeys.gpaSettings),
-  );
+  GpaSettings gpaSettings() =>
+      GpaSettings.fromJson(LocalStore.instance.readMap(StoreKeys.gpaSettings));
 
   Future<void> saveGpaSettings(GpaSettings settings) =>
       LocalStore.instance.writeMap(StoreKeys.gpaSettings, settings.toJson());

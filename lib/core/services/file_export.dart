@@ -25,9 +25,7 @@ class FileExport {
       // A data URL keeps this dependency-free; CSV of a class list is small
       // enough that the URL length limit is not a concern.
       final String encoded = base64Encode(utf8.encode(contents));
-      final Uri uri = Uri.parse(
-        'data:text/csv;charset=utf-8;base64,$encoded',
-      );
+      final Uri uri = Uri.parse('data:text/csv;charset=utf-8;base64,$encoded');
       return launchUrl(uri, webOnlyWindowName: '_blank');
     } catch (error) {
       debugPrint('[Eduvora] CSV export failed: $error');

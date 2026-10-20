@@ -48,13 +48,15 @@ class ModerationRepository {
     }
 
     try {
-      await SupabaseService.client.from('content_reports').insert(<String, dynamic>{
-        'reporter_id': userId,
-        'content_type': contentType.value,
-        'content_id': contentId,
-        'reason': reason.name,
-        'note': note.trim(),
-      });
+      await SupabaseService.client
+          .from('content_reports')
+          .insert(<String, dynamic>{
+            'reporter_id': userId,
+            'content_type': contentType.value,
+            'content_id': contentId,
+            'reason': reason.name,
+            'note': note.trim(),
+          });
     } catch (error) {
       debugPrint('[Eduvora] report insert failed: $error');
       throw const ModerationFailure(
@@ -71,10 +73,11 @@ class ModerationRepository {
       .where((String id) => id.isNotEmpty)
       .toSet();
 
-  Future<void> _cacheBlockedIds(Set<String> ids) => LocalStore.instance.writeList(
-    StoreKeys.blockedUsers,
-    ids.map((String id) => <String, dynamic>{'id': id}).toList(),
-  );
+  Future<void> _cacheBlockedIds(Set<String> ids) =>
+      LocalStore.instance.writeList(
+        StoreKeys.blockedUsers,
+        ids.map((String id) => <String, dynamic>{'id': id}).toList(),
+      );
 
   /// Ids of everyone the signed-in student has blocked. Reads the server
   /// when possible and caches the result, so a blocked student's content
@@ -116,10 +119,10 @@ class ModerationRepository {
     if (me == userId || userId.isEmpty) return;
 
     try {
-      await SupabaseService.client.from('user_blocks').upsert(
-        <String, dynamic>{'blocker_id': me, 'blocked_id': userId},
-        onConflict: 'blocker_id,blocked_id',
-      );
+      await SupabaseService.client.from('user_blocks').upsert(<String, dynamic>{
+        'blocker_id': me,
+        'blocked_id': userId,
+      }, onConflict: 'blocker_id,blocked_id');
     } catch (error) {
       debugPrint('[Eduvora] block failed: $error');
       throw const ModerationFailure(

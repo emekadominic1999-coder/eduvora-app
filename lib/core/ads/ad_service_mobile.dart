@@ -159,9 +159,11 @@ class AdService {
         if (!closed.isCompleted) closed.complete();
       },
     );
-    await ad.show(onUserEarnedReward: (AdWithoutView ad, RewardItem reward) {
-      earned = true;
-    });
+    await ad.show(
+      onUserEarnedReward: (AdWithoutView ad, RewardItem reward) {
+        earned = true;
+      },
+    );
     await closed.future;
     return earned ? RewardResult.earned : RewardResult.dismissed;
   }

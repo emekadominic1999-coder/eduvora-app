@@ -126,10 +126,8 @@ class _TutorSessionsScreenState extends State<TutorSessionsScreen> {
                 return ListView(
                   padding: const EdgeInsets.only(bottom: AppSpacing.xxl),
                   children: <Widget>[
-                    if (mine != null) _Earnings(
-                      tutor: mine,
-                      onWithdraw: () => _withdraw(mine),
-                    ),
+                    if (mine != null)
+                      _Earnings(tutor: mine, onWithdraw: () => _withdraw(mine)),
                     if (teaching.isNotEmpty) ...<Widget>[
                       const SectionHeader(
                         title: 'You are teaching',
@@ -211,8 +209,7 @@ class _Earnings extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool canWithdraw =
-        tutor.balanceKobo >= TutorRepository.minPayoutKobo;
+    final bool canWithdraw = tutor.balanceKobo >= TutorRepository.minPayoutKobo;
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.screenPadding,

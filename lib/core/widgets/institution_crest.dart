@@ -80,10 +80,7 @@ class InstitutionCrest extends StatelessWidget {
         .where((String w) => w.length > 2)
         .toList();
     if (words.isEmpty) return 'NG';
-    return words
-        .take(4)
-        .map((String w) => w[0].toUpperCase())
-        .join();
+    return words.take(4).map((String w) => w[0].toUpperCase()).join();
   }
 
   @override
@@ -159,9 +156,7 @@ class _CrestPainter extends CustomPainter {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: <Color>[
-            base
-                .withLightness(math.min(0.62, base.lightness + 0.16))
-                .toColor(),
+            base.withLightness(math.min(0.62, base.lightness + 0.16)).toColor(),
             colour,
           ],
         ).createShader(Offset.zero & size),

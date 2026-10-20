@@ -247,10 +247,7 @@ class GpaEngine {
     GpaSettings settings, {
     SemesterRecord? extra,
   }) {
-    final List<SemesterRecord> all = <SemesterRecord>[
-      ...semesters,
-      ?extra,
-    ];
+    final List<SemesterRecord> all = <SemesterRecord>[...semesters, ?extra];
 
     // The latest attempt of every course, to spot fails that were cleared.
     final Map<String, int> lastAttemptSemester = <String, int>{};
@@ -272,7 +269,9 @@ class GpaEngine {
         if (!c.isGraded) continue;
         final bool retakenLater =
             c.key.isNotEmpty && (lastAttemptSemester[c.key] ?? i) > i;
-        if (settings.replaceRetakenFails && c.grade == Grade.f && retakenLater) {
+        if (settings.replaceRetakenFails &&
+            c.grade == Grade.f &&
+            retakenLater) {
           continue; // this F is replaced by the later attempt
         }
         units += c.creditUnits;
@@ -297,7 +296,9 @@ class GpaEngine {
           }
         }
       }
-      final int cut = dropped > settings.previousUnits ? settings.previousUnits : dropped;
+      final int cut = dropped > settings.previousUnits
+          ? settings.previousUnits
+          : dropped;
       units -= cut;
     }
 

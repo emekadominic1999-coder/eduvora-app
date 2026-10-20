@@ -95,7 +95,9 @@ class CbtRepository {
           .from('cbt_questions')
           .select();
       final List<dynamic> page =
-          await (subjectId == null ? select : select.eq('subject_id', subjectId))
+          await (subjectId == null
+                  ? select
+                  : select.eq('subject_id', subjectId))
               .order('created_at')
               .range(start, start + _pageSize - 1);
       all.addAll(page.whereType<Map<String, dynamic>>());

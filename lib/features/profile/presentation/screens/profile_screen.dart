@@ -614,6 +614,15 @@ class _ProfileScreenState extends State<ProfileScreen>
               ),
               const Divider(height: 1, indent: 16, endIndent: 16),
               ListTile(
+                leading: const Icon(Icons.mark_email_unread_outlined, size: 20),
+                title: const Text('Email students'),
+                subtitle: const Text('Owner only · write and send an email'),
+                trailing: const Icon(Icons.chevron_right_rounded, size: 20),
+                onTap: () =>
+                    Navigator.of(context).pushNamed(AppRouter.emailStudents),
+              ),
+              const Divider(height: 1, indent: 16, endIndent: 16),
+              ListTile(
                 leading: const Icon(Icons.campaign_rounded, size: 20),
                 title: const Text('Post an update'),
                 subtitle: const Text(

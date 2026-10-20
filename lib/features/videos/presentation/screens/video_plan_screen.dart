@@ -110,9 +110,7 @@ class _VideoPlanScreenState extends State<VideoPlanScreen> {
     int clips = 0;
     int done = 0;
     for (final CourseOutline c in courses) {
-      for (final VideoClip clip in VideoClipSplitter.clipsForTopics(
-        c.topics,
-      )) {
+      for (final VideoClip clip in VideoClipSplitter.clipsForTopics(c.topics)) {
         clips++;
         if (_isChecked(clip.key(department, c.courseCode))) done++;
       }
@@ -146,25 +144,29 @@ class _VideoPlanScreenState extends State<VideoPlanScreen> {
         ),
         body: FutureBuilder<List<CourseOutline>>(
           future: _future,
-          builder: (BuildContext context, AsyncSnapshot<List<CourseOutline>> snapshot) {
-            if (snapshot.connectionState != ConnectionState.done) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            final List<CourseOutline> all =
-                snapshot.data ?? <CourseOutline>[];
-            if (all.isEmpty) {
-              return const EmptyState(
-                icon: Icons.movie_creation_outlined,
-                title: 'No course outlines loaded yet',
-                message:
-                    'Once outlines are loaded for your school, every course '
-                    'shows up here broken into short-video clips.',
-              );
-            }
-            return inDepartment
-                ? _buildDepartment(context, all)
-                : _buildLanding(context, all);
-          },
+          builder:
+              (
+                BuildContext context,
+                AsyncSnapshot<List<CourseOutline>> snapshot,
+              ) {
+                if (snapshot.connectionState != ConnectionState.done) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                final List<CourseOutline> all =
+                    snapshot.data ?? <CourseOutline>[];
+                if (all.isEmpty) {
+                  return const EmptyState(
+                    icon: Icons.movie_creation_outlined,
+                    title: 'No course outlines loaded yet',
+                    message:
+                        'Once outlines are loaded for your school, every course '
+                        'shows up here broken into short-video clips.',
+                  );
+                }
+                return inDepartment
+                    ? _buildDepartment(context, all)
+                    : _buildLanding(context, all);
+              },
         ),
       ),
     );
@@ -354,7 +356,10 @@ class _VideoPlanScreenState extends State<VideoPlanScreen> {
   Widget _buildDepartment(BuildContext context, List<CourseOutline> all) {
     final TextTheme text = Theme.of(context).textTheme;
     final List<CourseOutline> courses = all
-        .where((CourseOutline c) => c.faculty == _faculty && c.department == _department)
+        .where(
+          (CourseOutline c) =>
+              c.faculty == _faculty && c.department == _department,
+        )
         .toList();
 
     final String q = _query.trim().toLowerCase();
@@ -508,9 +513,7 @@ class _VideoPlanScreenState extends State<VideoPlanScreen> {
                 ),
               ),
               const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: Text(course.courseTitle, style: text.titleSmall),
-              ),
+              Expanded(child: Text(course.courseTitle, style: text.titleSmall)),
               const SizedBox(width: AppSpacing.sm),
               Text(
                 course.unitsLabel,

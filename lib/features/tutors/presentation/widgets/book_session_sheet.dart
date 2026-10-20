@@ -61,8 +61,7 @@ class _BookSessionSheetState extends State<_BookSessionSheet> {
     super.dispose();
   }
 
-  int get _estimatedKobo =>
-      (_course.hourlyRateKobo * _minutes / 60).round();
+  int get _estimatedKobo => (_course.hourlyRateKobo * _minutes / 60).round();
 
   Future<void> _send() async {
     setState(() {

@@ -294,7 +294,9 @@ class _MaterialRow extends StatelessWidget {
       );
       return;
     }
-    if (!isDrive && !pdfOrImage && !material.fileUrl.startsWith(ContentRepository.r2Scheme)) {
+    if (!isDrive &&
+        !pdfOrImage &&
+        !material.fileUrl.startsWith(ContentRepository.r2Scheme)) {
       await _openInViewerBrowser(
         context,
         Uri.parse(
@@ -342,9 +344,7 @@ class _MaterialRow extends StatelessWidget {
     try {
       ok = await launchUrl(
         uri,
-        mode: kIsWeb
-            ? LaunchMode.platformDefault
-            : LaunchMode.inAppBrowserView,
+        mode: kIsWeb ? LaunchMode.platformDefault : LaunchMode.inAppBrowserView,
       );
       if (!ok) ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
     } catch (_) {

@@ -76,11 +76,7 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
     if (!(confirmed ?? false)) return;
 
     try {
-      await _repo.setAdmin(
-        group: _group,
-        member: member,
-        isAdmin: makeAdmin,
-      );
+      await _repo.setAdmin(group: _group, member: member, isAdmin: makeAdmin);
       if (!mounted) return;
       await _load();
       if (!mounted) return;
@@ -244,7 +240,8 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
                   _header(),
                   _codeCard(),
                   SectionHeader(
-                    title: '${_members.length} '
+                    title:
+                        '${_members.length} '
                         '${_members.length == 1 ? 'member' : 'members'}',
                     subtitle: adminCount == 1
                         ? '1 admin'

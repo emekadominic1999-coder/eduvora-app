@@ -116,9 +116,8 @@ class _GpaCalculatorScreenState extends State<GpaCalculatorScreen>
     );
   }
 
-  bool get _draftHasContent => _courses.any(
-    (CourseEntry c) => c.code.trim().isNotEmpty || c.isGraded,
-  );
+  bool get _draftHasContent =>
+      _courses.any((CourseEntry c) => c.code.trim().isNotEmpty || c.isGraded);
 
   // ----------------------------------------------------------------- courses
 
@@ -156,8 +155,9 @@ class _GpaCalculatorScreenState extends State<GpaCalculatorScreen>
 
   // ----------------------------------------------------------------- numbers
 
-  List<CourseEntry> get _graded =>
-      _courses.where((CourseEntry c) => c.isGraded && c.creditUnits > 0).toList();
+  List<CourseEntry> get _graded => _courses
+      .where((CourseEntry c) => c.isGraded && c.creditUnits > 0)
+      .toList();
 
   int get _totalUnits =>
       _graded.fold(0, (int sum, CourseEntry c) => sum + c.creditUnits);
@@ -369,7 +369,11 @@ class _GpaCalculatorScreenState extends State<GpaCalculatorScreen>
     final profile = sessionController.profile;
     if (profile == null) {
       if (mounted) {
-        showEduvoraSnack(context, 'Sign in to add your courses.', isError: true);
+        showEduvoraSnack(
+          context,
+          'Sign in to add your courses.',
+          isError: true,
+        );
       }
       return;
     }
@@ -384,8 +388,9 @@ class _GpaCalculatorScreenState extends State<GpaCalculatorScreen>
     final List<CourseOutline> pick = outline
         .where((CourseOutline c) => c.semester == semester)
         .where(
-          (CourseOutline c) =>
-              !have.contains(c.courseCode.replaceAll(RegExp(r'\s+'), '').toUpperCase()),
+          (CourseOutline c) => !have.contains(
+            c.courseCode.replaceAll(RegExp(r'\s+'), '').toUpperCase(),
+          ),
         )
         .toList();
     if (pick.isEmpty) {
@@ -397,7 +402,9 @@ class _GpaCalculatorScreenState extends State<GpaCalculatorScreen>
       return;
     }
     setState(() {
-      _courses.removeWhere((CourseEntry c) => c.code.trim().isEmpty && !c.isGraded);
+      _courses.removeWhere(
+        (CourseEntry c) => c.code.trim().isEmpty && !c.isGraded,
+      );
       for (final CourseOutline c in pick) {
         _courses.add(
           CourseEntry(
@@ -436,7 +443,10 @@ class _GpaCalculatorScreenState extends State<GpaCalculatorScreen>
         ],
         bottom: TabBar(
           controller: _tabs,
-          labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+          labelStyle: const TextStyle(
+            fontWeight: FontWeight.w700,
+            fontSize: 14,
+          ),
           tabs: <Widget>[
             const Tab(text: 'Calculate'),
             Tab(
@@ -480,7 +490,11 @@ class _GpaCalculatorScreenState extends State<GpaCalculatorScreen>
             shadows: const <BoxShadow>[],
             child: Row(
               children: <Widget>[
-                const Icon(Icons.edit_rounded, color: AppColours.primary, size: 19),
+                const Icon(
+                  Icons.edit_rounded,
+                  color: AppColours.primary,
+                  size: 19,
+                ),
                 const SizedBox(width: AppSpacing.sm),
                 const Expanded(
                   child: Text(
@@ -535,7 +549,8 @@ class _GpaCalculatorScreenState extends State<GpaCalculatorScreen>
               entry: _courses[i],
               isResit: failedBefore.contains(_courses[i].key),
               canRemove: _courses.length > 1,
-              onChanged: (CourseEntry updated) => _update(_courses[i].id, updated),
+              onChanged: (CourseEntry updated) =>
+                  _update(_courses[i].id, updated),
               onRemove: () => _removeCourse(_courses[i].id),
             ),
           ),
@@ -653,12 +668,18 @@ class _GpaCalculatorScreenState extends State<GpaCalculatorScreen>
             AppSpacing.sm,
           ),
           expandedCrossAxisAlignment: CrossAxisAlignment.start,
-          leading: const Icon(Icons.lightbulb_outline_rounded, color: AppColours.primary),
+          leading: const Icon(
+            Icons.lightbulb_outline_rounded,
+            color: AppColours.primary,
+          ),
           title: const Text(
             'How to use this',
             style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w800),
           ),
-          subtitle: const Text('Three easy steps', style: TextStyle(fontSize: 12)),
+          subtitle: const Text(
+            'Three easy steps',
+            style: TextStyle(fontSize: 12),
+          ),
           children: <Widget>[
             step(
               1,
@@ -733,7 +754,9 @@ class _GpaCalculatorScreenState extends State<GpaCalculatorScreen>
                     children: <Widget>[
                       Expanded(
                         child: Text(
-                          c.code.trim().isEmpty ? 'Course' : c.code.trim().toUpperCase(),
+                          c.code.trim().isEmpty
+                              ? 'Course'
+                              : c.code.trim().toUpperCase(),
                           style: const TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
@@ -1308,9 +1331,9 @@ class _GpaCalculatorScreenState extends State<GpaCalculatorScreen>
                 '3 × 4 = 12 and 2 × 5 = 10, so total points = 22.\n'
                 'Total units = 5. GPA = 22 ÷ 5 = 4.40.\n\n'
                 'TNU = total units · TCP = total credit points · GPA = TCP ÷ TNU',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  height: 1.6,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(height: 1.6),
               ),
               const SizedBox(height: AppSpacing.lg),
               ...Grade.values.map(
@@ -1625,7 +1648,9 @@ class _CourseRowState extends State<_CourseRow> {
                   selected: grade == g,
                   onSelected: (_) {
                     _score.clear();
-                    widget.onChanged(entry.copyWith(grade: g, clearScore: true));
+                    widget.onChanged(
+                      entry.copyWith(grade: g, clearScore: true),
+                    );
                   },
                 ),
             ],

@@ -359,9 +359,9 @@ class _CreateClassListSheetState extends State<_CreateClassListSheet> {
                   );
                   return;
                 }
-                Navigator.of(context).pop(
-                  _NewClassList(_name.text, _session.text, _withGroup),
-                );
+                Navigator.of(
+                  context,
+                ).pop(_NewClassList(_name.text, _session.text, _withGroup));
               },
               child: const Text('Create class list'),
             ),

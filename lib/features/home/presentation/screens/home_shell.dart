@@ -92,7 +92,10 @@ class _HomeShellState extends State<HomeShell> {
 
   int _lastSavedTab() {
     final int saved =
-        int.tryParse(LocalStore.instance.readString(StoreKeys.lastShellTab) ?? '') ?? 0;
+        int.tryParse(
+          LocalStore.instance.readString(StoreKeys.lastShellTab) ?? '',
+        ) ??
+        0;
     return saved >= 0 && saved < _tabCount ? saved : 0;
   }
 

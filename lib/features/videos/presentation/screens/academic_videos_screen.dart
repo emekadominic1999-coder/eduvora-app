@@ -89,9 +89,7 @@ class _AcademicVideosScreenState extends State<AcademicVideosScreen> {
             tooltip: 'Video plan',
             icon: const Icon(Icons.movie_filter_rounded),
             onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => const VideoPlanScreen(),
-              ),
+              MaterialPageRoute<void>(builder: (_) => const VideoPlanScreen()),
             ),
           ),
         ],

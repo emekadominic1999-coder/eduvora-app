@@ -130,7 +130,8 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                               child: _CommentRow(
                                 comment: c,
                                 onBlocked: () => setState(
-                                  () => _future = _repo.comments(widget.post.id),
+                                  () =>
+                                      _future = _repo.comments(widget.post.id),
                                 ),
                               ),
                             ),

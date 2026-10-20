@@ -118,7 +118,8 @@ class _NewsScreenState extends State<NewsScreen> {
 
                       if (items.isEmpty) {
                         final bool noticeboardEmpty =
-                            !_savedOnly && (snapshot.data ?? <NewsItem>[]).isEmpty;
+                            !_savedOnly &&
+                            (snapshot.data ?? <NewsItem>[]).isEmpty;
                         return ListView(
                           children: <Widget>[
                             EmptyState(

@@ -105,11 +105,7 @@ class InstitutionFaculties {
       name: 'Faculty of Basic Medical Sciences',
       icon: Icons.biotech_rounded,
       colour: Color(0xFF0891B2),
-      departments: <String>[
-        'Anatomy',
-        'Medical Biochemistry',
-        'Physiology',
-      ],
+      departments: <String>['Anatomy', 'Medical Biochemistry', 'Physiology'],
     ),
     Faculty(
       name: 'Faculty of Biological Sciences',

@@ -28,9 +28,8 @@ class _ManualTutorReviewScreenState extends State<ManualTutorReviewScreen> {
   final TextEditingController _note = TextEditingController();
 
   late final Future<List<CbtSubject>> _subjects = _cbt.all().then(
-    (List<CbtSubject> all) => all
-        .where((CbtSubject s) => !s.isPlaceholder)
-        .toList(),
+    (List<CbtSubject> all) =>
+        all.where((CbtSubject s) => !s.isPlaceholder).toList(),
   );
 
   /// subjectId -> chosen hourly rate in naira.
@@ -249,8 +248,7 @@ class _ManualTutorReviewScreenState extends State<ManualTutorReviewScreen> {
                       horizontal: AppSpacing.screenPadding,
                     ),
                     child: FilledButton.icon(
-                      onPressed:
-                          _selected.isEmpty || !_noteLongEnough || _busy
+                      onPressed: _selected.isEmpty || !_noteLongEnough || _busy
                           ? null
                           : _submit,
                       icon: _busy

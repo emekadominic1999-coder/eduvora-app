@@ -349,17 +349,20 @@ class _ReferralScreenState extends State<ReferralScreen> {
               ),
               _Step(
                 number: '2',
-                text: 'They sign up and enter your code before their first '
+                text:
+                    'They sign up and enter your code before their first '
                     'purchase.',
               ),
               _Step(
                 number: '3',
-                text: 'You earn ${s.commissionPercent}% of every payment they '
+                text:
+                    'You earn ${s.commissionPercent}% of every payment they '
                     'make, for as long as they use Eduvora.',
               ),
               _Step(
                 number: '4',
-                text: 'Withdraw once you reach '
+                text:
+                    'Withdraw once you reach '
                     '${formatNaira(s.minWithdrawalKobo)}. We pay you by bank '
                     'transfer.',
                 last: true,

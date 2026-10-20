@@ -38,10 +38,7 @@ class CommunityRepository {
     }
 
     final Map<String, CommunityPost> byId = <String, CommunityPost>{};
-    for (final CommunityPost p in <CommunityPost>[
-      ...local,
-      ...remote,
-    ]) {
+    for (final CommunityPost p in <CommunityPost>[...local, ...remote]) {
       byId.putIfAbsent(p.id, () => p);
     }
 
@@ -56,7 +53,9 @@ class CommunityRepository {
     // A blocked student's posts never reach the feed.
     final Set<String> blocked = await _moderation.blockedUserIds();
     if (blocked.isNotEmpty) {
-      all = all.where((CommunityPost p) => !blocked.contains(p.authorId)).toList();
+      all = all
+          .where((CommunityPost p) => !blocked.contains(p.authorId))
+          .toList();
     }
 
     if (topic == null) return all;
@@ -193,17 +192,15 @@ class CommunityRepository {
     }
 
     final Map<String, CommunityComment> byId = <String, CommunityComment>{};
-    for (final CommunityComment c in <CommunityComment>[
-      ...remote,
-      ...local,
-    ]) {
+    for (final CommunityComment c in <CommunityComment>[...remote, ...local]) {
       byId[c.id] = c;
     }
 
-    List<CommunityComment> all = byId.values.toList()..sort(
-      (CommunityComment a, CommunityComment b) =>
-          a.createdAt.compareTo(b.createdAt),
-    );
+    List<CommunityComment> all = byId.values.toList()
+      ..sort(
+        (CommunityComment a, CommunityComment b) =>
+            a.createdAt.compareTo(b.createdAt),
+      );
 
     // A blocked student's comments never reach the thread.
     final Set<String> blocked = await _moderation.blockedUserIds();

@@ -9,6 +9,7 @@ import 'package:uuid/uuid.dart';
 
 import '../config/app_config.dart';
 import '../models/student_profile.dart';
+import '../services/email_repository.dart';
 import '../services/local_store.dart';
 import '../services/supabase_service.dart';
 
@@ -331,7 +332,8 @@ class SessionController extends ChangeNotifier {
         if (session == null) {
           if (_status == AuthStatus.signedOut) return;
           const Duration pollInterval = Duration(milliseconds: 1000);
-          const int maxPolls = 8; // up to ~8s total, well past normal resume jitter
+          const int maxPolls =
+              8; // up to ~8s total, well past normal resume jitter
           for (int i = 0; i < maxPolls; i++) {
             await Future<void>.delayed(pollInterval);
             if (SupabaseService.currentSession != null) {
@@ -431,6 +433,8 @@ class SessionController extends ChangeNotifier {
     sb.User user, {
     String fallbackName = '',
   }) async {
+    // Welcome email: the server sends it once per student and ignores repeats.
+    unawaited(const EmailRepository().sendWelcomeOnce(user.id));
     final String name = fallbackName.isNotEmpty
         ? fallbackName
         : _firstNonEmpty(<String?>[

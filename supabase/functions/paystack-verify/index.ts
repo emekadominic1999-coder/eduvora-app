@@ -1,5 +1,6 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 
+import { receiptEmail, sendEmail } from '../_shared/email.ts';
 import { settleGuestOrder } from '../_shared/guest.ts';
 
 // Handles two callers on the same endpoint:
@@ -151,6 +152,32 @@ Deno.serve(async (request: Request) => {
     { onConflict: 'user_id,plan,subject_id' },
   );
   if (entitlementError) console.error('entitlement upsert failed', entitlementError);
+
+  // Receipt email. Best effort: a mail problem must never undo a payment that
+  // has already been confirmed and unlocked.
+  try {
+    const { data: buyer } = await client.auth.admin.getUserById(payment.user_id);
+    const to = buyer?.user?.email;
+    if (to) {
+      const { data: names } = await client
+        .from('cbt_questions')
+        .select('subject_id, subject_name')
+        .in('subject_id', subjectIds.slice(0, 40))
+        .limit(400);
+      const nameBySubject = new Map<string, string>();
+      for (const n of names ?? []) nameBySubject.set(n.subject_id, n.subject_name);
+      const mail = receiptEmail({
+        planLabel: payment.plan === 'course_pack' ? 'Course pack' : 'Single paper',
+        amountKobo: payment.amount_kobo,
+        reference,
+        expiresAt,
+        papers: [...new Set(subjectIds.map((id) => nameBySubject.get(id) ?? id))],
+      });
+      await sendEmail(client, { to, kind: 'receipt', ref: reference, userId: payment.user_id, ...mail });
+    }
+  } catch (error) {
+    console.error('receipt email failed', error);
+  }
 
   return json({ verified: true, expiresAt });
 });

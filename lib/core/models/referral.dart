@@ -27,13 +27,15 @@ class ReferralEarning {
   /// First name only — a referrer never sees a friend's full name.
   final String firstName;
 
-  factory ReferralEarning.fromJson(Map<String, dynamic> json) => ReferralEarning(
-    createdAt: DateTime.tryParse('${json['created_at']}')?.toLocal() ??
-        DateTime.now(),
-    commissionKobo: (json['commission_kobo'] as num?)?.toInt() ?? 0,
-    paymentAmountKobo: (json['payment_amount_kobo'] as num?)?.toInt() ?? 0,
-    firstName: (json['first_name'] ?? 'A student') as String,
-  );
+  factory ReferralEarning.fromJson(Map<String, dynamic> json) =>
+      ReferralEarning(
+        createdAt:
+            DateTime.tryParse('${json['created_at']}')?.toLocal() ??
+            DateTime.now(),
+        commissionKobo: (json['commission_kobo'] as num?)?.toInt() ?? 0,
+        paymentAmountKobo: (json['payment_amount_kobo'] as num?)?.toInt() ?? 0,
+        firstName: (json['first_name'] ?? 'A student') as String,
+      );
 }
 
 /// A request to be paid out, and where it stands.
@@ -76,7 +78,8 @@ class ReferralWithdrawal {
         accountName: (json['account_name'] ?? '') as String,
         status: (json['status'] ?? 'pending') as String,
         note: (json['note'] ?? '') as String,
-        createdAt: DateTime.tryParse('${json['created_at']}')?.toLocal() ??
+        createdAt:
+            DateTime.tryParse('${json['created_at']}')?.toLocal() ??
             DateTime.now(),
         paidAt: json['paid_at'] == null
             ? null
@@ -116,8 +119,7 @@ class ReferralSummary {
   final List<ReferralWithdrawal> withdrawals;
 
   bool get canWithdraw => availableKobo >= minWithdrawalKobo;
-  int get shortfallKobo =>
-      canWithdraw ? 0 : minWithdrawalKobo - availableKobo;
+  int get shortfallKobo => canWithdraw ? 0 : minWithdrawalKobo - availableKobo;
 
   factory ReferralSummary.fromJson(Map<String, dynamic> json) =>
       ReferralSummary(

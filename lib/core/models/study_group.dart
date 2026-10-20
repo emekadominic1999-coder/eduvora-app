@@ -280,8 +280,7 @@ class GroupMessage {
   bool get isVoiceAttachment => attachmentType == GroupAttachmentType.voice;
 
   /// What to actually draw in the bubble.
-  String get displayBody =>
-      isDeleted ? 'This message was deleted' : body;
+  String get displayBody => isDeleted ? 'This message was deleted' : body;
 
   /// Emoji grouped with how many members picked each one, most popular first.
   List<MapEntry<String, List<GroupMessageReaction>>> get reactionGroups {
@@ -290,12 +289,13 @@ class GroupMessage {
     for (final GroupMessageReaction r in reactions) {
       byEmoji.putIfAbsent(r.emoji, () => <GroupMessageReaction>[]).add(r);
     }
-    final List<MapEntry<String, List<GroupMessageReaction>>> groups = byEmoji
-        .entries
-        .toList()
-      ..sort((MapEntry<String, List<GroupMessageReaction>> a,
-              MapEntry<String, List<GroupMessageReaction>> b) =>
-          b.value.length.compareTo(a.value.length));
+    final List<MapEntry<String, List<GroupMessageReaction>>> groups =
+        byEmoji.entries.toList()..sort(
+          (
+            MapEntry<String, List<GroupMessageReaction>> a,
+            MapEntry<String, List<GroupMessageReaction>> b,
+          ) => b.value.length.compareTo(a.value.length),
+        );
     return groups;
   }
 

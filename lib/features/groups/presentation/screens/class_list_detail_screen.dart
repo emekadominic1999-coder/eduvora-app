@@ -81,10 +81,7 @@ class _ClassListDetailScreenState extends State<ClassListDetailScreen> {
     );
     if (!(confirm ?? false)) return;
 
-    await _repo.removeEntry(
-      classListId: widget.list.id,
-      entryId: entry.id,
-    );
+    await _repo.removeEntry(classListId: widget.list.id, entryId: entry.id);
     await _load();
   }
 

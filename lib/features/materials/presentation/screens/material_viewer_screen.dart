@@ -42,7 +42,10 @@ class _MaterialViewerScreenState extends State<MaterialViewerScreen> {
 
   /// Download progress for the loading screen: bytes received and the total
   /// size when the server tells us (or null when unknown).
-  final ValueNotifier<(int, int?)> _progress = ValueNotifier<(int, int?)>((0, null));
+  final ValueNotifier<(int, int?)> _progress = ValueNotifier<(int, int?)>((
+    0,
+    null,
+  ));
 
   PdfControllerPinch? _pdfController;
   String? _url;
@@ -51,8 +54,12 @@ class _MaterialViewerScreenState extends State<MaterialViewerScreen> {
   String? _error;
 
   bool get _isPdf => widget.material.extension == 'PDF';
-  bool get _isImage =>
-      <String>['PNG', 'JPG', 'JPEG', 'WEBP'].contains(widget.material.extension);
+  bool get _isImage => <String>[
+    'PNG',
+    'JPG',
+    'JPEG',
+    'WEBP',
+  ].contains(widget.material.extension);
   bool get _isPrivate =>
       widget.material.fileUrl.startsWith(ContentRepository.r2Scheme);
 
@@ -108,9 +115,12 @@ class _MaterialViewerScreenState extends State<MaterialViewerScreen> {
       if (response.statusCode != 200) {
         throw StateError('File request failed (${response.statusCode}).');
       }
-      final int? total = response.contentLength != null && response.contentLength! > 0
+      final int? total =
+          response.contentLength != null && response.contentLength! > 0
           ? response.contentLength
-          : (widget.material.fileSizeBytes > 0 ? widget.material.fileSizeBytes : null);
+          : (widget.material.fileSizeBytes > 0
+                ? widget.material.fileSizeBytes
+                : null);
       final BytesBuilder buffer = BytesBuilder(copy: false);
       int received = 0;
       // A download that stops moving for 40 seconds is abandoned, so the
@@ -133,7 +143,8 @@ class _MaterialViewerScreenState extends State<MaterialViewerScreen> {
     }
   }
 
-  String _megabytes(int bytes) => (bytes / (1024 * 1024)).toStringAsFixed(bytes < 10 * 1024 * 1024 ? 1 : 0);
+  String _megabytes(int bytes) =>
+      (bytes / (1024 * 1024)).toStringAsFixed(bytes < 10 * 1024 * 1024 ? 1 : 0);
 
   /// The loading view: a spinner, plus how much has arrived so far, so a big
   /// file reads as "working" rather than "stuck".
@@ -258,7 +269,8 @@ class _MaterialViewerScreenState extends State<MaterialViewerScreen> {
             child: CircularProgressIndicator(color: Colors.white),
           ),
           errorBuilder: (_, Object error) => _errorView(
-            message: _error ??
+            message:
+                _error ??
                 'Could not open this material. Check your connection.',
             retry: true,
             allowExternal: true,

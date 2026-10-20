@@ -265,10 +265,7 @@ class _GroupsScreenState extends State<GroupsScreen> {
                 ],
               ),
             ),
-            const Icon(
-              Icons.chevron_right_rounded,
-              color: AppColours.primary,
-            ),
+            const Icon(Icons.chevron_right_rounded, color: AppColours.primary),
           ],
         ),
       ),
@@ -504,13 +501,9 @@ class _CreateGroupSheetState extends State<_CreateGroupSheet> {
                   );
                   return;
                 }
-                Navigator.of(context).pop(
-                  _NewGroup(
-                    _name.text,
-                    _description.text,
-                    _course.text,
-                  ),
-                );
+                Navigator.of(
+                  context,
+                ).pop(_NewGroup(_name.text, _description.text, _course.text));
               },
               child: const Text('Create group'),
             ),

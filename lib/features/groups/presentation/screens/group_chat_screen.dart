@@ -25,7 +25,14 @@ import 'group_info_screen.dart';
 
 /// Emoji offered on every message — small and deliberate, the way a
 /// classroom's reactions are a handful of gestures, not an open keyboard.
-const List<String> _quickReactions = <String>['👍', '❤️', '😂', '😮', '😢', '🙏'];
+const List<String> _quickReactions = <String>[
+  '👍',
+  '❤️',
+  '😂',
+  '😮',
+  '😢',
+  '🙏',
+];
 
 /// "0:07" for anything under an hour, "1:02:30" past it — a voice note is
 /// never that long, but a stray double-length recording should still read
@@ -190,9 +197,8 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
       setState(() {
         _messages = _messages
             .map(
-              (GroupMessage m) => m.id == event.messageId
-                  ? m.copyWith(reactions: fresh)
-                  : m,
+              (GroupMessage m) =>
+                  m.id == event.messageId ? m.copyWith(reactions: fresh) : m,
             )
             .toList();
       });
@@ -314,8 +320,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                 children: _quickReactions
                     .map(
                       (String emoji) => GestureDetector(
-                        onTap: () =>
-                            Navigator.of(context).pop('react:$emoji'),
+                        onTap: () => Navigator.of(context).pop('react:$emoji'),
                         child: AnimatedScale(
                           scale: myReaction == emoji ? 1.25 : 1,
                           duration: const Duration(milliseconds: 150),
@@ -480,15 +485,14 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
         _pendingAttachmentType = null;
         _pendingAttachmentDurationMs = 0;
       });
-      WidgetsBinding.instance
-          .addPostFrameCallback((_) => _toBottom(animate: true));
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _toBottom(animate: true),
+      );
     } catch (error) {
       // The message is already in the local thread; say plainly that it has
       // not reached the group rather than letting them believe it sent.
       if (!mounted) return;
-      final List<GroupMessage> messages = await _repo.messages(
-        widget.group.id,
-      );
+      final List<GroupMessage> messages = await _repo.messages(widget.group.id);
       if (!mounted) return;
       setState(() {
         _messages = messages;
@@ -653,9 +657,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
           timer.cancel();
           return;
         }
-        setState(
-          () => _recordElapsed += const Duration(milliseconds: 100),
-        );
+        setState(() => _recordElapsed += const Duration(milliseconds: 100));
         if (_recordElapsed.inSeconds >= AppConfig.maxVoiceNoteSeconds) {
           _stopRecording(send: true);
         }
@@ -849,9 +851,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
             onPressed: () => setState(() => _questionsOnly = !_questionsOnly),
             tooltip: _questionsOnly ? 'Show all messages' : 'Questions only',
             icon: Icon(
-              _questionsOnly
-                  ? Icons.help_rounded
-                  : Icons.help_outline_rounded,
+              _questionsOnly ? Icons.help_rounded : Icons.help_outline_rounded,
               color: _questionsOnly ? AppColours.accent : null,
             ),
           ),
@@ -1161,8 +1161,8 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                           _pendingAttachmentDurationMs = 0;
                         }),
                         icon: const Icon(Icons.close_rounded, size: 18),
-                        tooltip: _pendingAttachmentType ==
-                                GroupAttachmentType.voice
+                        tooltip:
+                            _pendingAttachmentType == GroupAttachmentType.voice
                             ? 'Discard voice note'
                             : 'Remove attachment',
                       ),
@@ -1333,10 +1333,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
               ),
               focusedBorder: const OutlineInputBorder(
                 borderRadius: AppRadii.xl,
-                borderSide: BorderSide(
-                  color: AppColours.primary,
-                  width: 1.4,
-                ),
+                borderSide: BorderSide(color: AppColours.primary, width: 1.4),
               ),
             ),
           ),
@@ -1356,9 +1353,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                       height: 20,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          Colors.white,
-                        ),
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                       ),
                     )
                   : const Icon(
@@ -1637,11 +1632,7 @@ class _DeletedBubble extends StatelessWidget {
           child: const Row(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              Icon(
-                Icons.block_rounded,
-                size: 14,
-                color: AppColours.textFaint,
-              ),
+              Icon(Icons.block_rounded, size: 14, color: AppColours.textFaint),
               SizedBox(width: 6),
               Text(
                 'This message was deleted',
@@ -1723,9 +1714,7 @@ class _AttachmentBubble extends StatelessWidget {
                       bottomRight: Radius.circular(mine ? 5 : 18),
                     ),
                     boxShadow: AppShadows.subtle,
-                    border: mine
-                        ? null
-                        : Border.all(color: AppColours.border),
+                    border: mine ? null : Border.all(color: AppColours.border),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1789,12 +1778,16 @@ class _AttachmentBubble extends StatelessWidget {
                                 decoration: BoxDecoration(
                                   color:
                                       (mine ? Colors.white : AppColours.primary)
-                                          .withValues(alpha: mine ? 0.18 : 0.10),
+                                          .withValues(
+                                            alpha: mine ? 0.18 : 0.10,
+                                          ),
                                   borderRadius: AppRadii.sm,
                                 ),
                                 child: Icon(
                                   Icons.insert_drive_file_rounded,
-                                  color: mine ? Colors.white : AppColours.primary,
+                                  color: mine
+                                      ? Colors.white
+                                      : AppColours.primary,
                                   size: 20,
                                 ),
                               ),
@@ -1822,7 +1815,9 @@ class _AttachmentBubble extends StatelessWidget {
                                       style: TextStyle(
                                         fontSize: 11,
                                         color: mine
-                                            ? Colors.white.withValues(alpha: 0.75)
+                                            ? Colors.white.withValues(
+                                                alpha: 0.75,
+                                              )
                                             : AppColours.textMuted,
                                       ),
                                     ),
@@ -1927,19 +1922,14 @@ class _ReactionsRow extends StatelessWidget {
             return GestureDetector(
               onTap: () => onTap(entry.key),
               child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 3,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: isMine
                       ? AppColours.primaryTint
                       : AppColours.surfaceMuted,
                   borderRadius: AppRadii.pill,
                   border: Border.all(
-                    color: isMine
-                        ? AppColours.primarySoft
-                        : AppColours.border,
+                    color: isMine ? AppColours.primarySoft : AppColours.border,
                   ),
                 ),
                 child: Row(
@@ -2118,9 +2108,9 @@ class _VoicePlayerState extends State<_VoicePlayer> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  _formatDuration(_playing || _position > Duration.zero
-                      ? _position
-                      : total),
+                  _formatDuration(
+                    _playing || _position > Duration.zero ? _position : total,
+                  ),
                   style: TextStyle(
                     fontSize: 10.5,
                     color: widget.mine

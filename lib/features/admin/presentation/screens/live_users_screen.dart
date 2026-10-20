@@ -54,13 +54,12 @@ class _LiveUsersScreenState extends State<LiveUsersScreen> {
         _loading = false;
         _error = text.contains('not allowed')
             ? 'This screen is only for the Eduvora owner account.'
-            : (text.contains('owner_active_users') ||
-                      text.contains('PGRST202'))
-                  ? 'The database step has not been run yet. Run the '
-                        'ACTIVE_USERS.sql script in Supabase once, then '
-                        'refresh.'
-                  : 'Could not load the numbers. Check your connection and '
-                        'try again.';
+            : (text.contains('owner_active_users') || text.contains('PGRST202'))
+            ? 'The database step has not been run yet. Run the '
+                  'ACTIVE_USERS.sql script in Supabase once, then '
+                  'refresh.'
+            : 'Could not load the numbers. Check your connection and '
+                  'try again.';
       });
     }
   }
@@ -106,7 +105,10 @@ class _LiveUsersScreenState extends State<LiveUsersScreen> {
                   )
                 else if (c == null)
                   EduvoraCard(
-                    child: Text(_error ?? 'No data yet.', style: text.bodyMedium),
+                    child: Text(
+                      _error ?? 'No data yet.',
+                      style: text.bodyMedium,
+                    ),
                   )
                 else ...<Widget>[
                   EduvoraCard(
@@ -154,11 +156,21 @@ class _LiveUsersScreenState extends State<LiveUsersScreen> {
                   const SizedBox(height: AppSpacing.md),
                   Row(
                     children: <Widget>[
-                      Expanded(child: _stat('Today', c.activeToday, 'last 24 hours')),
+                      Expanded(
+                        child: _stat('Today', c.activeToday, 'last 24 hours'),
+                      ),
                       const SizedBox(width: AppSpacing.md),
-                      Expanded(child: _stat('This week', c.active7Days, 'last 7 days')),
+                      Expanded(
+                        child: _stat('This week', c.active7Days, 'last 7 days'),
+                      ),
                       const SizedBox(width: AppSpacing.md),
-                      Expanded(child: _stat('This month', c.active30Days, 'last 30 days')),
+                      Expanded(
+                        child: _stat(
+                          'This month',
+                          c.active30Days,
+                          'last 30 days',
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: AppSpacing.md),
@@ -166,7 +178,10 @@ class _LiveUsersScreenState extends State<LiveUsersScreen> {
                     child: Row(
                       children: <Widget>[
                         Expanded(
-                          child: Text('Registered students', style: text.bodyMedium),
+                          child: Text(
+                            'Registered students',
+                            style: text.bodyMedium,
+                          ),
                         ),
                         Text(
                           '${c.totalUsers}',
@@ -183,7 +198,9 @@ class _LiveUsersScreenState extends State<LiveUsersScreen> {
                     'feature went live, so the numbers start low and grow. '
                     'Only you can see this screen, and it shows counts only '
                     '— never names or emails.${_updated == null ? '' : '\nUpdated ${_clock(_updated!)} · refreshes every 30 seconds.'}',
-                    style: text.bodySmall?.copyWith(color: AppColours.textFaint),
+                    style: text.bodySmall?.copyWith(
+                      color: AppColours.textFaint,
+                    ),
                   ),
                 ],
               ],

@@ -30,14 +30,18 @@ class _SplashGateState extends State<SplashGate> {
       // Both mark variants appear across the app (this splash, auth,
       // onboarding); warming the cache once here means none of them ever
       // shows the bare tile a slow first fetch would otherwise leave blank.
-      unawaited(precacheImage(
-        const AssetImage('assets/branding/eduvora_mark_blue.png'),
-        context,
-      ));
-      unawaited(precacheImage(
-        const AssetImage('assets/branding/eduvora_mark_white.png'),
-        context,
-      ));
+      unawaited(
+        precacheImage(
+          const AssetImage('assets/branding/eduvora_mark_blue.png'),
+          context,
+        ),
+      );
+      unawaited(
+        precacheImage(
+          const AssetImage('assets/branding/eduvora_mark_white.png'),
+          context,
+        ),
+      );
       _bootstrap();
     });
   }
