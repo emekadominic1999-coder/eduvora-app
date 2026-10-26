@@ -42,6 +42,41 @@ class AcademicVideo {
         lower.endsWith('.mov');
   }
 
+  /// The YouTube video id when [videoUrl] is a YouTube link (watch, youtu.be,
+  /// shorts, live or embed), otherwise null. These play inside the app.
+  String? get youtubeId {
+    final Uri? uri = Uri.tryParse(videoUrl.trim());
+    if (uri == null) return null;
+    final String host = uri.host.toLowerCase().replaceFirst('www.', '');
+    final RegExp idPattern = RegExp(r'^[A-Za-z0-9_-]{11}$');
+    String? id;
+    if (host == 'youtu.be' && uri.pathSegments.isNotEmpty) {
+      id = uri.pathSegments.first;
+    } else if (host == 'youtube.com' ||
+        host == 'm.youtube.com' ||
+        host == 'music.youtube.com') {
+      if (uri.queryParameters['v'] != null) {
+        id = uri.queryParameters['v'];
+      } else if (uri.pathSegments.length >= 2 &&
+          const <String>[
+            'shorts',
+            'embed',
+            'live',
+            'v',
+          ].contains(uri.pathSegments.first)) {
+        id = uri.pathSegments[1];
+      }
+    }
+    return id != null && idPattern.hasMatch(id) ? id : null;
+  }
+
+  /// The stored thumbnail, or YouTube's own picture for a YouTube lecture.
+  String get thumbnailUrl {
+    if (thumbnail.isNotEmpty) return thumbnail;
+    final String? id = youtubeId;
+    return id == null ? '' : 'https://i.ytimg.com/vi/$id/hqdefault.jpg';
+  }
+
   String get viewsLabel {
     if (views >= 1000000) {
       return '${(views / 1000000).toStringAsFixed(1)}M views';

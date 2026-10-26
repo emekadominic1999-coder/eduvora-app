@@ -291,6 +291,17 @@ class _VideoRow extends StatelessWidget {
             ),
             child: Stack(
               children: <Widget>[
+                if (video.thumbnailUrl.isNotEmpty)
+                  Positioned.fill(
+                    child: ClipRRect(
+                      borderRadius: AppRadii.sm,
+                      child: Image.network(
+                        video.thumbnailUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                      ),
+                    ),
+                  ),
                 const Center(
                   child: Icon(
                     Icons.play_arrow_rounded,

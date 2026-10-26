@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:video_player/video_player.dart';
+import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 
 import '../../../../core/models/academic_video.dart';
 import '../../../../core/services/content_repository.dart';
@@ -9,8 +10,9 @@ import '../../../../core/widgets/common.dart';
 
 /// In-app lecture playback with custom controls.
 ///
-/// Direct video files play here; anything else (a YouTube link, for instance)
-/// is opened in the device's own player so no lecture is ever a dead end.
+/// YouTube lectures play inside the app; direct video files play with custom
+/// controls; anything else opens in the device's own player so no lecture is
+/// ever a dead end.
 class VideoPlayerScreen extends StatefulWidget {
   const VideoPlayerScreen({super.key, required this.video});
 
@@ -24,6 +26,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   static const ContentRepository _content = ContentRepository();
 
   VideoPlayerController? _controller;
+  YoutubePlayerController? _youtube;
   bool _initialising = true;
   String? _error;
   double _speed = 1.0;
@@ -38,6 +41,20 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   }
 
   Future<void> _setUp() async {
+    final String? ytId = widget.video.youtubeId;
+    if (ytId != null) {
+      _youtube = YoutubePlayerController.fromVideoId(
+        videoId: ytId,
+        params: const YoutubePlayerParams(
+          showFullscreenButton: true,
+          strictRelatedVideos: true,
+          playsInline: true,
+        ),
+      );
+      setState(() => _initialising = false);
+      return;
+    }
+
     if (!widget.video.isStreamable) {
       setState(() {
         _initialising = false;
@@ -80,6 +97,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   void dispose() {
     _controller?.removeListener(_onTick);
     _controller?.dispose();
+    _youtube?.close();
     super.dispose();
   }
 
@@ -215,6 +233,14 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   }
 
   Widget _stage() {
+    final YoutubePlayerController? yt = _youtube;
+    if (yt != null) {
+      return ColoredBox(
+        color: const Color(0xFF0F172A),
+        child: YoutubePlayer(controller: yt, aspectRatio: 16 / 9),
+      );
+    }
+
     final VideoPlayerController? c = _controller;
 
     if (_initialising) {
