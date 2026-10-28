@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:video_player/video_player.dart';
@@ -7,6 +8,7 @@ import '../../../../core/models/academic_video.dart';
 import '../../../../core/services/content_repository.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/common.dart';
+import '../widgets/youtube_embed.dart';
 
 /// In-app lecture playback with custom controls.
 ///
@@ -43,6 +45,12 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   Future<void> _setUp() async {
     final String? ytId = widget.video.youtubeId;
     if (ytId != null) {
+      // The website plays a plain embed (see WebYoutubeEmbed); the apps use the
+      // iframe-API player.
+      if (kIsWeb) {
+        setState(() => _initialising = false);
+        return;
+      }
       _youtube = YoutubePlayerController.fromVideoId(
         videoId: ytId,
         params: const YoutubePlayerParams(
@@ -183,6 +191,14 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                     ),
                   ],
                 ),
+                if (v.youtubeId != null) ...<Widget>[
+                  const SizedBox(height: AppSpacing.md),
+                  OutlinedButton.icon(
+                    onPressed: _openExternally,
+                    icon: const Icon(Icons.open_in_new_rounded, size: 18),
+                    label: const Text('Watch on YouTube'),
+                  ),
+                ],
                 const SizedBox(height: AppSpacing.xl),
                 if (v.description.isNotEmpty) ...<Widget>[
                   Text(
@@ -233,6 +249,13 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   }
 
   Widget _stage() {
+    final String? webId = kIsWeb ? widget.video.youtubeId : null;
+    if (webId != null) {
+      return ColoredBox(
+        color: const Color(0xFF0F172A),
+        child: WebYoutubeEmbed(videoId: webId),
+      );
+    }
     final YoutubePlayerController? yt = _youtube;
     if (yt != null) {
       return ColoredBox(
