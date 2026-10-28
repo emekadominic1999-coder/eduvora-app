@@ -447,16 +447,10 @@ class _MaterialRow extends StatelessWidget {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return EduvoraCard(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      shadows: AppShadows.subtle,
-      onTap: () => _details(context),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Container(
+  /// The first page of the file as a small cover; the kind icon shows while it
+  /// loads and for files that have no cover (Word, PowerPoint and the like).
+  Widget _cover() {
+    final Widget fallback = Container(
             width: 46,
             height: 46,
             decoration: BoxDecoration(
@@ -478,7 +472,36 @@ class _MaterialRow extends StatelessWidget {
                 ),
               ],
             ),
-          ),
+          );
+    final String url = material.coverUrl;
+    if (url.isEmpty) return fallback;
+    return ClipRRect(
+      borderRadius: AppRadii.sm,
+      child: SizedBox(
+        width: 52,
+        height: 68,
+        child: Image.network(
+          url,
+          fit: BoxFit.cover,
+          alignment: Alignment.topCenter,
+          errorBuilder: (_, _, _) => Center(child: fallback),
+          loadingBuilder: (_, Widget child, ImageChunkEvent? progress) =>
+              progress == null ? child : Center(child: fallback),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return EduvoraCard(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      shadows: AppShadows.subtle,
+      onTap: () => _details(context),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          _cover(),
           const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(

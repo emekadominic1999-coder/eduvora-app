@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:pdfx/pdfx.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' show FileOptions;
 import 'package:uuid/uuid.dart';
 
 import '../config/app_config.dart';
@@ -47,12 +49,23 @@ class ContentRepository {
       final List<dynamic> rows = await SupabaseService.client
           .from('academic_videos')
           .select()
-          .eq('department', profile.department)
+          .or(
+            'department.eq."${profile.department.replaceAll('"', '')}",'
+            'department.eq."$allDepartments"',
+          )
           .order('created_at', ascending: false)
           .limit(100);
+      // A lecture marked "All departments" is open to everyone; if it names a
+      // faculty, only that faculty sees it.
       return rows
           .whereType<Map<String, dynamic>>()
           .map(AcademicVideo.fromJson)
+          .where(
+            (AcademicVideo v) =>
+                v.department == profile.department ||
+                (v.department == allDepartments &&
+                    (v.faculty.isEmpty || v.faculty == profile.faculty)),
+          )
           .toList();
     } catch (error) {
       debugPrint('[Eduvora] video fetch failed: $error');
@@ -182,12 +195,46 @@ class ContentRepository {
       }
     }
 
+    if (SupabaseService.isReady && bytes != null && material.extension == 'PDF') {
+      await _uploadCover(id, bytes);
+    }
+
     final List<Map<String, dynamic>> cached = LocalStore.instance.readList(
       StoreKeys.materials,
     )..insert(0, material.toJson());
     await LocalStore.instance.writeList(StoreKeys.materials, cached);
 
     return material;
+  }
+
+  /// Renders page 1 of a PDF and stores it as `covers/<id>.jpg` so the
+  /// library can show it as the cover. Never blocks or fails an upload.
+  Future<void> _uploadCover(String id, Uint8List pdfBytes) async {
+    PdfDocument? document;
+    try {
+      document = await PdfDocument.openData(pdfBytes);
+      final PdfPage page = await document.getPage(1);
+      final double width = 420;
+      final PdfPageImage? image = await page.render(
+        width: width,
+        height: width * page.height / page.width,
+        format: PdfPageImageFormat.jpeg,
+        quality: 82,
+      );
+      await page.close();
+      if (image == null) return;
+      await SupabaseService.client.storage
+          .from(AppConfig.materialsBucket)
+          .uploadBinary(
+            'covers/$id.jpg',
+            image.bytes,
+            fileOptions: const FileOptions(contentType: 'image/jpeg'),
+          );
+    } catch (error) {
+      debugPrint('[Eduvora] cover not created: $error');
+    } finally {
+      await document?.close();
+    }
   }
 
   /// Prefix of a `materials.file_url` that points into the private R2 bucket.

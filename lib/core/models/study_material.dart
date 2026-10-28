@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../config/app_config.dart';
 import '../theme/app_theme.dart';
 
 /// What kind of resource a student has shared.
@@ -67,6 +68,19 @@ class StudyMaterial {
     final int dot = source.lastIndexOf('.');
     if (dot == -1 || dot == source.length - 1) return 'FILE';
     return source.substring(dot + 1).split('?').first.toUpperCase();
+  }
+
+  /// The picture of the file's first page, kept in the public materials
+  /// bucket as `covers/<key>.jpg`. The key is the Drive file id (so every
+  /// copy of one file shares a cover) or else the material id. Empty when the
+  /// app is not connected.
+  String get coverUrl {
+    if (AppConfig.supabaseUrl.trim().isEmpty) return '';
+    final String key = fileUrl.startsWith('gdrive://')
+        ? fileUrl.substring('gdrive://'.length)
+        : id;
+    return '${AppConfig.supabaseUrl.trim()}/storage/v1/object/public/'
+        '${AppConfig.materialsBucket}/covers/$key.jpg';
   }
 
   String get readableSize {
