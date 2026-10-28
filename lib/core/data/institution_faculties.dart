@@ -82,6 +82,7 @@ class InstitutionFaculties {
         'Home Science and Management',
         'Nutrition and Dietetics',
         'Soil Science',
+        'Agribusiness',
       ],
     ),
     Faculty(
@@ -98,6 +99,12 @@ class InstitutionFaculties {
         'Mass Communication',
         'Music',
         'Theatre and Film Studies',
+        'Combined Arts',
+        'Creative Arts',
+        'French with German / Russian',
+        'German',
+        'Journalism and Media Studies',
+        'Tourism Studies',
       ],
     ),
     // Departments not published on the faculty site — standard structure.
@@ -105,7 +112,13 @@ class InstitutionFaculties {
       name: 'Faculty of Basic Medical Sciences',
       icon: Icons.biotech_rounded,
       colour: Color(0xFF0891B2),
-      departments: <String>['Anatomy', 'Medical Biochemistry', 'Physiology'],
+      departments: <String>[
+        'Anatomy',
+        'Medical Biochemistry',
+        'Physiology',
+        'Human Anatomy',
+        'Human Physiology',
+      ],
     ),
     Faculty(
       name: 'Faculty of Biological Sciences',
@@ -116,6 +129,9 @@ class InstitutionFaculties {
         'Microbiology',
         'Plant Science and Biotechnology',
         'Zoology and Environmental Biology',
+        'Botany',
+        'Combined Biological Sciences',
+        'Genetics and Biotechnology',
       ],
     ),
     Faculty(
@@ -127,6 +143,7 @@ class InstitutionFaculties {
         'Banking and Finance',
         'Management',
         'Marketing',
+        'Business Management',
       ],
     ),
     Faculty(
@@ -138,6 +155,7 @@ class InstitutionFaculties {
         'Oral and Maxillofacial Surgery',
         'Preventive Dentistry',
         'Restorative Dentistry',
+        'Dentistry and Dental Surgery',
       ],
     ),
     Faculty(
@@ -154,6 +172,20 @@ class InstitutionFaculties {
         'Science Education',
         'Social Science Education',
         'Special Needs Education',
+        'Early Childhood Education',
+        'Guidance and Counselling',
+        'Health Education',
+        'Physical Education',
+        'Education and Biology',
+        'Education and Chemistry',
+        'Education and Economics',
+        'Education and English Language',
+        'Education and Fine and Applied Arts',
+        'Education and Integrated Science',
+        'Education and Physics',
+        'Education and Political Science',
+        'Education and Social Science',
+        'Education and Social Studies',
       ],
     ),
     Faculty(
@@ -226,6 +258,7 @@ class InstitutionFaculties {
         'Psychological Medicine',
         'Radiation Medicine',
         'Surgery',
+        'Medicine and Surgery',
       ],
     ),
     Faculty(
@@ -240,6 +273,7 @@ class InstitutionFaculties {
         'Pharmaceutics',
         'Pharmacognosy and Environmental Medicine',
         'Pharmacology and Toxicology',
+        'Doctor of Pharmacy',
       ],
     ),
     Faculty(
@@ -253,6 +287,7 @@ class InstitutionFaculties {
         'Physics and Astronomy',
         'Pure and Industrial Chemistry',
         'Statistics',
+        'Computer with Statistics',
       ],
     ),
     Faculty(
@@ -269,6 +304,8 @@ class InstitutionFaculties {
         'Religion and Cultural Studies',
         'Social Work',
         'Sociology and Anthropology',
+        'Criminology and Security Studies',
+        'Government',
       ],
     ),
     Faculty(
@@ -297,6 +334,7 @@ class InstitutionFaculties {
         'Computer and Robotics Education',
         'Home Economics Education',
         'Industrial Technical Education',
+        'Agricultural Science Education',
       ],
     ),
   ];
