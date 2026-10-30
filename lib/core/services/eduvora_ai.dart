@@ -551,10 +551,8 @@ class EduvoraAi {
             'video to open that paper for one sitting, no payment needed. '
             'It is entirely your choice — nobody is forced to watch anything, '
             'and closing the video early just leaves the paper locked.\n\n'
-            'A small banner also shows near the bottom of the screen for '
-            'students who have not paid for anything yet; it disappears '
-            'during an exam, and for anyone who has unlocked at least one '
-            'paper.',
+            'A small banner also shows near the bottom of the screen on the '
+            'Android app; it helps keep Eduvora running.',
         route: '/cbt',
         routeLabel: 'Open CBT Practice',
         suggestions: <String>[
