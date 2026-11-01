@@ -365,6 +365,7 @@ class InstitutionFaculties {
         'Home Economics Education',
         'Industrial Technical Education',
         'Agricultural Science Education',
+        'Computer Education',
       ],
     ),
   ];
