@@ -83,6 +83,9 @@ class InstitutionFaculties {
         'Nutrition and Dietetics',
         'Soil Science',
         'Agribusiness',
+        'Fishery',
+        'Agric Extension Services',
+        'Home Science',
       ],
     ),
     Faculty(
@@ -105,6 +108,15 @@ class InstitutionFaculties {
         'German',
         'Journalism and Media Studies',
         'Tourism Studies',
+        'Advertising',
+        'Public Relations',
+        'Broadcasting',
+        'Development and Communication',
+        'Russian',
+        'French',
+        'Archaeology',
+        'Fine Arts',
+        'Linguistics',
       ],
     ),
     // Departments not published on the faculty site — standard structure.
@@ -132,6 +144,7 @@ class InstitutionFaculties {
         'Botany',
         'Combined Biological Sciences',
         'Genetics and Biotechnology',
+        'Zoology',
       ],
     ),
     Faculty(
@@ -186,6 +199,14 @@ class InstitutionFaculties {
         'Education and Political Science',
         'Education and Social Science',
         'Education and Social Studies',
+        'Primary Education',
+        'Education Science',
+        'Education and French',
+        'Education and Igbo',
+        'Education and Music',
+        'Education Arts',
+        'Library and Information Science',
+        'Special Education',
       ],
     ),
     Faculty(
@@ -201,6 +222,8 @@ class InstitutionFaculties {
         'Mechanical Engineering',
         'Mechatronic Engineering',
         'Metallurgical and Materials Engineering',
+        'Electronics Engineering',
+        'Mechatronics Engineering',
       ],
     ),
     Faculty(
@@ -212,6 +235,7 @@ class InstitutionFaculties {
         'Estate Management',
         'Geoinformatics and Surveying',
         'Urban and Regional Planning',
+        'Surveying and Geoinformatics',
       ],
     ),
     Faculty(
@@ -224,6 +248,9 @@ class InstitutionFaculties {
         'Nursing Sciences',
         'Radiography and Radiological Sciences',
         'Science Laboratory Technology',
+        'Doctor of Optometry',
+        'Medical Laboratory Science',
+        'Medical Radiography and Radiological Sciences',
       ],
     ),
     Faculty(
@@ -238,6 +265,7 @@ class InstitutionFaculties {
         'Private Law',
         'Property Law',
         'Public Law',
+        'Law',
       ],
     ),
     // Departments not published on the faculty site — standard structure.
@@ -306,6 +334,8 @@ class InstitutionFaculties {
         'Sociology and Anthropology',
         'Criminology and Security Studies',
         'Government',
+        'Local Government Studies',
+        'Religious Studies',
       ],
     ),
     Faculty(
