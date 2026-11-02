@@ -67,6 +67,11 @@ class _GpaCalculatorScreenState extends State<GpaCalculatorScreen>
     _restoreDraft();
     if (_courses.isEmpty) _courses.add(_blank());
     if (_label.text.trim().isEmpty) _label.text = _defaultLabel();
+    _study.restoreSemestersFromCloud().then((int restored) {
+      if (restored > 0 && mounted) {
+        setState(() => _saved = _study.semesters());
+      }
+    });
   }
 
   @override

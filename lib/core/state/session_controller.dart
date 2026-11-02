@@ -11,6 +11,7 @@ import '../config/app_config.dart';
 import '../models/student_profile.dart';
 import '../services/email_repository.dart';
 import '../services/local_store.dart';
+import '../services/study_repository.dart';
 import '../services/supabase_service.dart';
 
 /// Where the app is in the sign-in → onboarding → dashboard journey.
@@ -479,6 +480,7 @@ class SessionController extends ChangeNotifier {
     }
 
     await _persistLocalSession(resolved);
+    unawaited(const StudyRepository().restoreSemestersFromCloud());
     _profile = resolved;
     _status = resolved.isComplete
         ? AuthStatus.ready

@@ -51,6 +51,56 @@ class StudyRepository {
       StoreKeys.gpaSemesters,
       current.map((SemesterRecord s) => s.toJson()).toList(),
     );
+    if (!SupabaseService.isReady) return;
+    try {
+      await SupabaseService.client
+          .from('gpa_semesters')
+          .delete()
+          .eq('id', id);
+    } catch (error) {
+      debugPrint('[Eduvora] semester delete sync failed: $error');
+    }
+  }
+
+  /// Brings back semesters saved to the student's account that are missing on
+  /// this phone (after an update, reinstall or new device), and uploads any
+  /// that exist only here. Returns how many were restored.
+  Future<int> restoreSemestersFromCloud() async {
+    if (!SupabaseService.isReady || SupabaseService.currentUser == null) {
+      return 0;
+    }
+    try {
+      final List<dynamic> rows = await SupabaseService.client
+          .from('gpa_semesters')
+          .select()
+          .eq('user_id', SupabaseService.currentUser!.id);
+      final List<SemesterRecord> local = semesters();
+      final Set<String> have = local.map((SemesterRecord s) => s.id).toSet();
+      final Set<String> remoteIds = <String>{};
+      int restored = 0;
+      for (final dynamic row in rows) {
+        final SemesterRecord record = SemesterRecord.fromJson(
+          Map<String, dynamic>.from(row as Map<dynamic, dynamic>),
+        );
+        remoteIds.add(record.id);
+        if (have.contains(record.id)) continue;
+        local.add(record);
+        restored++;
+      }
+      if (restored > 0) {
+        await LocalStore.instance.writeList(
+          StoreKeys.gpaSemesters,
+          local.map((SemesterRecord s) => s.toJson()).toList(),
+        );
+      }
+      for (final SemesterRecord s in local) {
+        if (!remoteIds.contains(s.id)) await _mirrorSemester(s);
+      }
+      return restored;
+    } catch (error) {
+      debugPrint('[Eduvora] semester restore failed: $error');
+      return 0;
+    }
   }
 
   /// The semester the student was in the middle of entering, so leaving the
