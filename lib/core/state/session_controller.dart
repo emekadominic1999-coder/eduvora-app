@@ -481,6 +481,7 @@ class SessionController extends ChangeNotifier {
 
     await _persistLocalSession(resolved);
     unawaited(const StudyRepository().restoreSemestersFromCloud());
+    unawaited(const StudyRepository().restoreGpaSettingsFromCloud());
     _profile = resolved;
     _status = resolved.isComplete
         ? AuthStatus.ready

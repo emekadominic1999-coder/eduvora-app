@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' as sb;
 
 import '../models/cbt.dart';
 import '../models/gpa.dart';
@@ -117,8 +118,48 @@ class StudyRepository {
   GpaSettings gpaSettings() =>
       GpaSettings.fromJson(LocalStore.instance.readMap(StoreKeys.gpaSettings));
 
-  Future<void> saveGpaSettings(GpaSettings settings) =>
-      LocalStore.instance.writeMap(StoreKeys.gpaSettings, settings.toJson());
+  Future<void> saveGpaSettings(GpaSettings settings) async {
+    await LocalStore.instance.writeMap(
+      StoreKeys.gpaSettings,
+      settings.toJson(),
+    );
+    if (!SupabaseService.isReady || SupabaseService.currentUser == null) {
+      return;
+    }
+    try {
+      await SupabaseService.client.auth.updateUser(
+        sb.UserAttributes(
+          data: <String, dynamic>{'gpa_settings': settings.toJson()},
+        ),
+      );
+    } catch (error) {
+      debugPrint('[Eduvora] gpa settings sync failed: $error');
+    }
+  }
+
+  /// Brings back the previous-CGPA box and resit rule saved to the student's
+  /// account when this phone has none. Returns true when something came back.
+  Future<bool> restoreGpaSettingsFromCloud() async {
+    if (!SupabaseService.isReady || SupabaseService.currentUser == null) {
+      return false;
+    }
+    if (LocalStore.instance.readMap(StoreKeys.gpaSettings) != null) {
+      return false;
+    }
+    try {
+      final sb.UserResponse res = await SupabaseService.client.auth.getUser();
+      final Object? saved = res.user?.userMetadata?['gpa_settings'];
+      if (saved is! Map) return false;
+      await LocalStore.instance.writeMap(
+        StoreKeys.gpaSettings,
+        Map<String, dynamic>.from(saved),
+      );
+      return true;
+    } catch (error) {
+      debugPrint('[Eduvora] gpa settings restore failed: $error');
+      return false;
+    }
+  }
 
   /// The cumulative position across every saved semester, honouring the
   /// student's resit rule and any earlier CGPA they entered.

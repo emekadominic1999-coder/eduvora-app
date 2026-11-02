@@ -72,6 +72,16 @@ class _GpaCalculatorScreenState extends State<GpaCalculatorScreen>
         setState(() => _saved = _study.semesters());
       }
     });
+    _study.restoreGpaSettingsFromCloud().then((bool restored) {
+      if (!restored || !mounted) return;
+      setState(() {
+        _settings = _study.gpaSettings();
+        if (_settings.hasPrevious) {
+          _prevCgpa.text = _settings.previousCgpa.toStringAsFixed(2);
+          _prevUnits.text = '${_settings.previousUnits}';
+        }
+      });
+    });
   }
 
   @override
