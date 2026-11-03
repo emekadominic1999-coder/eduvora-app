@@ -64,5 +64,5 @@ delete from public.materials a
 select 'materials before the first cleanup' as item, count(*)::text as value from public.cleanup_backup_materials_2026_11_03
 union all select 'materials now (after repair)', count(*)::text from public.materials
 union all select 'materials still removed (unusable or true duplicates)',
-  (select count(*) from public.cleanup_backup_materials_2026_11_03) - (select count(*) from public.materials)::text
+  ((select count(*) from public.cleanup_backup_materials_2026_11_03) - (select count(*) from public.materials))::text
 order by 1;
