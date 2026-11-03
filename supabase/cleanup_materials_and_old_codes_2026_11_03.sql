@@ -84,13 +84,16 @@ update public.course_outlines o
   from code_map c
  where o.course_code = c.old_code;
 
--- 4. Remove duplicate materials (same title, code, department and file)
+-- 4. Remove duplicate materials (same title, code, department, FACULTY, level and file).
+--    Faculty matters: the app shows a material to a faculty only if a copy exists for it.
 delete from public.materials a
  using public.materials b
  where a.ctid > b.ctid
    and a.title = b.title
    and a.course_code = b.course_code
    and a.department = b.department
+   and a.faculty = b.faculty
+   and a.level = b.level
    and a.file_url = b.file_url
    and coalesce(a.file_url, '') <> '';
 

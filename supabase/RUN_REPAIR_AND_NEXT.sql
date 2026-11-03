@@ -1,11 +1,83 @@
--- EDUVORA: NEXT UPDATES IN ONE FILE (STA 112 + chemistry + cleanup of old codes and junk materials)
+-- EDUVORA: REPAIR + STA 112 + CHEMISTRY, IN ONE FILE
 -- Paste this whole file into the Supabase SQL editor and click Run ONCE.
--- If anything fails, nothing is changed (it all runs as one unit).
--- The cleanup part saves a backup of every material and outline first.
+-- (The cleanup is NOT repeated; its duplicate rule is now fixed in the repository.)
 
 
 -- ============================================================
--- PART 1 of 3: unn_sta112_introductory_probability_cbt_questions.sql
+-- PART 1 of 3: repair_materials_faculty_copies_2026_11_03.sql
+-- ============================================================
+-- =============================================================================
+-- REPAIR: bring back the per-faculty material copies the first cleanup removed
+-- =============================================================================
+-- The cleanup treated materials that differ ONLY by faculty as duplicates. The app
+-- shows an "All departments" material to a student only when a copy exists for
+-- that student's faculty, so those copies are needed.
+-- This restores every removed row from the backup (except genuinely unusable
+-- ones), re-applies the code tidy-up and old-to-current code changes, and then
+-- removes only TRUE duplicates (same title, code, department, faculty, level, file).
+-- Safe to run twice.
+-- =============================================================================
+
+-- 1. Restore removed rows (not unusable ones)
+insert into public.materials
+select b.*
+  from public.cleanup_backup_materials_2026_11_03 b
+ where not exists (select 1 from public.materials m where m.id = b.id)
+   and coalesce(trim(b.title), '') <> ''
+   and length(trim(b.title)) >= 3
+   and coalesce(trim(b.file_url), '') <> '';
+
+-- 2. Re-apply the code tidy-up and the old -> current code changes on those rows
+create temp table code_map (old_code text primary key, new_code text);
+insert into code_map values
+  ('BIO 151', 'BIO 101'), ('BIO 152', 'BIO 102'), ('BIO 154', 'BIO 108'),
+  ('PHY 121', 'PHY 101'), ('PHY 124', 'PHY 102'), ('PHY 114', 'PHY 102'), ('PHY 192', 'PHY 108'),
+  ('PHY 191', 'PHY 107'), ('PHY 193', 'PHY 107'),
+  ('MTH 111', 'MTH 101'), ('MTH 121', 'MTH 103'), ('MTH 122', 'MTH 102'),
+  ('GSP 101', 'GST 111'), ('GSP 102', 'GST 114'), ('GSP 201', 'GST 311'), ('GSP 202', 'GST 312'),
+  ('GSP 207', 'GST 211'), ('GSP 208', 'GST 212'), ('GST 208', 'GST 212'),
+  ('EGR 101', 'GET 101'), ('ECO 131', 'ECO 111');
+
+update public.materials
+   set course_code = regexp_replace(upper(trim(course_code)), '^([A-Z]{2,4})\s*[-_.]?\s*([0-9]{3})$', '\1 \2')
+ where course_code ~* '^\s*[a-z]{2,4}\s*[-_.]?\s*[0-9]{3}\s*$'
+   and course_code <> regexp_replace(upper(trim(course_code)), '^([A-Z]{2,4})\s*[-_.]?\s*([0-9]{3})$', '\1 \2');
+
+update public.materials m
+   set course_code = c.new_code
+  from code_map c
+ where m.course_code = c.old_code;
+
+do $$
+begin
+  if exists (select 1 from information_schema.columns
+              where table_schema = 'public' and table_name = 'materials' and column_name = 'code') then
+    execute 'update public.materials set code = course_code where code is distinct from course_code and course_code <> ''''';
+  end if;
+end $$;
+
+-- 3. Remove TRUE duplicates only (faculty and level are part of the match)
+delete from public.materials a
+ using public.materials b
+ where a.ctid > b.ctid
+   and a.title = b.title
+   and a.course_code = b.course_code
+   and a.department = b.department
+   and a.faculty = b.faculty
+   and a.level = b.level
+   and a.file_url = b.file_url
+   and coalesce(a.file_url, '') <> '';
+
+-- 4. Check
+select 'materials before the first cleanup' as item, count(*)::text as value from public.cleanup_backup_materials_2026_11_03
+union all select 'materials now (after repair)', count(*)::text from public.materials
+union all select 'materials still removed (unusable or true duplicates)',
+  (select count(*) from public.cleanup_backup_materials_2026_11_03) - (select count(*) from public.materials)::text
+order by 1;
+
+
+-- ============================================================
+-- PART 2 of 3: unn_sta112_introductory_probability_cbt_questions.sql
 -- ============================================================
 -- STA 112: Introductory Probability
 -- =============================================================================
@@ -121,7 +193,7 @@ select count(*) as sta112_questions from public.cbt_questions where subject_id =
 
 
 -- ============================================================
--- PART 2 of 3: RUN_CHEMISTRY_UPDATES.sql
+-- PART 3 of 3: RUN_CHEMISTRY_UPDATES.sql
 -- ============================================================
 -- EDUVORA: CHEMISTRY UPDATES (CHM 107 practical + more CHM 101 questions)
 -- Paste this whole file into the Supabase SQL editor and click Run ONCE.
@@ -337,128 +409,4 @@ select subject_id, subject_name, count(*) as questions
  where subject_name ilike 'CHM 101%' and subject_id not like '%coming-soon'
  group by 1, 2;
 
-
-
--- ============================================================
--- PART 3 of 3: cleanup_materials_and_old_codes_2026_11_03.sql
--- ============================================================
--- =============================================================================
--- EDUVORA CLEANUP (3 Nov 2026) - materials and old course codes
--- =============================================================================
--- Requested by the owner: remove junk materials, and fix or remove anything that
--- still uses an OLD course code, so the app only shows current courses.
---
--- SAFETY
---   * Step 0 copies every row of `materials` and `course_outlines` into backup
---     tables first (only the first time it runs), so every change can be undone.
---   * Only codes the owner has explicitly declared old are changed.
---   * Anything that is unclear is NOT deleted. It is listed in the final table so
---     it can be reviewed.
---   * Safe to run twice.
---
--- WHAT IT DOES
---   1. Backs up materials and course_outlines.
---   2. Tidies how course codes are typed in materials ("phy101", "Phy-101" -> "PHY 101").
---   3. Changes old codes to their current codes in materials AND course_outlines
---      (BIO 151->BIO 101, PHY 121->PHY 101, GSP 101->GST 111, MTH 111->MTH 101 ...).
---   4. Removes duplicate rows that this creates (same title, department, code, file).
---   5. Removes materials with no title or no file/link (unusable).
---   6. Removes the old PHY 121 outline row where PHY 101 and PHY 103 now exist.
---   7. Shows a summary and the codes that still need a decision.
--- =============================================================================
-
--- 0. Backups (kept private)
-create table if not exists public.cleanup_backup_materials_2026_11_03 as
-  select * from public.materials;
-create table if not exists public.cleanup_backup_outlines_2026_11_03 as
-  select * from public.course_outlines;
-alter table public.cleanup_backup_materials_2026_11_03 enable row level security;
-alter table public.cleanup_backup_outlines_2026_11_03 enable row level security;
-do $$
-begin
-  if to_regclass('public.course_code_change_backup_2026_11_03') is not null then
-    execute 'alter table public.course_code_change_backup_2026_11_03 enable row level security';
-  end if;
-end $$;
-
--- 1. Old code -> current code (only mappings the owner has confirmed)
-create temp table code_map (old_code text primary key, new_code text);
-insert into code_map values
-  ('BIO 151', 'BIO 101'), ('BIO 152', 'BIO 102'), ('BIO 154', 'BIO 108'),
-  ('PHY 121', 'PHY 101'), ('PHY 124', 'PHY 102'), ('PHY 114', 'PHY 102'), ('PHY 192', 'PHY 108'),
-  ('PHY 191', 'PHY 107'), ('PHY 193', 'PHY 107'),
-  ('MTH 111', 'MTH 101'), ('MTH 121', 'MTH 103'), ('MTH 122', 'MTH 102'),
-  ('GSP 101', 'GST 111'), ('GSP 102', 'GST 114'), ('GSP 201', 'GST 311'), ('GSP 202', 'GST 312'),
-  ('GSP 207', 'GST 211'), ('GSP 208', 'GST 212'), ('GST 208', 'GST 212'),
-  ('EGR 101', 'GET 101'), ('ECO 131', 'ECO 111');
-
--- 2. Tidy how codes are typed in materials
-update public.materials
-   set course_code = regexp_replace(upper(trim(course_code)), '^([A-Z]{2,4})\s*[-_.]?\s*([0-9]{3})$', '\1 \2')
- where course_code ~* '^\s*[a-z]{2,4}\s*[-_.]?\s*[0-9]{3}\s*$'
-   and course_code <> regexp_replace(upper(trim(course_code)), '^([A-Z]{2,4})\s*[-_.]?\s*([0-9]{3})$', '\1 \2');
-
--- 3a. Materials: old code -> current code
-update public.materials m
-   set course_code = c.new_code
-  from code_map c
- where m.course_code = c.old_code;
-
--- keep a separate `code` column in step if the table has one
-do $$
-begin
-  if exists (select 1 from information_schema.columns
-              where table_schema = 'public' and table_name = 'materials' and column_name = 'code') then
-    execute 'update public.materials set code = course_code where code is distinct from course_code and course_code <> ''''';
-  end if;
-end $$;
-
--- 3b. Course outlines: where the current-code row already exists for the same
---     department, drop the old row (it would only duplicate); otherwise rename it.
-delete from public.course_outlines o
- using code_map c
- where o.course_code = c.old_code
-   and exists (select 1 from public.course_outlines n
-                where n.course_code = c.new_code
-                  and n.institution = o.institution
-                  and n.faculty = o.faculty
-                  and n.department = o.department);
-update public.course_outlines o
-   set course_code = c.new_code
-  from code_map c
- where o.course_code = c.old_code;
-
--- 4. Remove duplicate materials (same title, code, department and file)
-delete from public.materials a
- using public.materials b
- where a.ctid > b.ctid
-   and a.title = b.title
-   and a.course_code = b.course_code
-   and a.department = b.department
-   and a.file_url = b.file_url
-   and coalesce(a.file_url, '') <> '';
-
--- 5. Remove unusable materials (no title, or no file/link at all)
-delete from public.materials
- where coalesce(trim(title), '') = ''
-    or length(trim(title)) < 3
-    or coalesce(trim(file_url), '') = '';
-
--- 6. Summary and the codes that still need a decision (nothing here was deleted)
-select item, value from (
-  select 1 as ord, 'materials before cleanup' as item, count(*)::text as value
-    from public.cleanup_backup_materials_2026_11_03
-  union all
-  select 2, 'materials now', count(*)::text from public.materials
-  union all
-  select 3, 'outline rows before cleanup', count(*)::text from public.cleanup_backup_outlines_2026_11_03
-  union all
-  select 4, 'outline rows now', count(*)::text from public.course_outlines
-  union all
-  select 5, 'NEEDS REVIEW - code not in any course: ' || x.course_code, x.n::text
-    from (select m.course_code, count(*) as n
-            from public.materials m
-           where not exists (select 1 from public.course_outlines o where o.course_code = m.course_code)
-           group by m.course_code order by count(*) desc limit 40) x
-) r order by ord, item;
 
