@@ -34,6 +34,10 @@ class _CbtHomeScreenState extends State<CbtHomeScreen> {
 
   bool _showAllPapers = false;
   late Future<List<CbtSubject>> _future;
+
+  /// Every paper in the bank, for the course search box (which looks beyond
+  /// the "papers for you" list).
+  List<CbtSubject> _allPapers = <CbtSubject>[];
   List<CbtEntitlement> _entitlements = <CbtEntitlement>[];
 
   @override
@@ -109,6 +113,7 @@ class _CbtHomeScreenState extends State<CbtHomeScreen> {
     if (mounted) setState(() => _entitlements = entitlements);
 
     final List<CbtSubject> all = await _cbt.all();
+    _allPapers = all;
     if (_showAllPapers) return all;
 
     return all
@@ -533,6 +538,15 @@ class _CbtHomeScreenState extends State<CbtHomeScreen> {
                   ),
                 ),
                 const _Disclaimer(),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.screenPadding,
+                    AppSpacing.lg,
+                    AppSpacing.screenPadding,
+                    0,
+                  ),
+                  child: _CourseSearch(papers: _allPapers, onPick: _start),
+                ),
                 SectionHeader(
                   title: _showAllPapers ? 'All papers' : 'Papers for you',
                   subtitle: _showAllPapers
@@ -673,6 +687,145 @@ class _CbtHomeScreenState extends State<CbtHomeScreen> {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// A search box with a drop-down of matching courses, so a student can type
+/// "phy 101" or "mechanics" and tap the paper instead of scrolling the list.
+class _CourseSearch extends StatefulWidget {
+  const _CourseSearch({required this.papers, required this.onPick});
+
+  final List<CbtSubject> papers;
+  final void Function(CbtSubject subject) onPick;
+
+  @override
+  State<_CourseSearch> createState() => _CourseSearchState();
+}
+
+class _CourseSearchState extends State<_CourseSearch> {
+  final TextEditingController _controller = TextEditingController();
+  final FocusNode _focus = FocusNode();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _focus.dispose();
+    super.dispose();
+  }
+
+  /// "PHY101", "phy 101" and "phy-101" all compare equal.
+  static String _norm(String s) =>
+      s.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+
+  Iterable<CbtSubject> _matches(String query) {
+    final List<CbtSubject> sorted = List<CbtSubject>.of(widget.papers)
+      ..sort((CbtSubject a, CbtSubject b) => a.name.compareTo(b.name));
+    final String q = _norm(query);
+    if (q.isEmpty) return sorted;
+    final List<CbtSubject> starts = <CbtSubject>[];
+    final List<CbtSubject> contains = <CbtSubject>[];
+    for (final CbtSubject s in sorted) {
+      final String name = _norm(s.name);
+      if (name.startsWith(q)) {
+        starts.add(s);
+      } else if (name.contains(q) ||
+          _norm(s.description).contains(q) ||
+          _norm(s.id).contains(q)) {
+        contains.add(s);
+      }
+    }
+    return <CbtSubject>[...starts, ...contains];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        return RawAutocomplete<CbtSubject>(
+          textEditingController: _controller,
+          focusNode: _focus,
+          displayStringForOption: (CbtSubject s) => s.name,
+          optionsBuilder: (TextEditingValue value) => _matches(value.text),
+          onSelected: (CbtSubject s) {
+            _controller.clear();
+            _focus.unfocus();
+            widget.onPick(s);
+          },
+          fieldViewBuilder:
+              (
+                BuildContext context,
+                TextEditingController controller,
+                FocusNode focusNode,
+                VoidCallback onFieldSubmitted,
+              ) {
+                return TextField(
+                  controller: controller,
+                  focusNode: focusNode,
+                  textInputAction: TextInputAction.search,
+                  decoration: InputDecoration(
+                    hintText: 'Search a course, e.g. PHY 101 or Mechanics',
+                    prefixIcon: const Icon(Icons.search_rounded),
+                    suffixIcon: ValueListenableBuilder<TextEditingValue>(
+                      valueListenable: controller,
+                      builder: (_, TextEditingValue v, _) => v.text.isEmpty
+                          ? const Icon(Icons.arrow_drop_down_rounded)
+                          : IconButton(
+                              tooltip: 'Clear',
+                              icon: const Icon(Icons.close_rounded),
+                              onPressed: controller.clear,
+                            ),
+                    ),
+                  ),
+                );
+              },
+          optionsViewBuilder:
+              (
+                BuildContext context,
+                AutocompleteOnSelected<CbtSubject> onSelected,
+                Iterable<CbtSubject> options,
+              ) {
+                final List<CbtSubject> list = options.toList();
+                return Align(
+                  alignment: Alignment.topLeft,
+                  child: Material(
+                    elevation: 6,
+                    borderRadius: AppRadii.md,
+                    clipBehavior: Clip.antiAlias,
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxHeight: 320,
+                        maxWidth: constraints.maxWidth,
+                      ),
+                      child: list.isEmpty
+                          ? const Padding(
+                              padding: EdgeInsets.all(AppSpacing.lg),
+                              child: Text('No course matches that search.'),
+                            )
+                          : ListView.builder(
+                              padding: EdgeInsets.zero,
+                              shrinkWrap: true,
+                              itemCount: list.length,
+                              itemBuilder: (BuildContext context, int i) {
+                                final CbtSubject s = list[i];
+                                return ListTile(
+                                  dense: true,
+                                  title: Text(
+                                    s.name,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  subtitle: Text('${s.questionCount} questions'),
+                                  onTap: () => onSelected(s),
+                                );
+                              },
+                            ),
+                    ),
+                  ),
+                );
+              },
+        );
+      },
     );
   }
 }
