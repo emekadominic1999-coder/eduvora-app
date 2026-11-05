@@ -4,6 +4,7 @@ import '../../../../core/models/theory.dart';
 import '../../../../core/services/theory_repository.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/common.dart';
+import 'snap_solver_screen.dart';
 import 'theory_course_screen.dart';
 
 /// Theory practice: pick a course, answer on paper or aloud, then mark
@@ -51,6 +52,29 @@ class _TheoryHomeScreenState extends State<TheoryHomeScreen> {
                   'would answer it. Then tap Show answer to see a full model '
                   'answer and the key points to remember.',
                   style: TextStyle(color: AppColours.text, height: 1.4),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              EduvoraCard(
+                colour: AppColours.accentSoft,
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const SnapSolverScreen(),
+                  ),
+                ),
+                child: const Row(
+                  children: <Widget>[
+                    Icon(Icons.photo_camera_rounded, color: AppColours.accent),
+                    SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: Text(
+                        'Snap a question. Take a photo of any question or '
+                        'equation and get a step-by-step solution.',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                    Icon(Icons.chevron_right_rounded),
+                  ],
                 ),
               ),
               const SizedBox(height: AppSpacing.lg),
