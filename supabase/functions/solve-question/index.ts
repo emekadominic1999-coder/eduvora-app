@@ -48,6 +48,7 @@ Deno.serve(async (request: Request) => {
     courseTitle?: string;
     topics?: string[];
     count?: number;
+    images?: string[];
   };
   try {
     body = await request.json();
@@ -56,6 +57,9 @@ Deno.serve(async (request: Request) => {
   }
   if (body.mode === 'generate') {
     return await generateTheory(client, geminiKey, userId, body);
+  }
+  if (body.mode === 'notes') {
+    return await questionsFromNotes(client, geminiKey, userId, body);
   }
 
   const image = (body.image ?? '').trim();
@@ -214,6 +218,116 @@ Only include facts you are sure are correct. Return JSON only.`;
   }
   if (!Array.isArray(questions) || questions.length === 0) {
     return json({ error: 'No questions came back. Please try again.' }, 502);
+  }
+
+  await client
+    .from('ai_solve_usage')
+    .upsert(
+      { user_id: userId, day, uses: usage?.uses ?? 0, gen_uses: genUsed + 1 },
+      { onConflict: 'user_id,day' },
+    );
+
+  return json({ questions, remaining: Math.max(GEN_DAILY_LIMIT - genUsed - 1, 0) });
+}
+
+// "Study from my notes": the student sends photos of the pages they are
+// studying and gets exam-style questions and model answers taken only from
+// those pages.
+async function questionsFromNotes(
+  client: ReturnType<typeof createClient>,
+  geminiKey: string,
+  userId: string,
+  body: { images?: string[]; count?: number; topics?: string[] },
+): Promise<Response> {
+  const images = (body.images ?? []).filter((i) => typeof i === 'string' && i.length > 100).slice(0, 6);
+  if (images.length === 0) return json({ error: 'Add photos of your notes first.' }, 400);
+  const total = images.reduce((n, i) => n + i.length, 0);
+  if (total > 9_000_000) return json({ error: 'Those photos are too large. Use fewer pages.' }, 413);
+  const count = Math.min(Math.max(Math.round(Number(body.count ?? 5)), 5), 15);
+  const topics = (body.topics ?? []).map((t) => String(t).trim().slice(0, 100)).filter(Boolean).slice(0, 8);
+
+  const day = new Date().toISOString().slice(0, 10);
+  const { data: usage } = await client
+    .from('ai_solve_usage')
+    .select('uses, gen_uses')
+    .eq('user_id', userId)
+    .eq('day', day)
+    .maybeSingle();
+  const genUsed = usage?.gen_uses ?? 0;
+  if (genUsed >= GEN_DAILY_LIMIT) {
+    return json(
+      { error: `You have used your ${GEN_DAILY_LIMIT} free question sets for today. Come back tomorrow.` },
+      429,
+    );
+  }
+
+  const prompt = `You are an experienced Nigerian university lecturer.
+The images are pages from a student's textbook or lecture notes.
+Write exactly ${count} different written (theory) exam questions based ONLY on what these pages teach.
+${topics.length ? 'Focus on these topics where the pages cover them: ' + topics.join(', ') + '.' : ''}
+For each question give: the question, the marks (3 to 10), a clear complete model answer built from the
+content of the pages (use the same terms and definitions as the pages), 3 to 6 short key points, and the
+topic. Do not use facts that are not in the pages. If the pages contain too little for ${count} good
+questions, write fewer. If the images are unreadable or are not study notes, return an empty list.
+Use plain text for maths such as x^2, sqrt(x), a/b. Return JSON only.`;
+
+  const parts: unknown[] = [{ text: prompt }];
+  for (const data of images) parts.push({ inlineData: { mimeType: 'image/jpeg', data } });
+
+  const schema = {
+    type: 'OBJECT',
+    properties: {
+      questions: {
+        type: 'ARRAY',
+        items: {
+          type: 'OBJECT',
+          properties: {
+            question: { type: 'STRING' },
+            marks: { type: 'INTEGER' },
+            answer: { type: 'STRING' },
+            keyPoints: { type: 'ARRAY', items: { type: 'STRING' } },
+            topic: { type: 'STRING' },
+          },
+          required: ['question', 'marks', 'answer', 'keyPoints'],
+        },
+      },
+    },
+    required: ['questions'],
+  };
+
+  const reply = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': geminiKey },
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts }],
+        generationConfig: {
+          temperature: 0.4,
+          maxOutputTokens: 8192,
+          responseMimeType: 'application/json',
+          responseSchema: schema,
+        },
+      }),
+    },
+  );
+  if (!reply.ok) {
+    console.error('gemini notes failed', reply.status, (await reply.text()).slice(0, 300));
+    return json({ error: 'The question maker is busy. Please try again in a minute.' }, 502);
+  }
+  const result = await reply.json();
+  const text: string = (result?.candidates?.[0]?.content?.parts ?? [])
+    .map((p: { text?: string }) => p.text ?? '')
+    .join('')
+    .trim();
+  let questions: unknown[] = [];
+  try {
+    questions = JSON.parse(text)?.questions ?? [];
+  } catch {
+    questions = [];
+  }
+  if (!Array.isArray(questions) || questions.length === 0) {
+    return json({ error: 'Could not read questions from those pages. Try clearer photos of the text.' }, 422);
   }
 
   await client
