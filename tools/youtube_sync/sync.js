@@ -36,9 +36,23 @@ const lessonOf = (title) => {
   return m ? Number(m[1]) : null;
 };
 
+const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
+
+// YouTube's public feeds answer 404/500 now and then even for good playlists,
+// so try a few times before giving up.
 async function feed(playlistId) {
-  const r = await fetch('https://www.youtube.com/feeds/videos.xml?playlist_id=' + playlistId);
-  if (!r.ok) throw new Error('YouTube feed ' + playlistId + ' returned ' + r.status);
+  let r;
+  for (let i = 1; i <= 6; i++) {
+    r = await fetch('https://www.youtube.com/feeds/videos.xml?playlist_id=' + playlistId);
+    if (r.ok) break;
+    console.log('YouTube feed ' + playlistId + ' returned ' + r.status + ' (try ' + i + ' of 6)');
+    if (i < 6) await sleep(i * 5000);
+  }
+  if (!r.ok) {
+    const e = new Error('YouTube feed ' + playlistId + ' returned ' + r.status);
+    e.transient = true;
+    throw e;
+  }
   const xml = await r.text();
   return [...xml.matchAll(/<entry>([\s\S]*?)<\/entry>/g)]
     .map((m) => ({
@@ -83,4 +97,13 @@ async function main() {
   console.log((DRY ? '[dry run] ' : '') + 'added ' + added + ', replaced ' + replaced + ', already up to date ' + skipped);
 }
 
-main().catch((e) => { console.error(e.message); process.exit(1); });
+main().catch((e) => {
+  if (e.transient) {
+    // A YouTube hiccup is not worth a red failure: the next run, half an
+    // hour later, tries again.
+    console.log('::warning::' + e.message + ' - will retry on the next run');
+    return;
+  }
+  console.error(e.message);
+  process.exit(1);
+});
