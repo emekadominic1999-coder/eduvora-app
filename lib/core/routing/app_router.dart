@@ -23,6 +23,7 @@ import '../../features/admin/presentation/screens/email_students_screen.dart';
 import '../../features/admin/presentation/screens/live_users_screen.dart';
 import '../../features/legal/legal_content.dart';
 import '../../features/legal/presentation/screens/legal_screen.dart';
+import '../../features/theory/presentation/screens/theory_home_screen.dart';
 import '../../features/videos/presentation/screens/academic_videos_screen.dart';
 
 /// Named routes and the shell-aware navigation helper.
@@ -42,6 +43,7 @@ class AppRouter {
   static const String upload = '/upload';
   static const String cbt = '/cbt';
   static const String courses = '/courses';
+  static const String theory = '/theory';
   static const String groups = '/groups';
   static const String classLists = '/class-lists';
   static const String gpa = '/gpa';
@@ -97,6 +99,8 @@ class AppRouter {
         page = const CourseOutlineScreen();
       case cbt:
         page = const CbtHomeScreen();
+      case theory:
+        page = const TheoryHomeScreen();
       case gpa:
         page = const GpaCalculatorScreen();
       case community:

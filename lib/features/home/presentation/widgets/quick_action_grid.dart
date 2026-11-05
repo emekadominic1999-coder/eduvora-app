@@ -23,6 +23,12 @@ class QuickActionGrid extends StatelessWidget {
       route: AppRouter.cbt,
     ),
     _Action(
+      label: 'Theory\npractice',
+      icon: Icons.edit_note_rounded,
+      colour: Color(0xFF7C3AED),
+      route: AppRouter.theory,
+    ),
+    _Action(
       label: 'Course\noutline',
       icon: Icons.list_alt_rounded,
       colour: Color(0xFF0891B2),
