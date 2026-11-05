@@ -40,6 +40,26 @@ Deno.serve(async (request: Request) => {
   if (userError || !userData.user) return json({ error: 'Sign in first.' }, 401);
   const userId = userData.user.id;
 
+  // The AI tools are a paid feature. The owner always has access, anyone
+  // else needs an unexpired row in `ai_access` (written by the payment flow
+  // or by the owner in the Supabase table editor).
+  const isOwner =
+    (userData.user.email ?? '').trim().toLowerCase() === 'emekadominic1999@gmail.com';
+  if (!isOwner) {
+    const { data: access } = await client
+      .from('ai_access')
+      .select('expires_at')
+      .eq('user_id', userId)
+      .maybeSingle();
+    const active = access?.expires_at && new Date(access.expires_at).getTime() > Date.now();
+    if (!active) {
+      return json(
+        { error: 'The AI tools are a paid feature. Unlock them to use Snap a question and the AI question maker.', paywall: true },
+        402,
+      );
+    }
+  }
+
   let body: {
     mode?: string;
     image?: string;
