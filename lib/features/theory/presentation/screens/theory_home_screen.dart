@@ -47,9 +47,9 @@ class _TheoryHomeScreenState extends State<TheoryHomeScreen> {
               const EduvoraCard(
                 colour: AppColours.primaryTint,
                 child: Text(
-                  'Answer each question on paper or say it aloud, just like '
-                  'in the exam hall. Then reveal the marking guide and tick '
-                  'the points you covered to see your score.',
+                  'Read each written exam question and think about how you '
+                  'would answer it. Then tap Show answer to see a full model '
+                  'answer and the key points to remember.',
                   style: TextStyle(color: AppColours.text, height: 1.4),
                 ),
               ),

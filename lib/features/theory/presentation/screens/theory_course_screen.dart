@@ -1,15 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/models/theory.dart';
-import '../../../../core/services/local_store.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/common.dart';
 import 'theory_question_screen.dart';
 
-String theoryScoreKey(String id) => 'eduvora.theory.score.$id';
-
-/// The questions of one course, with the student's best score on each.
-class TheoryCourseScreen extends StatefulWidget {
+/// The theory questions of one course.
+class TheoryCourseScreen extends StatelessWidget {
   const TheoryCourseScreen({
     super.key,
     required this.code,
@@ -20,36 +17,24 @@ class TheoryCourseScreen extends StatefulWidget {
   final List<TheoryQuestion> questions;
 
   @override
-  State<TheoryCourseScreen> createState() => _TheoryCourseScreenState();
-}
-
-class _TheoryCourseScreenState extends State<TheoryCourseScreen> {
-  int? _best(String id) => LocalStore.isReady
-      ? int.tryParse(LocalStore.instance.readString(theoryScoreKey(id)) ?? '')
-      : null;
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColours.background,
-      appBar: AppBar(title: Text('${widget.code} theory')),
+      appBar: AppBar(title: Text('$code theory')),
       body: ListView.separated(
         padding: const EdgeInsets.all(AppSpacing.screenPadding),
-        itemCount: widget.questions.length,
+        itemCount: questions.length,
         separatorBuilder: (BuildContext context, int index) =>
             const SizedBox(height: AppSpacing.md),
         itemBuilder: (BuildContext context, int i) {
-          final TheoryQuestion q = widget.questions[i];
-          final int? best = _best(q.id);
+          final TheoryQuestion q = questions[i];
           return EduvoraCard(
-            onTap: () async {
-              await Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => TheoryQuestionScreen(question: q),
-                ),
-              );
-              if (mounted) setState(() {});
-            },
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) =>
+                    TheoryQuestionScreen(questions: questions, index: i),
+              ),
+            ),
             child: Row(
               children: <Widget>[
                 Text(
@@ -82,24 +67,7 @@ class _TheoryCourseScreenState extends State<TheoryCourseScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(width: AppSpacing.sm),
-                Column(
-                  children: <Widget>[
-                    Text(
-                      '${q.marks} marks',
-                      style: const TextStyle(fontSize: 12),
-                    ),
-                    if (best != null)
-                      Text(
-                        'Best $best/${q.marks}',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: AppColours.success,
-                        ),
-                      ),
-                  ],
-                ),
+                const Icon(Icons.chevron_right_rounded),
               ],
             ),
           );
