@@ -6,6 +6,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/common.dart';
 import 'snap_solver_screen.dart';
 import 'theory_course_screen.dart';
+import 'theory_generator_screen.dart';
 
 /// Theory practice: pick a course, answer on paper or aloud, then mark
 /// yourself against the marking guide.
@@ -52,6 +53,29 @@ class _TheoryHomeScreenState extends State<TheoryHomeScreen> {
                   'would answer it. Then tap Show answer to see a full model '
                   'answer and the key points to remember.',
                   style: TextStyle(color: AppColours.text, height: 1.4),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              EduvoraCard(
+                colour: AppColours.successSoft,
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const TheoryGeneratorScreen(),
+                  ),
+                ),
+                child: const Row(
+                  children: <Widget>[
+                    Icon(Icons.auto_awesome_rounded, color: AppColours.success),
+                    SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: Text(
+                        'Make my own theory questions. Pick a course, topics '
+                        'and 5 or more questions, with full answers.',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                    Icon(Icons.chevron_right_rounded),
+                  ],
                 ),
               ),
               const SizedBox(height: AppSpacing.md),

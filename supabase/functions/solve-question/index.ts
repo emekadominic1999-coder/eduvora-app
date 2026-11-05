@@ -40,12 +40,24 @@ Deno.serve(async (request: Request) => {
   if (userError || !userData.user) return json({ error: 'Sign in first.' }, 401);
   const userId = userData.user.id;
 
-  let body: { image?: string; mimeType?: string };
+  let body: {
+    mode?: string;
+    image?: string;
+    mimeType?: string;
+    courseCode?: string;
+    courseTitle?: string;
+    topics?: string[];
+    count?: number;
+  };
   try {
     body = await request.json();
   } catch {
     return json({ error: 'Bad request body.' }, 400);
   }
+  if (body.mode === 'generate') {
+    return await generateTheory(client, geminiKey, userId, body);
+  }
+
   const image = (body.image ?? '').trim();
   const mimeType = (body.mimeType ?? 'image/jpeg').trim();
   if (!image) return json({ error: 'Send a photo of the question.' }, 400);
@@ -106,4 +118,110 @@ function json(payload: unknown, status = 200): Response {
     status,
     headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
   });
+}
+
+const GEN_DAILY_LIMIT = Number(Deno.env.get('GENERATE_DAILY_LIMIT') ?? '6');
+
+// "Generate theory": the student picks a course, topics and how many questions
+// they want, and gets a fresh set of exam-style written questions with answers.
+async function generateTheory(
+  client: ReturnType<typeof createClient>,
+  geminiKey: string,
+  userId: string,
+  body: { courseCode?: string; courseTitle?: string; topics?: string[]; count?: number },
+): Promise<Response> {
+  const code = (body.courseCode ?? '').trim().slice(0, 20);
+  const title = (body.courseTitle ?? '').trim().slice(0, 120);
+  if (!code && !title) return json({ error: 'Choose a course first.' }, 400);
+  const topics = (body.topics ?? []).map((t) => String(t).trim().slice(0, 100)).filter(Boolean).slice(0, 12);
+  const count = Math.min(Math.max(Math.round(Number(body.count ?? 5)), 5), 15);
+
+  const day = new Date().toISOString().slice(0, 10);
+  const { data: usage } = await client
+    .from('ai_solve_usage')
+    .select('uses, gen_uses')
+    .eq('user_id', userId)
+    .eq('day', day)
+    .maybeSingle();
+  const genUsed = usage?.gen_uses ?? 0;
+  if (genUsed >= GEN_DAILY_LIMIT) {
+    return json(
+      { error: `You have used your ${GEN_DAILY_LIMIT} free question sets for today. Come back tomorrow.` },
+      429,
+    );
+  }
+
+  const prompt = `You are an experienced Nigerian university lecturer setting a written (theory) exam.
+Course: ${code} ${title}
+Topics: ${topics.length ? topics.join(', ') : 'the main topics of this course'}
+Write exactly ${count} different theory questions in the style of a university exam paper.
+Mix definitions, explanations, derivations or calculations where the course needs them.
+For each question give: the question, the marks (3 to 10), a clear complete model answer a student can
+learn from, and 3 to 6 short key points. Use plain text for maths such as x^2, sqrt(x), a/b.
+Only include facts you are sure are correct. Return JSON only.`;
+
+  const schema = {
+    type: 'OBJECT',
+    properties: {
+      questions: {
+        type: 'ARRAY',
+        items: {
+          type: 'OBJECT',
+          properties: {
+            question: { type: 'STRING' },
+            marks: { type: 'INTEGER' },
+            answer: { type: 'STRING' },
+            keyPoints: { type: 'ARRAY', items: { type: 'STRING' } },
+            topic: { type: 'STRING' },
+          },
+          required: ['question', 'marks', 'answer', 'keyPoints'],
+        },
+      },
+    },
+    required: ['questions'],
+  };
+
+  const reply = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': geminiKey },
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 8192,
+          responseMimeType: 'application/json',
+          responseSchema: schema,
+        },
+      }),
+    },
+  );
+  if (!reply.ok) {
+    console.error('gemini generate failed', reply.status, (await reply.text()).slice(0, 300));
+    return json({ error: 'The question maker is busy. Please try again in a minute.' }, 502);
+  }
+  const result = await reply.json();
+  const text: string = (result?.candidates?.[0]?.content?.parts ?? [])
+    .map((p: { text?: string }) => p.text ?? '')
+    .join('')
+    .trim();
+  let questions: unknown[] = [];
+  try {
+    questions = JSON.parse(text)?.questions ?? [];
+  } catch {
+    questions = [];
+  }
+  if (!Array.isArray(questions) || questions.length === 0) {
+    return json({ error: 'No questions came back. Please try again.' }, 502);
+  }
+
+  await client
+    .from('ai_solve_usage')
+    .upsert(
+      { user_id: userId, day, uses: usage?.uses ?? 0, gen_uses: genUsed + 1 },
+      { onConflict: 'user_id,day' },
+    );
+
+  return json({ questions, remaining: Math.max(GEN_DAILY_LIMIT - genUsed - 1, 0) });
 }
