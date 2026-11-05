@@ -8,6 +8,7 @@ import '../../../../core/routing/app_router.dart';
 import '../../../../core/services/activity_repository.dart';
 import '../../../../core/services/cbt_progress_store.dart';
 import '../../../../core/services/local_store.dart';
+import '../../../../core/services/update_prompt.dart';
 import '../../../../core/services/chat_repository.dart';
 import '../../../../core/state/session_controller.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -64,6 +65,9 @@ class _HomeShellState extends State<HomeShell> {
     // tap, or a jump from Ada / a deep link via [AppRouter.go].
     AppRouter.shellTab.addListener(_saveCurrentTab);
     WidgetsBinding.instance.addPostFrameCallback((_) => _resumeCbtIfAny());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) unawaited(UpdatePrompt.check(context));
+    });
   }
 
   void _saveCurrentTab() {
